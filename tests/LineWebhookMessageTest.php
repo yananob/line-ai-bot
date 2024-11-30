@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-// require_once "vendor/autoload.php";
-
-use yananob\mytools\Utils;
 use MyApp\LineWebhookMessage;
 
 final class LineWebhookMessageTest extends PHPUnit\Framework\TestCase

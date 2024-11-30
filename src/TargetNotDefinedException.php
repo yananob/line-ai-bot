@@ -2,4 +2,6 @@
 
 declare(strict_types=1);
 
-class TargetNotDefinedException extends exception {}
+namespace MyApp;
+
+class TargetNotDefinedException extends \Exception {}

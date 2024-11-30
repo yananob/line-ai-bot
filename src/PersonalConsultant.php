@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace MyApp;
 
-use TargetNotDefinedException;
+use ArrayObject;
 use yananob\mytools\Utils;
 use yananob\mytools\Gpt;
+use MyApp\TargetNotDefinedException;
 
 class PersonalConsultant
 {
@@ -23,16 +24,16 @@ class PersonalConsultant
 <request>
 EOM;
 
-    public function __construct(string $targetId)
+    public function __construct(string $configPath, string $targetId)
     {
         $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
 
-        $config = Utils::getConfig(__DIR__ . "/../config.json");
-        if (!array_key_exists($targetId, $config)) {
+        $config = Utils::getConfig($configPath, false);
+        if (!property_exists($config, $targetId)) {
             throw new TargetNotDefinedException("targetId [{$targetId}] is not defined.");
         }
 
-        $this->config = json_decode($config[$targetId], false);
+        $this->config = $config->$targetId;
     }
 
     public function getAnswer(string $question): string
