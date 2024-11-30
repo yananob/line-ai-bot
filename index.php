@@ -11,7 +11,7 @@ use yananob\mytools\Logger;
 use yananob\mytools\Line;
 use MyApp\LineWebhookMessage;
 use MyApp\PersonalConsultant;
-use myapp\TargetNotDefinedException;
+use MyApp\TargetNotDefinedException;
 
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
