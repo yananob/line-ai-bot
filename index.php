@@ -20,8 +20,8 @@ function main(ServerRequestInterface $request): ResponseInterface
     $logger = new Logger("webhook-receive");
     $logger->log(str_repeat("-", 120));
     $logger->log("headers: " . json_encode($request->getHeaders()));
-    $logger->log("params: " . json_encode($request->getQueryParams()));
-    $logger->log("parsedBody: " . json_encode($request->getParsedBody()));
+    // $logger->log("params: " . json_encode($request->getQueryParams()));
+    // $logger->log("parsedBody: " . json_encode($request->getParsedBody()));
     $body = $request->getBody()->getContents();
     $logger->log("body: " . $body);
 
@@ -35,7 +35,7 @@ function main(ServerRequestInterface $request): ResponseInterface
 
     $webhookMessage = new LineWebhookMessage($body);
 
-    $consultant = new PersonalConsultant($webhookMessage->getTargetId());
+    $consultant = new PersonalConsultant(__DIR__ . "/configs/config.json", $webhookMessage->getTargetId());
 
     $line = new Line(__DIR__ . "/configs/line.json");
     $line->sendMessage(
@@ -45,14 +45,6 @@ function main(ServerRequestInterface $request): ResponseInterface
         replyToken: $webhookMessage->getReplyToken(),
     );
 
-    // $line = new Line(__DIR__ . "/configs/line.json");
-    // $line->sendMessage(
-    //     bot: $config->bot->line_target,
-    //     targetId: $targetId,
-    //     message: $answer,
-    //     replyToken: $event->replyToken
-    // );
-  
     $headers = ['Content-Type' => 'application/json'];
     return new Response(200, $headers, json_encode($body));
 }
