@@ -46,15 +46,6 @@ jobs:
       id: current_dir
       run: echo "CURRENT_DIR=$(pwd)" >> $GITHUB_OUTPUT
 
-    # - name: Get current directory
-    #   run: echo "$(pwd)"
-
-    # - name: ls
-    #   run: echo "$(ls cf-common)"
-
-    # - name: cat
-    #   run: echo "$(cat phpstan.neon)"
-
     - name: Cache Composer packages
       id: composer-cache
       uses: actions/cache@v4
@@ -67,10 +58,11 @@ jobs:
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress
 
-    # - name: Create config.json
-    #   run: |
-    #     pwd
-    #     cp -v configs/config.json.sample configs/config.json
+    - name: Create /configs
+      env:
+        DECODED_BASE64: ${{ secrets.GPT_BASE64 }}
+      run: |
+        echo $DECODED_BASE64 | base64 --decode > configs/gpt.json
 
     - name: Test with phpunit
       run: |
