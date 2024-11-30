@@ -49,4 +49,14 @@ EOM;
     {
         $this->assertSame("今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？", $this->webhookMessage->getMessage());
     }
+
+    public function testGetTargetId(): void
+    {
+        $this->assertSame("Cz8ae3320b1b13dbdaff35ae50dc09500", $this->webhookMessage->getTargetId());
+    }
+
+    public function testGetReplyToken(): void
+    {
+        $this->assertSame("b3c26b13dfc74f6387c8bea36965e27c", $this->webhookMessage->getReplyToken());
+    }
 }
