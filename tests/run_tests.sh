@@ -2,12 +2,12 @@
 set -eu
 
 echo "Running PHPStan..."
-./vendor/bin/phpstan analyze -c ./cf-common/test/phpstan.neon .
+./vendor/bin/phpstan analyze -c ./_cf-common/test/phpstan.neon .
 
-# TEST_TARGET=""
-# if [ $# -eq 1 ];then
-#     TEST_TARGET=$1.php
-# fi
+TEST_TARGET=""
+if [ $# -eq 1 ];then
+    TEST_TARGET=$1.php
+fi
 
-# echo "Running PHPUnit $TEST_TARGET..."
-# ./vendor/bin/phpunit --colors=auto --display-notices --display-warnings --display-errors tests/$TEST_TARGET
+echo "Running PHPUnit $TEST_TARGET..."
+./vendor/bin/phpunit --colors=auto --display-notices --display-warnings --display-errors tests/$TEST_TARGET

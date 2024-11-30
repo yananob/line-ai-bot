@@ -23,7 +23,7 @@ class PersonalConsultant
 <request>
 EOM;
 
-    public function __construct(private string $targetId)
+    public function __construct(string $targetId)
     {
         $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
 

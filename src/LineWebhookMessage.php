@@ -9,7 +9,7 @@ class LineWebhookMessage
     private $bodyObj;
     private $event;
 
-    public function __construct(private string $messageBody)
+    public function __construct(string $messageBody)
     {
         $this->bodyObj = json_decode($messageBody, false);
         $this->event = $this->bodyObj->events[0];

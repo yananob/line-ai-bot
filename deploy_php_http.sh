@@ -36,7 +36,7 @@ rm -rf ./${DEPLOY_DIR}
 mkdir -p ${DEPLOY_DIR}
 pushd ${DEPLOY_DIR}
 
-rsync -vaL --exclude-from=../cf-common/deploy/rsync_exclude.conf ../ ./
+rsync -vaL --exclude-from=../_cf-common/deploy/rsync_exclude.conf ../ ./
 
 echo "-------- deploying http --------"
 gcloud functions deploy ${SCRIPT_NAME} \
