@@ -20,6 +20,7 @@ const GPT_CONTEXT = <<<EOM
 依頼事項：
 カウンセリング相手からのメッセージに対して、カウンセリング相手の特徴を一部反映して、ポジティブなフィードバックを、300〜500字ぐらいで返してください。
 EOM;
+// TODO: 「依頼事項」もConfig化
 
 function getContext($config): string
 {
@@ -49,13 +50,15 @@ function main(ServerRequestInterface $request): ResponseInterface
     $event = $body->events[0];
     $message = $event->message->text;
 
-    $config = Utils::getConfig(__DIR__ . "/configs/config.json", asArray: false);
+    /** 
+     * 1. LINE webhook受ける
+     * 2. LINE webhook処理クラスで、target特定する
+     * 3. targetから、Consultantを生成
+     * 4. Consultantからメッセージもらう
+     * 5. メッセージをLINEで送る
+     */
 
-    $gpt = new Gpt(__DIR__ . "/configs/gpt.json");
-    $answer = $gpt->getAnswer(
-        context: getContext($config),
-        message: $message,
-    );
+    $config = Utils::getConfig(__DIR__ . "/configs/config.json", asArray: false);
 
     // TODO: LINE Webhookから来たデータを処理するラッパーがあったほうがよさそう
     $type = $event->source->type;
@@ -70,6 +73,12 @@ function main(ServerRequestInterface $request): ResponseInterface
     } else {
         throw new Exception("Unknown type :" + $type);
     }
+
+    $gpt = new Gpt(__DIR__ . "/configs/gpt.json");
+    $answer = $gpt->getAnswer(
+        context: getContext($config),
+        message: $message,
+    );
 
     $line = new Line(__DIR__ . "/configs/line.json");
     $line->sendMessage(
