@@ -7,78 +7,49 @@ use Psr\Http\Message\ServerRequestInterface;
 use Google\CloudFunctions\FunctionsFramework;
 use GuzzleHttp\Psr7\Response;
 use yananob\mytools\Logger;
-use yananob\mytools\Utils;
+// use yananob\mytools\Utils;
 use yananob\mytools\Line;
-use yananob\mytools\Gpt;
-
-const GPT_CONTEXT = <<<EOM
-<bot/characteristics>
-
-カウンセリング相手の情報：
-<human/characteristics>
-
-依頼事項：
-カウンセリング相手からのメッセージに対して、カウンセリング相手の特徴を一部反映して、ポジティブなフィードバックを、300〜500字ぐらいで返してください。
-EOM;
-
-function getContext($config): string
-{
-    $result = GPT_CONTEXT;
-    $replaceSettings = [
-        ["search" => "<bot/characteristics>", "replace" => $config->bot->characteristics],
-        ["search" => "<human/characteristics>", "replace" => $config->human->characteristics],
-    ];
-    foreach ($replaceSettings as $replaceSetting) {
-        $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);
-    }
-    return $result;
-}
+use MyApp\LineWebhookMessage;
+use MyApp\PersonalConsultant;
+use myapp\TargetNotDefinedException;
 
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
 {
+    // $config = Utils::getConfig(__DIR__ . "/configs/config.json", asArray: false);
+
     $logger = new Logger("webhook-receive");
     $logger->log(str_repeat("-", 120));
     $logger->log("headers: " . json_encode($request->getHeaders()));
-    $logger->log("params: " . json_encode($request->getQueryParams()));
-    $logger->log("parsedBody: " . json_encode($request->getParsedBody()));
+    // $logger->log("params: " . json_encode($request->getQueryParams()));
+    // $logger->log("parsedBody: " . json_encode($request->getParsedBody()));
     $body = $request->getBody()->getContents();
     $logger->log("body: " . $body);
-    $body = json_decode($body, false);
 
-    $event = $body->events[0];
-    $message = $event->message->text;
+    /** 
+     * 1. LINE webhook受ける
+     * 2. LINE webhook処理クラスで、target特定する
+     * 3. targetから、Consultantを生成
+     * 4. Consultantからメッセージもらう
+     * 5. メッセージをLINEで送る
+     */
 
-    $config = Utils::getConfig(__DIR__ . "/configs/config.json", asArray: false);
+    $headers = ['Content-Type' => 'application/json'];
 
-    $gpt = new Gpt(__DIR__ . "/configs/gpt.json");
-    $answer = $gpt->getAnswer(
-        context: getContext($config),
-        message: $message,
-    );
-
-    // TODO: LINE Webhookから来たデータを処理するラッパーがあったほうがよさそう
-    $type = $event->source->type;
-    $targetId = null;
-    // typeを判定して、idを取得
-    if ($type === 'user') {
-        $targetId = $event->source->userId;
-    } else if ($type === 'group') {
-        $targetId = $event->source->groupId;
-    } else if ($type === 'room') {
-        $targetId = $event->source->roomId;
-    } else {
-        throw new Exception("Unknown type :" + $type);
+    $webhookMessage = new LineWebhookMessage($body);
+    $line = new Line(__DIR__ . "/configs/line.json");
+    try {
+        $consultant = new PersonalConsultant(__DIR__ . "/configs/config.json", $webhookMessage->getTargetId());
+        $line->sendMessage(
+            bot: $consultant->getLineTarget(),
+            targetId: $webhookMessage->getTargetId(),
+            message: $consultant->getAnswer($webhookMessage->getMessage()),
+            replyToken: $webhookMessage->getReplyToken(),
+        );
+    } catch (TargetNotDefinedException $e) {
+        $logger->log("Non defined targetId: {$e}");
+        return new Response(400, $headers, '{"result": "ng"');
     }
 
-    $line = new Line(__DIR__ . "/configs/line.json");
-    $line->sendMessage(
-        bot: $config->bot->line_target,
-        targetId: $targetId,
-        message: $answer,
-        replyToken: $event->replyToken
-    );
-  
-    $headers = ['Content-Type' => 'application/json'];
-    return new Response(200, $headers, json_encode($body));
+    return new Response(200, $headers, '{"result": "ok"}');
 }

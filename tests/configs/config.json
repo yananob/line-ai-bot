@@ -1,0 +1,12 @@
+{
+    "TEST_TARGET_ID": {
+        "bot": {
+            "line_target": "TEST_LINE_TARGET",
+            "characteristics": "あなたはフレンドリーなカウンセラーです。"
+        },
+        "human": {
+            "characteristics": "・男性\n・年齢：90代"
+        },
+        "request": "カウンセリング相手からのメッセージに対して、カウンセリング相手の特徴を一部だけ反映して、ポジティブなフィードバックを、200〜300字ぐらいで返してください。"
+    }
+}

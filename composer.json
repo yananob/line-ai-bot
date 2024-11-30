@@ -23,5 +23,10 @@
             "Composer\\Config::disableProcessTimeout",
             "FUNCTION_TARGET=main php -S localhost:${PORT:-8080} vendor/google/cloud-functions-framework/router.php"
         ]
+    },
+    "autoload": {
+        "psr-4": {
+            "MyApp\\": "./src/"
+        }
     }
 }
