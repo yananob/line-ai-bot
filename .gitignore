@@ -1,0 +1,10 @@
+configs/*.json
+configs/*.json.bak
+
+tmp/
+_deploy/
+
+# for PHP
+cache/
+templates_c/
+vendor/

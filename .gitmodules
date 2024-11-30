@@ -1,0 +1,3 @@
+[submodule "cf-common"]
+	path = cf-common
+	url = git@github.com:yananob/cloud-functions-common
