@@ -11,6 +11,7 @@ use yananob\mytools\Logger;
 use yananob\mytools\Line;
 use MyApp\LineWebhookMessage;
 use MyApp\PersonalConsultant;
+use myapp\TargetNotDefinedException;
 
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
@@ -33,18 +34,22 @@ function main(ServerRequestInterface $request): ResponseInterface
      * 5. メッセージをLINEで送る
      */
 
-    $webhookMessage = new LineWebhookMessage($body);
-
-    $consultant = new PersonalConsultant(__DIR__ . "/configs/config.json", $webhookMessage->getTargetId());
-
-    $line = new Line(__DIR__ . "/configs/line.json");
-    $line->sendMessage(
-        bot: $consultant->getLineTarget(),
-        targetId: $webhookMessage->getTargetId(),
-        message: $consultant->getAnswer($webhookMessage->getMessage()),
-        replyToken: $webhookMessage->getReplyToken(),
-    );
-
     $headers = ['Content-Type' => 'application/json'];
-    return new Response(200, $headers, json_encode($body));
+
+    $webhookMessage = new LineWebhookMessage($body);
+    $line = new Line(__DIR__ . "/configs/line.json");
+    try {
+        $consultant = new PersonalConsultant(__DIR__ . "/configs/config.json", $webhookMessage->getTargetId());
+        $line->sendMessage(
+            bot: $consultant->getLineTarget(),
+            targetId: $webhookMessage->getTargetId(),
+            message: $consultant->getAnswer($webhookMessage->getMessage()),
+            replyToken: $webhookMessage->getReplyToken(),
+        );
+    } catch (TargetNotDefinedException $e) {
+        $logger->log("Non defined targetId: {$e}");
+        return new Response(400, $headers, '{"result": "ng"');
+    }
+
+    return new Response(200, $headers, '{"result": "ok"}');
 }
