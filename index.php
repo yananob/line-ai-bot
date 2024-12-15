@@ -67,7 +67,7 @@ function main(ServerRequestInterface $request): ResponseInterface
 
     } catch (TargetNotDefinedException $e) {
         $logger->log("Non defined targetId: {$e}");
-        return new Response(400, $headers, '{"result": "ng"');
+        return new Response(400, $headers, '{"result": "ng"}');
     }
 
     return new Response(200, $headers, '{"result": "ok"}');
