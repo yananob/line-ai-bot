@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+use Carbon\Carbon;
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\FieldValue;
@@ -34,13 +35,22 @@ class Conversations
         // }
 
         $result = [];
-        foreach ($this->collectionRoot->listDocuments() as $doc) {
-            $data = $doc->snapshot()->data();
+        foreach ($this->collectionRoot->orderBy("id", "DESC")->limit($count)->documents() as $doc) {
+            // var_dump($doc);
+            // $data = $doc->snapshot()->data();
+            $data = $doc->data();
             $obj = new \stdClass();
-            foreach (["by", "content", "created_at"] as $key) {
-                $obj->$key = $data[$key];
+            foreach (["id", "by", "content", "created_at"] as $key) {
+                if ($key === "created_at") {
+                    $obj->$key = new Carbon((string)$data[$key]);
+                } else {
+                    $obj->$key = $data[$key];
+                }
             }
             $result[] = $obj;
+            // if (--$count <= 0) {
+            //     break;
+            // }
         }
         // CacheStore::put(CacheItems::Accounts->value, $accounts);
         return $result;
@@ -48,12 +58,13 @@ class Conversations
 
     public function store(string $by, string $content): void
     {
-        $curCount = $this->collectionRoot->count();
-        $this->collectionRoot->document($curCount + 1)->set(
+        $id = $this->collectionRoot->count() + 1;
+        $this->collectionRoot->document($id)->set(
             [
+                "id" => $id,
                 "by" => $by,
                 "content" => $content,
-                "timestamp" => FieldValue::serverTimestamp(),
+                "created_at" => FieldValue::serverTimestamp(),
             ]
         );
     }
