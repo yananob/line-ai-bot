@@ -6,7 +6,8 @@
         "php": ">= 8.2",
         "google/cloud-functions-framework": "^1.3",
         "google/protobuf": "^3.17",
-        "yananob/mytools": "dev-main"
+        "yananob/mytools": "dev-main",
+        "google/cloud-firestore": "^1.47"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.3",

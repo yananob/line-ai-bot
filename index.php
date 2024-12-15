@@ -37,15 +37,26 @@ function main(ServerRequestInterface $request): ResponseInterface
     $headers = ['Content-Type' => 'application/json'];
 
     $webhookMessage = new LineWebhookMessage($body);
-    $line = new Line(__DIR__ . "/configs/line.json");
     try {
         $consultant = new PersonalConsultant(__DIR__ . "/configs/config.json", $webhookMessage->getTargetId());
+        $answer = $consultant->getAnswer(
+            applyRecentConversations: true,
+            message: $webhookMessage->getMessage(),
+        );
+
+        $line = new Line(__DIR__ . "/configs/line.json");
         $line->sendMessage(
             bot: $consultant->getLineTarget(),
             targetId: $webhookMessage->getTargetId(),
-            message: $consultant->getAnswer($webhookMessage->getMessage()),
+            message: $answer,
             replyToken: $webhookMessage->getReplyToken(),
         );
+
+        $consultant->storeConversations(
+            message: $webhookMessage->getMessage(),
+            answer: $answer,
+        );
+
     } catch (TargetNotDefinedException $e) {
         $logger->log("Non defined targetId: {$e}");
         return new Response(400, $headers, '{"result": "ng"');
