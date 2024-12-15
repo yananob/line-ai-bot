@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace MyApp;
 
 use ArrayObject;
-use yananob\mytools\Utils;
-use yananob\mytools\Gpt;
+use yananob\MyTools\Utils;
+use yananob\MyTools\Gpt;
 use MyApp\TargetNotDefinedException;
 
 class PersonalConsultant
@@ -28,7 +28,7 @@ class PersonalConsultant
 <request>
 EOM;
 
-    public function __construct(string $configPath, string $targetId)
+    public function __construct(string $configPath, string $targetId, bool $isTest = true)
     {
         $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
         $this->conversations = new Conversations($targetId, $isTest);

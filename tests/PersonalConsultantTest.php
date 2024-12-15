@@ -15,7 +15,7 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
 
     public function testGetAnswer()
     {
-        $this->assertNotEmpty($this->consultant->getAnswer("今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
+        $this->assertNotEmpty($this->consultant->getAnswer(false, "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
     }
 
     public function testGetLineTarget()

@@ -34,7 +34,7 @@ class Conversations
         $result = [];
         foreach ($this->collectionRoot->listDocuments() as $doc) {
             $data = $doc->snapshot()->data();
-            $obj = new Object();
+            $obj = new \stdClass();
             foreach (["by", "content", "created_at"] as $key) {
                 $obj->$key = $data[$key];
             }
