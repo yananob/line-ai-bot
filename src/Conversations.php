@@ -53,7 +53,7 @@ class Conversations
     public function store(string $by, string $content): void
     {
         $id = $this->collectionRoot->count() + 1;
-        $this->collectionRoot->document($id)->set(
+        $this->collectionRoot->document((string)$id)->set(
             [
                 "id" => $id,
                 "by" => $by,
