@@ -67,7 +67,7 @@ EOM;
 
         if (empty($conversations)) {
             foreach (["<title/recentConversations>", "<recentConversations>"] as $replaceKey) {
-                $result = str_replace($replaceKey, "", $result);
+                $result = str_replace($replaceKey . "\n", "", $result);
             }
         } else {
             $result = str_replace("<title/recentConversations>", "【最近の会話内容】", $result);
