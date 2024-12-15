@@ -6,6 +6,8 @@ namespace MyApp;
 
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
+use Google\Cloud\Firestore\FieldValue;
+
 // use yananob\MyTools\CacheStore;
 // use MyApp\CacheItems;
 
@@ -46,10 +48,12 @@ class Conversations
 
     public function store(string $by, string $content): void
     {
-        $this->collectionRoot->newDocument()->set(
+        $curCount = $this->collectionRoot->count();
+        $this->collectionRoot->document($curCount + 1)->set(
             [
                 "by" => $by,
                 "content" => $content,
+                "timestamp" => FieldValue::serverTimestamp(),
             ]
         );
     }
