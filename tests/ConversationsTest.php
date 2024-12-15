@@ -36,9 +36,9 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
             $obj->by = $data["by"];
             $obj->content = $data["content"];
             // $obj->created_at = new Carbon("today");
-            $expected[] = $obj;
+            array_unshift($expected, $obj);
         };
-        krsort($expected);
+        // krsort($expected);
 
         $convs = [];
         foreach ($this->conversations->get(2) as $conv) {
@@ -48,5 +48,7 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
         }
 
         $this->assertEquals($expected, $convs);
+
+        $this->conversations->delete(2);
     }
 }
