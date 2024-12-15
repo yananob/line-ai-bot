@@ -20,7 +20,7 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
     //     // $this->assertNotEmpty($this->conversations->getAnswer("今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
     // }
 
-    public function testStoreAndGet()
+    public function testStoreAndGetAndDelete()
     {
         $expected = [];
         foreach (
@@ -41,7 +41,7 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
         // krsort($expected);
 
         $convs = [];
-        foreach ($this->conversations->get(2) as $conv) {
+        foreach ($this->conversations->get(count($expected)) as $conv) {
             unset($conv->id);
             unset($conv->created_at);
             $convs[] = $conv;
@@ -49,6 +49,12 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
 
         $this->assertEquals($expected, $convs);
 
-        $this->conversations->delete(2);
+        $this->conversations->delete(count($expected));
+    }
+
+    public function testGet_returnsBlankForonExistanceTargetId()
+    {
+        $conversations = new Conversations(targetId: "NON_EXISTING_TARGET_ID", isTest: true);
+        $this->assertSame([], $conversations->get());
     }
 }

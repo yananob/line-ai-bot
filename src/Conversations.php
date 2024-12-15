@@ -68,4 +68,11 @@ class Conversations
             ]
         );
     }
+
+    public function delete(int $count): void
+    {
+        foreach ($this->collectionRoot->orderBy("id", "DESC")->limit($count)->documents() as $doc) {
+            $doc->reference()->delete();
+        }
+    }
 }
