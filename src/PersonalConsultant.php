@@ -18,13 +18,13 @@ class PersonalConsultant
     const GPT_CONTEXT = <<<EOM
 <bot/characteristics>
 
-カウンセリング相手の情報：
+【カウンセリング相手の情報】
 <human/characteristics>
 
 <title/recentConversations>
 <recentConversations>
 
-依頼事項：
+【依頼事項】
 <request>
 EOM;
 
@@ -70,7 +70,7 @@ EOM;
                 $result = str_replace($replaceKey, "", $result);
             }
         } else {
-            $result = str_replace("<title/recentConversations>", "最近の会話内容：", $result);
+            $result = str_replace("<title/recentConversations>", "【最近の会話内容】", $result);
             $result = str_replace(
                 "<recentConversations>",
                 $this->__convertConversationsToText($conversations),
@@ -85,10 +85,10 @@ EOM;
     {
         $result = "";
         foreach ($conversations as $conversation) {
-            $result += "・日時：" . $conversation["created_at"] . "\n";
-            $result += "・発言者：" . ($conversation["by"] === "human" ? "会話相手" : "ボット（あなた）") . "\n";
-            $result += "・内容：" . $conversation["content"] . "\n";
-            $result += str_repeat("-", 80);
+            $result .= "・日時：" . $conversation->created_at . "\n";
+            $result .= "・発言者：" . ($conversation->by === "human" ? "会話相手" : "ボット（あなた）") . "\n";
+            $result .= "・内容：" . $conversation->content . "\n";
+            $result .= str_repeat("-", 80) . "\n";
         }
         return $result;
     }

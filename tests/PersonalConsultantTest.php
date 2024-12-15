@@ -13,9 +13,14 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
         $this->consultant = new PersonalConsultant(__DIR__ . "/configs/config.json", "TEST_TARGET_ID");
     }
 
-    public function testGetAnswer()
+    public function testGetAnswerWithoutRecentConversation()
     {
         $this->assertNotEmpty($this->consultant->getAnswer(false, "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
+    }
+
+    public function testGetAnswerWithRecentConversation()
+    {
+        $this->assertNotEmpty($this->consultant->getAnswer(true, "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
     }
 
     public function testGetLineTarget()

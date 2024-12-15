@@ -57,4 +57,16 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
         $conversations = new Conversations(targetId: "NON_EXISTING_TARGET_ID", isTest: true);
         $this->assertSame([], $conversations->get());
     }
+
+
+    public function testStoreRandomMessages()
+    {
+        $this->conversations->store("human", "今日は暑いね！");
+        $this->conversations->store("bot", "そうですね！");
+        $this->conversations->store("human", "今日は疲れたね！");
+        $this->conversations->store("bot", "大変お疲れ様でした！");
+        $this->conversations->store("human", "今日は眠いよ・・・");
+        $this->conversations->store("bot", "金曜日ですもんね！");
+        $this->assertTrue(true);
+    }
 }
