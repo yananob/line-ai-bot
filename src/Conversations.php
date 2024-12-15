@@ -44,7 +44,7 @@ class Conversations
                     $obj->$key = $data[$key];
                 }
             }
-            $result[] = $obj;
+            array_unshift($result, $obj);
         }
         // CacheStore::put(CacheItems::Accounts->value, $accounts);
         return $result;

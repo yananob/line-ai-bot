@@ -16,11 +16,15 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
     public function testGetAnswerWithoutRecentConversation()
     {
         $this->assertNotEmpty($this->consultant->getAnswer(false, "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
+
+        // TODO: check the context doesn't contain 最近の会話
     }
 
     public function testGetAnswerWithRecentConversation()
     {
         $this->assertNotEmpty($this->consultant->getAnswer(true, "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
+
+        // TODO: check the context contains 最近の会話
     }
 
     public function testGetLineTarget()

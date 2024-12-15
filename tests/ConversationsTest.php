@@ -14,10 +14,15 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
         $this->conversations = new Conversations(targetId: "TEST_TARGET_ID", isTest: true);
     }
 
-    // public function testGet()
+    // public function testStoreRandomMessages()
     // {
-    //     $this->assertEquals([], $this->conversations->get(5));
-    //     // $this->assertNotEmpty($this->conversations->getAnswer("今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
+    //     $this->conversations->store("human", "今日は暑いね！");
+    //     $this->conversations->store("bot", "そうですね！");
+    //     $this->conversations->store("human", "今日は疲れたね！");
+    //     $this->conversations->store("bot", "大変お疲れ様でした！");
+    //     $this->conversations->store("human", "今日は眠いよ・・・");
+    //     $this->conversations->store("bot", "金曜日ですもんね！");
+    //     $this->assertTrue(true);
     // }
 
     public function testStoreAndGetAndDelete()
@@ -36,7 +41,7 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
             $obj->by = $data["by"];
             $obj->content = $data["content"];
             // $obj->created_at = new Carbon("today");
-            array_unshift($expected, $obj);
+            $expected[] = $obj;
         };
         // krsort($expected);
 
@@ -58,15 +63,4 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
         $this->assertSame([], $conversations->get());
     }
 
-
-    public function testStoreRandomMessages()
-    {
-        $this->conversations->store("human", "今日は暑いね！");
-        $this->conversations->store("bot", "そうですね！");
-        $this->conversations->store("human", "今日は疲れたね！");
-        $this->conversations->store("bot", "大変お疲れ様でした！");
-        $this->conversations->store("human", "今日は眠いよ・・・");
-        $this->conversations->store("bot", "金曜日ですもんね！");
-        $this->assertTrue(true);
-    }
 }
