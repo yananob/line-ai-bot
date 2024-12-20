@@ -1,4 +1,11 @@
 {
+    "default": {
+        "bot": {
+            "line_target": "LINE_TARGET",
+            "characteristics": "あなたはフレンドリーなカウンセラーです。"
+        },
+        "request": "カウンセリング相手からのメッセージに対して、カウンセリング相手の特徴を一部だけ反映して、ポジティブなフィードバックを、200〜300字ぐらいで返してください。"
+    },
     "TARGET_ID": {
         "bot": {
             "line_target": "LINE_TARGET",
