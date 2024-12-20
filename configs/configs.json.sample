@@ -1,14 +1,14 @@
 {
     "default": {
         "bot": {
-            "line_target": "LINE_TARGET",
-            "characteristics": "あなたはフレンドリーなカウンセラーです。"
+            "line_target": "LINE_TARGET_DEFAULT",
+            "characteristics": "あなたはフレンドリーなデフォルトカウンセラーです。"
         },
-        "request": "カウンセリング相手からのメッセージに対して、カウンセリング相手の特徴を一部だけ反映して、ポジティブなフィードバックを、200〜300字ぐらいで返してください。"
+        "request": "デフォルトカウンセリング相手からのメッセージに対して、カウンセリング相手の特徴を一部だけ反映して、ポジティブなフィードバックを、200〜300字ぐらいで返してください。"
     },
     "TARGET_ID": {
         "bot": {
-            "line_target": "LINE_TARGET",
+            "line_target": "LINE_TARGET_TEST",
             "characteristics": "あなたはフレンドリーなカウンセラーです。"
         },
         "human": {

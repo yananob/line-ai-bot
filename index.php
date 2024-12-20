@@ -12,13 +12,10 @@ use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
 use MyApp\LineWebhookMessage;
 use MyApp\PersonalConsultant;
-use MyApp\TargetNotDefinedException;
 
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
 {
-    // $config = Utils::getConfig(__DIR__ . "/configs/config.json", asArray: false);
-
     $logger = new Logger("webhook-receive");
     $logger->log(str_repeat("-", 120));
     $logger->log("headers: " . json_encode($request->getHeaders()));
@@ -41,34 +38,28 @@ function main(ServerRequestInterface $request): ResponseInterface
     $headers = ['Content-Type' => 'application/json'];
 
     $webhookMessage = new LineWebhookMessage($body);
-    try {
-        $consultant = new PersonalConsultant(
-            __DIR__ . "/configs/config.json",
-            $webhookMessage->getTargetId(),
-            $isLocal
-        );
-        $answer = $consultant->getAnswer(
-            applyRecentConversations: true,
-            message: $webhookMessage->getMessage(),
-        );
+    $consultant = new PersonalConsultant(
+        __DIR__ . "/configs/config.json",
+        $webhookMessage->getTargetId(),
+        $isLocal
+    );
+    $answer = $consultant->getAnswer(
+        applyRecentConversations: true,
+        message: $webhookMessage->getMessage(),
+    );
 
-        $line = new Line(__DIR__ . "/configs/line.json");
-        $line->sendMessage(
-            bot: $consultant->getLineTarget(),
-            targetId: $webhookMessage->getTargetId(),
-            message: $answer,
-            replyToken: $webhookMessage->getReplyToken(),
-        );
+    $line = new Line(__DIR__ . "/configs/line.json");
+    $line->sendMessage(
+        bot: $consultant->getLineTarget(),
+        targetId: $webhookMessage->getTargetId(),
+        message: $answer,
+        replyToken: $webhookMessage->getReplyToken(),
+    );
 
-        $consultant->storeConversations(
-            message: $webhookMessage->getMessage(),
-            answer: $answer,
-        );
-
-    } catch (TargetNotDefinedException $e) {
-        $logger->log("Non defined targetId: {$e}");
-        return new Response(400, $headers, '{"result": "ng"}');
-    }
+    $consultant->storeConversations(
+        message: $webhookMessage->getMessage(),
+        answer: $answer,
+    );
 
     return new Response(200, $headers, '{"result": "ok"}');
 }
