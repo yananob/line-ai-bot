@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Carbon\Carbon;
 use MyApp\Conversations;
 
 final class ConversationsTest extends PHPUnit\Framework\TestCase

@@ -3,19 +3,19 @@
 declare(strict_types=1);
 
 use Carbon\Carbon;
-use MyApp\PersonalConsultant;
+use MyApp\PersonalBot;
 
-final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
+final class PersonalBotTest extends PHPUnit\Framework\TestCase
 {
-    private PersonalConsultant $consultant_chat;
-    private PersonalConsultant $consultant_consulting;
-    private PersonalConsultant $consultant_default;
+    private PersonalBot $bot_chat;
+    private PersonalBot $bot_consulting;
+    private PersonalBot $bot_default;
 
     protected function setUp(): void
     {
-        $this->consultant_chat = new PersonalConsultant(__DIR__ . "/configs/config.json", "TARGET_ID_TEST_CHAT");
-        $this->consultant_consulting = new PersonalConsultant(__DIR__ . "/configs/config.json", "TARGET_ID_TEST_CONSULTING");
-        $this->consultant_default = new PersonalConsultant(__DIR__ . "/configs/config.json", "TARGET_ID_NOT_EXISTS");
+        $this->bot_chat = new PersonalBot(__DIR__ . "/configs/config.json", "TARGET_ID_TEST_CHAT");
+        $this->bot_consulting = new PersonalBot(__DIR__ . "/configs/config.json", "TARGET_ID_TEST_CONSULTING");
+        $this->bot_default = new PersonalBot(__DIR__ . "/configs/config.json", "TARGET_ID_NOT_EXISTS");
     }
 
     private function __invokePrivateMethod($object, string $methodName, ...$args): mixed
@@ -28,7 +28,7 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
 
     public function testGetAnswerWithoutRecentConversation()
     {
-        $this->assertNotEmpty($this->consultant_chat->getAnswer(
+        $this->assertNotEmpty($this->bot_chat->getAnswer(
             false,
             "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"
         ));
@@ -36,7 +36,7 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
 
     public function testGetAnswerWithRecentConversation()
     {
-        $this->assertNotEmpty($this->consultant_chat->getAnswer(
+        $this->assertNotEmpty($this->bot_chat->getAnswer(
             true,
             "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"
         ));
@@ -46,24 +46,24 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
     {
         $this->assertStringNotContainsString(
             "【話し相手の情報】",
-            $this->__invokePrivateMethod($this->consultant_default, "__getContext", [])
+            $this->__invokePrivateMethod($this->bot_default, "__getContext", [])
         );
     }
     public function testGetContext_WithTargetConfiguration()
     {
         $this->assertStringContainsString(
             "【話し相手の情報】",
-            $this->__invokePrivateMethod($this->consultant_chat, "__getContext", [])
+            $this->__invokePrivateMethod($this->bot_chat, "__getContext", [])
         );
     }
 
-    // public function testGetContext_WithoutRecentConversation()
-    // {
-    //     $this->assertStringNotContainsString(
-    //         "【最近の会話内容】",
-    //         $this->__invokePrivateMethod($this->consultant_default, "__getContext", [])
-    //     );
-    // }
+    public function testGetContext_WithoutRecentConversation()
+    {
+        $this->assertStringContainsString(
+            "【最近の会話内容】",
+            $this->__invokePrivateMethod($this->bot_default, "__getContext", [])
+        );
+    }
     public function testGetContext_WithRecentConversation()
     {
         $recentConversations = [];
@@ -75,13 +75,13 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
 
         $this->assertStringContainsString(
             "【最近の会話内容】",
-            $this->__invokePrivateMethod($this->consultant_chat, "__getContext", $recentConversations)
+            $this->__invokePrivateMethod($this->bot_chat, "__getContext", $recentConversations)
         );
     }
 
     public function testGetRequest_ChatModeWithoutRecentConversations()
     {
-        $result = $this->__invokePrivateMethod($this->consultant_chat, "__getRequest", false);
+        $result = $this->__invokePrivateMethod($this->bot_chat, "__getRequest", false);
         foreach (
             [
                 "返すメッセージの文字数は、話し相手からの今回のメッセージの文字数と同じぐらい",
@@ -94,14 +94,14 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
             [
                 "【話し相手の情報】の一部",
             ]
-            as $contain
+            as $notContain
         ) {
-            $this->assertStringNotContainsString($contain, $result);
+            $this->assertStringNotContainsString($notContain, $result);
         }
     }
     public function testGetRequest_ConsultingModeWithRecentConversations()
     {
-        $result = $this->__invokePrivateMethod($this->consultant_consulting, "__getRequest", true);
+        $result = $this->__invokePrivateMethod($this->bot_consulting, "__getRequest", true);
         foreach (
             [
                 "【話し相手の情報】の一部",
@@ -115,11 +115,11 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
 
     public function testGetLineTarget_WithTargetConfiguration()
     {
-        $this->assertSame("LINE_TARGET_TEST", $this->consultant_chat->getLineTarget());
+        $this->assertSame("LINE_TARGET_TEST", $this->bot_chat->getLineTarget());
     }
 
     public function testGetLineTarget_WithOutTargetConfiguration()
     {
-        $this->assertSame("LINE_TARGET_DEFAULT", $this->consultant_default->getLineTarget());
+        $this->assertSame("LINE_TARGET_DEFAULT", $this->bot_default->getLineTarget());
     }
 }
