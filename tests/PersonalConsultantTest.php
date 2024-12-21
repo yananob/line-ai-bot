@@ -23,7 +23,7 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
         $reflection = new \ReflectionClass($object);
         $method = $reflection->getMethod($methodName);
         $method->setAccessible(true);
-        return $method->invoke($object, $args);
+        return $method->invoke($object, ...$args);
     }
 
     public function testGetAnswerWithoutRecentConversation()
