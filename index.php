@@ -11,7 +11,7 @@ use yananob\MyTools\Logger;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
 use MyApp\LineWebhookMessage;
-use MyApp\PersonalConsultant;
+use MyApp\PersonalBot;
 
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
@@ -38,7 +38,7 @@ function main(ServerRequestInterface $request): ResponseInterface
     $headers = ['Content-Type' => 'application/json'];
 
     $webhookMessage = new LineWebhookMessage($body);
-    $consultant = new PersonalConsultant(
+    $consultant = new PersonalBot(
         __DIR__ . "/configs/config.json",
         $webhookMessage->getTargetId(),
         $isLocal

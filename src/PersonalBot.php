@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace MyApp;
 
-use ArrayObject;
 use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
-use MyApp\TargetNotDefinedException;
 
-class PersonalConsultant
+class PersonalBot
 {
     private Gpt $gpt;
     private object $config;
