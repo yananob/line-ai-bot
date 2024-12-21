@@ -26,7 +26,7 @@ class Conversations
         $this->collectionRoot = $this->dbAccessor->collection($collectionName)->document("conversations")->collection($targetId);
     }
 
-    public function get(int $count = 20): array
+    public function get(bool $includeBot = true, bool $includeHuman = true, int $count = 20): array
     {
         // $cache = CacheStore::get(CacheItems::Accounts->value);
         // if (!empty($cache)) {
@@ -34,8 +34,15 @@ class Conversations
         // }
 
         $result = [];
-        foreach ($this->collectionRoot->orderBy("id", "DESC")->limit($count)->documents() as $doc) {
+        foreach ($this->collectionRoot->orderBy("id", "DESC")->limit(50)->documents() as $doc) {
             $data = $doc->data();
+            if ($data["by"] === "bot" && !$includeBot) {
+                continue;
+            }
+            if ($data["by"] === "human" && !$includeHuman) {
+                continue;
+            }
+
             $obj = new \stdClass();
             foreach (["id", "by", "content", "created_at"] as $key) {
                 if ($key === "created_at") {
@@ -45,6 +52,9 @@ class Conversations
                 }
             }
             array_unshift($result, $obj);
+            if (--$count <= 0) {
+                break;
+            }
         }
         // CacheStore::put(CacheItems::Accounts->value, $accounts);
         return $result;

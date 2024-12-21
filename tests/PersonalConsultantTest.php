@@ -79,25 +79,12 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
         );
     }
 
-    public function testGetRequest_ChatModeWithRecentConversations()
+    public function testGetRequest_ChatModeWithoutRecentConversations()
     {
-        $result = $this->__invokePrivateMethod($this->consultant_chat, "__getRequest", [true]);
+        $result = $this->__invokePrivateMethod($this->consultant_chat, "__getRequest", [false]);
         foreach (
             [
-                "【話し相手の情報】の一部",
                 "返すメッセージの文字数は、話し相手からの今回のメッセージの文字数と同じぐらい",
-            ]
-            as $contain
-        ) {
-            $this->assertStringContainsString($contain, $result);
-        }
-    }
-    public function testGetRequest_ConsultingModeWithoutRecentConversations()
-    {
-        $result = $this->__invokePrivateMethod($this->consultant_consulting, "__getRequest", [false]);
-        foreach (
-            [
-                "メッセージの文字数は、話し相手からの今回のメッセージの文字数の2倍ぐらい",
             ]
             as $contain
         ) {
@@ -110,6 +97,19 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
             as $contain
         ) {
             $this->assertStringNotContainsString($contain, $result);
+        }
+    }
+    public function testGetRequest_ConsultingModeWithRecentConversations()
+    {
+        $result = $this->__invokePrivateMethod($this->consultant_consulting, "__getRequest", [true]);
+        foreach (
+            [
+                "【話し相手の情報】の一部",
+                "メッセージの文字数は、話し相手からの今回のメッセージの文字数の2倍ぐらい",
+            ]
+            as $contain
+        ) {
+            $this->assertStringContainsString($contain, $result);
         }
     }
 
