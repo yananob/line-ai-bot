@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use MyApp\Conversations;
+use MyApp\ConversationsStore;
 
 final class ConversationsTest extends PHPUnit\Framework\TestCase
 {
-    private Conversations $conversations;
+    private ConversationsStore $conversations;
 
     const TEST_CONVERSATIONS = [
         [1, "human", "今日は暑いね！"],
@@ -20,7 +20,7 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
 
     protected function setUp(): void
     {
-        $this->conversations = new Conversations(targetId: "TARGET_ID_AUTOTEST", isTest: true);
+        $this->conversations = new ConversationsStore(targetId: "TARGET_ID_AUTOTEST", isTest: true);
 
         $this->test_conversations = [];
         foreach (self::TEST_CONVERSATIONS as $conversation) {
@@ -114,8 +114,7 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
 
     public function testGet_returnsBlankForonExistanceTargetId()
     {
-        $conversations = new Conversations(targetId: "NON_EXISTING_TARGET_ID", isTest: true);
+        $conversations = new ConversationsStore(targetId: "NON_EXISTING_TARGET_ID", isTest: true);
         $this->assertSame([], $conversations->get());
     }
-
 }

@@ -13,9 +13,9 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
 
     protected function setUp(): void
     {
-        $this->bot_chat = new PersonalBot(__DIR__ . "/configs/config.json", "TARGET_ID_TEST_CHAT");
-        $this->bot_consulting = new PersonalBot(__DIR__ . "/configs/config.json", "TARGET_ID_TEST_CONSULTING");
-        $this->bot_default = new PersonalBot(__DIR__ . "/configs/config.json", "TARGET_ID_NOT_EXISTS");
+        $this->bot_chat = new PersonalBot("TARGET_ID_TEST_CHAT");
+        $this->bot_consulting = new PersonalBot("TARGET_ID_TEST_CONSULTING");
+        $this->bot_default = new PersonalBot("TARGET_ID_NOT_EXISTS");
     }
 
     private function __invokePrivateMethod($object, string $methodName, ...$args): mixed
