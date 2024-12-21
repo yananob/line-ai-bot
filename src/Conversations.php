@@ -8,8 +8,6 @@ use Carbon\Carbon;
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\FieldValue;
-// use yananob\MyTools\CacheStore;
-// use MyApp\CacheItems;
 
 class Conversations
 {
@@ -28,11 +26,6 @@ class Conversations
 
     public function get(bool $includeBot = true, bool $includeHuman = true, int $count = 20): array
     {
-        // $cache = CacheStore::get(CacheItems::Accounts->value);
-        // if (!empty($cache)) {
-        //     return $cache;
-        // }
-
         $result = [];
         foreach ($this->collectionRoot->orderBy("id", "DESC")->limit(50)->documents() as $doc) {
             $data = $doc->data();
@@ -56,7 +49,6 @@ class Conversations
                 break;
             }
         }
-        // CacheStore::put(CacheItems::Accounts->value, $accounts);
         return $result;
     }
 

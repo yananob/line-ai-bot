@@ -84,9 +84,6 @@ EOM;
 
     private function __getRequest(bool $applyRecentConversations): string
     {
-        // 話し相手からのメッセージに対して、【話し相手の情報】の一部や【最近の会話内容】を反映して、ポジティブなフィードバックを返してください。
-        // 返すメッセージの文字数は、話し相手からの今回のメッセージの文字数の2倍ぐらいにしてください。
-        // 過去にメモリーした内容は反映しないでください。
         $result = "";
         $result .= "話し相手からのメッセージに対して、";
         if ($applyRecentConversations && $this->config->mode === Mode::Consulting->value) {
