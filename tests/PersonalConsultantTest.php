@@ -23,6 +23,9 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
         $this->assertNotEmpty($this->consultant->getAnswer(true, "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"));
     }
 
+    public function testGetContext_WithTargetConfiguration() {}
+    public function testGetContext_WithOutTargetConfiguration() {}
+
     public function testGetContext_WithoutRecentConversation()
     {
         $reflection = new \ReflectionClass($this->consultant);
@@ -32,9 +35,6 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
     }
 
     public function testGetContext_WithRecentConversation() {}
-
-    public function testGetContext_WithTargetConfiguration() {}
-    public function testGetContext_WithOutTargetConfiguration() {}
 
     public function testGetLineTarget()
     {
