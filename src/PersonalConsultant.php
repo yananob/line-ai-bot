@@ -68,7 +68,7 @@ EOM;
         if (empty($this->config->human)) {
             $result = $this->__removeFromContext(["<title/human_characteristics>", "<human/characteristics>"], $result);
         } else {
-            $result = str_replace("<human/human_characteristics>", "【話し相手の情報】", $result);
+            $result = str_replace("<title/human_characteristics>", "【話し相手の情報】", $result);
             $result = str_replace("<human/characteristics>", $this->config->human->characteristics, $result);
         }
 
