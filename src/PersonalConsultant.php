@@ -46,7 +46,7 @@ EOM;
         $recentConversations = [];
         if ($applyRecentConversations) {
             $recentConversations = $this->conversations->get(
-                includeBot: $this->config->mode === Mode::Chat,
+                includeBot: $this->config->mode === Mode::Chat->value,
                 includeHuman: true,
             );
         }
