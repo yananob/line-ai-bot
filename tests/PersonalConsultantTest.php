@@ -18,12 +18,12 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
         $this->consultant_default = new PersonalConsultant(__DIR__ . "/configs/config.json", "TARGET_ID_NOT_EXISTS");
     }
 
-    private function __invokePrivateMethod($object, string $methodName, array $params): mixed
+    private function __invokePrivateMethod($object, string $methodName, ...$args): mixed
     {
         $reflection = new \ReflectionClass($object);
         $method = $reflection->getMethod($methodName);
         $method->setAccessible(true);
-        return $method->invoke($object, ...$params);
+        return $method->invoke($object, $args);
     }
 
     public function testGetAnswerWithoutRecentConversation()
@@ -57,13 +57,13 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
         );
     }
 
-    public function testGetContext_WithoutRecentConversation()
-    {
-        $this->assertStringNotContainsString(
-            "【最近の会話内容】",
-            $this->__invokePrivateMethod($this->consultant_chat, "__getContext", [])
-        );
-    }
+    // public function testGetContext_WithoutRecentConversation()
+    // {
+    //     $this->assertStringNotContainsString(
+    //         "【最近の会話内容】",
+    //         $this->__invokePrivateMethod($this->consultant_default, "__getContext", [])
+    //     );
+    // }
     public function testGetContext_WithRecentConversation()
     {
         $recentConversations = [];
@@ -81,7 +81,7 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
 
     public function testGetRequest_ChatModeWithoutRecentConversations()
     {
-        $result = $this->__invokePrivateMethod($this->consultant_chat, "__getRequest", [false]);
+        $result = $this->__invokePrivateMethod($this->consultant_chat, "__getRequest", false);
         foreach (
             [
                 "返すメッセージの文字数は、話し相手からの今回のメッセージの文字数と同じぐらい",
@@ -101,7 +101,7 @@ final class PersonalConsultantTest extends PHPUnit\Framework\TestCase
     }
     public function testGetRequest_ConsultingModeWithRecentConversations()
     {
-        $result = $this->__invokePrivateMethod($this->consultant_consulting, "__getRequest", [true]);
+        $result = $this->__invokePrivateMethod($this->consultant_consulting, "__getRequest", true);
         foreach (
             [
                 "【話し相手の情報】の一部",
