@@ -26,7 +26,7 @@ class Conversations
         $this->collectionRoot = $this->dbAccessor->collection($collectionName)->document("conversations")->collection($targetId);
     }
 
-    public function get(int $count = 10): array
+    public function get(int $count = 20): array
     {
         // $cache = CacheStore::get(CacheItems::Accounts->value);
         // if (!empty($cache)) {
