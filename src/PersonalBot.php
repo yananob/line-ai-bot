@@ -29,13 +29,13 @@ EOM;
 
     public function __construct(string $targetId, bool $isTest = true)
     {
-        $this->botConfigsStore = new Config($targetId, $isTest);
-        if ($this->botConfigsStore->exists($targetId){
+        $this->botConfigsStore = new BotConfigsStore($targetId, $isTest);
+        if ($this->botConfigsStore->exists($targetId)) {
             $this->botConfig = $this->botConfigsStore->get($targetId);
         } else {
             $this->botConfig = $this->botConfigsStore->getDefault();
         }
-        $this->conversations = new Conversations($targetId, $isTest);
+        $this->conversationsStore = new ConversationsStore($targetId, $isTest);
         $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
     }
 
@@ -43,7 +43,7 @@ EOM;
     {
         $recentConversations = [];
         if ($applyRecentConversations) {
-            $recentConversations = $this->conversations->get(
+            $recentConversations = $this->conversationsStore->get(
                 includeBot: $this->botConfig->isChatMode(),
                 includeHuman: true,
             );
@@ -135,7 +135,7 @@ EOM;
 
     public function storeConversations(string $message, string $answer): void
     {
-        $this->conversations->store("human", $message);
-        $this->conversations->store("bot", $answer);
+        $this->conversationsStore->store("human", $message);
+        $this->conversationsStore->store("bot", $answer);
     }
 }
