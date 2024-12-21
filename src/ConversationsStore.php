@@ -9,7 +9,7 @@ use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\FieldValue;
 
-class Conversations
+class ConversationsStore
 {
     private FirestoreClient $dbAccessor;
     private CollectionReference $collectionRoot;

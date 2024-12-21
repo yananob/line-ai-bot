@@ -9,9 +9,10 @@ use yananob\MyTools\Gpt;
 
 class PersonalBot
 {
+    private BotConfigsStore $botConfigsStore;
+    private BotConfig $botConfig;
+    private ConversationsStore $conversationsStore;
     private Gpt $gpt;
-    private object $config;
-    private Conversations $conversations;
 
     const GPT_CONTEXT = <<<EOM
 あなたはフレンドリーなチャットボットです。
@@ -26,17 +27,16 @@ class PersonalBot
 <request>
 EOM;
 
-    public function __construct(string $configPath, string $targetId, bool $isTest = true)
+    public function __construct(string $targetId, bool $isTest = true)
     {
-        $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
-        $this->conversations = new Conversations($targetId, $isTest);
-
-        $config = Utils::getConfig($configPath, false);
-        if (property_exists($config, $targetId)) {
-            $this->config = $config->$targetId;
+        $this->botConfigsStore = new Config($targetId, $isTest);
+        if ($this->botConfigsStore->exists($targetId){
+            $this->botConfig = $this->botConfigsStore->get($targetId);
         } else {
-            $this->config = $config->default;
+            $this->botConfig = $this->botConfigsStore->getDefault();
         }
+        $this->conversations = new Conversations($targetId, $isTest);
+        $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
     }
 
     public function getAnswer(bool $applyRecentConversations, string $message): string
@@ -44,7 +44,7 @@ EOM;
         $recentConversations = [];
         if ($applyRecentConversations) {
             $recentConversations = $this->conversations->get(
-                includeBot: $this->config->mode === Mode::Chat->value,
+                includeBot: $this->botConfig->isChatMode(),
                 includeHuman: true,
             );
         }
@@ -65,11 +65,11 @@ EOM;
             $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);
         }
 
-        if (empty($this->config->human)) {
+        if (empty($this->botConfig->hasHumanCharacteristics())) {
             $result = $this->__removeFromContext(["<title/human_characteristics>", "<human/characteristics>"], $result);
         } else {
             $result = str_replace("<title/human_characteristics>", "【話し相手の情報】", $result);
-            $result = str_replace("<human/characteristics>", $this->config->human->characteristics, $result);
+            $result = str_replace("<human/characteristics>", implode("\n", $this->botConfig->getHumanCharacteristics()), $result);
         }
 
         if (empty($conversations)) {
@@ -86,18 +86,18 @@ EOM;
     {
         $result = "";
         $result .= "話し相手からのメッセージに対して、";
-        if ($applyRecentConversations && $this->config->mode === Mode::Consulting->value) {
+        if ($applyRecentConversations && $this->botConfig->isConsultingMode()) {
             $result .= "【話し相手の情報】の一部や";
         }
         $result .= "【最近の会話内容】を反映して、";
-        if ($this->config->mode === Mode::Chat->value) {
+        if ($this->botConfig->isChatMode()) {
             $result .= "相手を楽しくさせたり励ましたりする回答を返してください。";
         } else {
             $result .= "ポジティブなフィードバックを返してください。";
         }
         $result .= "\n";
         $result .= "返すメッセージの文字数は、話し相手からの今回のメッセージの文字数";
-        if ($this->config->mode === Mode::Chat->value) {
+        if ($this->botConfig->isChatMode()) {
             $result .= "と同じぐらいにしてください。";
         } else {
             $result .= "の2倍ぐらいにしてください。";
@@ -130,7 +130,7 @@ EOM;
 
     public function getLineTarget(): string
     {
-        return $this->config->bot->line_target;
+        return $this->botConfig->getLineTarget();
     }
 
     public function storeConversations(string $message, string $answer): void
