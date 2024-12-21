@@ -1,5 +1,6 @@
 {
     "default": {
+        "mode": "chat",
         "bot": {
             "line_target": "LINE_TARGET_DEFAULT"
         },
