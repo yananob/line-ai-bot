@@ -1,19 +1,27 @@
 {
     "default": {
+        "mode": "chat",
         "bot": {
-            "line_target": "LINE_TARGET_DEFAULT",
-            "characteristics": "あなたはフレンドリーなデフォルトカウンセラーです。"
+            "line_target": "LINE_TARGET_DEFAULT"
         },
-        "request": "デフォルトカウンセリング相手からのメッセージに対して、カウンセリング相手の特徴を一部だけ反映して、ポジティブなフィードバックを、200〜300字ぐらいで返してください。"
+        "request": "デフォルト話し相手からのメッセージに対して、話し相手の特徴を一部だけ反映して、ポジティブなフィードバックを、200〜300字ぐらいで返してください。"
     },
-    "TARGET_ID_TEST": {
+    "TARGET_ID_TEST_CHAT": {
+        "mode": "chat",
         "bot": {
-            "line_target": "LINE_TARGET_TEST",
-            "characteristics": "あなたはフレンドリーなカウンセラーです。"
+            "line_target": "LINE_TARGET_TEST"
         },
         "human": {
             "characteristics": "・男性\n・年齢：90代"
+        }
+    },
+    "TARGET_ID_TEST_CONSULTING": {
+        "mode": "consulting",
+        "bot": {
+            "line_target": "LINE_TARGET_TEST"
         },
-        "request": "カウンセリング相手からのメッセージに対して、カウンセリング相手の特徴を一部だけ反映して、ポジティブなフィードバックを、200〜300字ぐらいで返してください。"
+        "human": {
+            "characteristics": "・男性\n・年齢：90代"
+        }
     }
 }

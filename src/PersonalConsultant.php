@@ -16,7 +16,7 @@ class PersonalConsultant
     private Conversations $conversations;
 
     const GPT_CONTEXT = <<<EOM
-<bot/characteristics>
+あなたはフレンドリーなチャットボットです。
 
 <title/human_characteristics>
 <human/characteristics>
@@ -45,7 +45,10 @@ EOM;
     {
         $recentConversations = [];
         if ($applyRecentConversations) {
-            $recentConversations = $this->conversations->get();
+            $recentConversations = $this->conversations->get(
+                includeBot: $this->config->mode === Mode::Chat->value,
+                includeHuman: true,
+            );
         }
 
         return $this->gpt->getAnswer(
@@ -58,8 +61,7 @@ EOM;
     {
         $result = self::GPT_CONTEXT;
         $replaceSettings = [
-            ["search" => "<bot/characteristics>", "replace" => $this->config->bot->characteristics],
-            ["search" => "<request>", "replace" => $this->config->request],
+            ["search" => "<request>", "replace" => $this->__getRequest(!empty($conversations))],
         ];
         foreach ($replaceSettings as $replaceSetting) {
             $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);
@@ -78,6 +80,35 @@ EOM;
             $result = str_replace("<title/recentConversations>", "【最近の会話内容】", $result);
             $result = str_replace("<recentConversations>", $this->__convertConversationsToText($conversations), $result);
         }
+
+        return $result;
+    }
+
+    private function __getRequest(bool $applyRecentConversations): string
+    {
+        // 話し相手からのメッセージに対して、【話し相手の情報】の一部や【最近の会話内容】を反映して、ポジティブなフィードバックを返してください。
+        // 返すメッセージの文字数は、話し相手からの今回のメッセージの文字数の2倍ぐらいにしてください。
+        // 過去にメモリーした内容は反映しないでください。
+        $result = "";
+        $result .= "話し相手からのメッセージに対して、";
+        if ($applyRecentConversations && $this->config->mode === Mode::Consulting->value) {
+            $result .= "【話し相手の情報】の一部や";
+        }
+        $result .= "【最近の会話内容】を反映して、";
+        if ($this->config->mode === Mode::Chat->value) {
+            $result .= "相手を楽しくさせたり励ましたりする回答を返してください。";
+        } else {
+            $result .= "ポジティブなフィードバックを返してください。";
+        }
+        $result .= "\n";
+        $result .= "返すメッセージの文字数は、話し相手からの今回のメッセージの文字数";
+        if ($this->config->mode === Mode::Chat->value) {
+            $result .= "と同じぐらいにしてください。";
+        } else {
+            $result .= "の2倍ぐらいにしてください。";
+        }
+        $result .= "\n";
+        $result .= "過去にメモリーした内容は反映しないでください。\n";
 
         return $result;
     }
