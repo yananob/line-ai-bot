@@ -47,6 +47,10 @@ function main(ServerRequestInterface $request): ResponseInterface
         applyRecentConversations: true,
         message: $webhookMessage->getMessage(),
     );
+    $consultant->storeConversations(
+        message: $webhookMessage->getMessage(),
+        answer: $answer,
+    );
 
     $line = new Line(__DIR__ . "/configs/line.json");
     $line->sendMessage(
@@ -54,11 +58,6 @@ function main(ServerRequestInterface $request): ResponseInterface
         targetId: $webhookMessage->getTargetId(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
-    );
-
-    $consultant->storeConversations(
-        message: $webhookMessage->getMessage(),
-        answer: $answer,
     );
 
     return new Response(200, $headers, '{"result": "ok"}');
