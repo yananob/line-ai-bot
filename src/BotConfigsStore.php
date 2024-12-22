@@ -22,12 +22,7 @@ class BotConfigsStore
         $this->documentRoot = $this->dbAccessor->collection($collectionName)->document("configs");
     }
 
-    public function exists(string $targetId): bool
-    {
-        return !empty($this->get($targetId));
-    }
-
-    public function get(string $targetId): BotConfig
+    public function get(string $targetId): ?BotConfig
     {
         return new BotConfig($this->documentRoot->collection($targetId), $this->getDefault());
     }
@@ -35,4 +30,9 @@ class BotConfigsStore
     {
         return new BotConfig($this->documentRoot->collection("default"), null);
     }
+
+    // public function exists(string $targetId): bool
+    // {
+    //     return !empty($this->get($targetId));
+    // }
 }

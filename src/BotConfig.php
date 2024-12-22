@@ -5,26 +5,26 @@ declare(strict_types=1);
 namespace MyApp;
 
 use Google\Cloud\Firestore\CollectionReference;
-use Google\Cloud\Firestore\DocumentReference;
 use Google\Cloud\Firestore\DocumentSnapshot;
 
 class BotConfig
 {
-    private DocumentSnapshot $configGenerated;
+    private ?array $config;     // memo: 最初のやり取りの際は空になる
     // private DocumentReference $triggersGenerated;
-    private string $mode;
+    // private ?string $mode;
 
     public function __construct(CollectionReference $collectionReference, private ?BotConfig $configDefault)
     {
-        $this->configGenerated = $collectionReference->document("config-generated")->snapshot()->data();
-        $this->mode = $this->configGenerated["mode"];
+        $this->config = $collectionReference->document("config")->snapshot()->data();
     }
 
     private function __getConfig(string $fieldName, bool $useDefaultAndGenerated): array
     {
-        // $result = [];
-        $result = $this->configGenerated[$fieldName];
-        if ((empty($generated) || $useDefaultAndGenerated) && !empty($configDefault)) {
+        $result = [];
+        if (!empty($this->config[$fieldName])) {
+            array_push($result, $this->config[$fieldName]);
+        }
+        if ((empty($result) || $useDefaultAndGenerated) && !empty($configDefault)) {
             array_push($result, $this->configDefault[$fieldName]);
         }
         return $result;
@@ -47,14 +47,18 @@ class BotConfig
         return $this->__getConfig("requests", true);
     }
 
+    public function getMode(): string
+    {
+        return empty($this->config["mode"]) ? $this->configDefault->getMode() : $this->config["mode"];
+    }
     public function isChatMode(): bool
     {
-        return $this->mode === Mode::Chat->value;
+        return $this->getMode() === Mode::Chat->value;
     }
 
     public function isConsultingMode(): bool
     {
-        return $this->mode === Mode::Consulting->value;
+        return $this->getMode() === Mode::Consulting->value;
     }
 
     public function getLineTarget(): string
