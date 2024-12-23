@@ -89,6 +89,6 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
     }
     public function testGetLineTarget()
     {
-        $this->assertSame("aisan", $this->botConfigWithDefault->getLineTarget());
+        $this->assertSame("LINE_TARGET_TEST", $this->botConfigWithDefault->getLineTarget());
     }
 }

@@ -33,7 +33,7 @@ final class BotConfigsStoreTest extends PHPUnit\Framework\TestCase
     {
         $botConfig = $this->botConfigsStore->getDefault();
         $this->assertTrue($botConfig->isChatMode());
-        $this->assertEmpty($botConfig->getBotCharacteristics());
+        $this->assertNotEmpty($botConfig->getBotCharacteristics());
         $this->assertEmpty($botConfig->getHumanCharacteristics());
         $this->assertNotEmpty($botConfig->getRequests());
     }
