@@ -22,10 +22,17 @@ class BotConfig
     {
         $result = [];
         if (!empty($this->config[$fieldName])) {
-            array_push($result, $this->config[$fieldName]);
+            array_push($result, ...$this->config[$fieldName]);
         }
-        if ((empty($result) || $useDefaultAndGenerated) && !empty($configDefault)) {
-            array_push($result, $this->configDefault[$fieldName]);
+        if ((empty($result) || $useDefaultAndGenerated) && !empty($this->configDefault)) {
+            // TODO: ダサい
+            if ($fieldName === "bot_characteristics") {
+                array_push($result, ...$this->configDefault->getBotCharacteristics());
+            } elseif ($fieldName === "human_characteristics") {
+                array_push($result, ...$this->configDefault->getHumanCharacteristics());
+            } else {
+                array_push($result, ...$this->configDefault->getRequests());
+            }
         }
         return $result;
     }
@@ -63,6 +70,6 @@ class BotConfig
 
     public function getLineTarget(): string
     {
-        return $this->configDefault["line_target"];
+        return empty($this->config["line_target"]) ? $this->configDefault->getLineTarget() : $this->config["line_target"];
     }
 }
