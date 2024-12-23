@@ -70,6 +70,7 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertEquals([
             "回答を返して",
             "過去の会話を参照して",
+            "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
             "過去にメモリーした内容は反映しないでください。",
         ], $this->botConfigWithDefault->getRequests());
     }

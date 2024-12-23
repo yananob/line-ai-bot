@@ -15,7 +15,8 @@ class PersonalBot
     private Gpt $gpt;
 
     const GPT_CONTEXT = <<<EOM
-あなたはフレンドリーなチャットボットです。
+【チャットボット（あなた）の情報】
+<bot/characteristics>
 
 <title/human_characteristics>
 <human/characteristics>
@@ -24,12 +25,12 @@ class PersonalBot
 <recentConversations>
 
 【依頼事項】
-<request>
+<requests>
 EOM;
 
     public function __construct(string $targetId, bool $isTest = true)
     {
-        $this->botConfigsStore = new BotConfigsStore($targetId, $isTest);
+        $this->botConfigsStore = new BotConfigsStore($isTest);
         // if ($this->botConfigsStore->exists($targetId)) {
             $this->botConfig = $this->botConfigsStore->get($targetId);
         // } else {
@@ -59,7 +60,9 @@ EOM;
     {
         $result = self::GPT_CONTEXT;
         $replaceSettings = [
-            ["search" => "<request>", "replace" => $this->__getRequest(!empty($conversations))],
+            ["search" => "<bot/characteristics>", "replace" => implode("\n", $this->botConfig->getBotCharacteristics())],
+            // ["search" => "<requests>", "replace" => $this->__getRequest(!empty($conversations))],
+            ["search" => "<requests>", "replace" => implode("\n", $this->botConfig->getRequests())],
         ];
         foreach ($replaceSettings as $replaceSetting) {
             $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);
@@ -82,31 +85,31 @@ EOM;
         return $result;
     }
 
-    private function __getRequest(bool $applyRecentConversations): string
-    {
-        $result = "";
-        $result .= "話し相手からのメッセージに対して、";
-        if ($applyRecentConversations && $this->botConfig->isConsultingMode()) {
-            $result .= "【話し相手の情報】の一部や";
-        }
-        $result .= "【最近の会話内容】を反映して、";
-        if ($this->botConfig->isChatMode()) {
-            $result .= "相手を楽しくさせたり励ましたりする回答を返してください。";
-        } else {
-            $result .= "ポジティブなフィードバックを返してください。";
-        }
-        $result .= "\n";
-        $result .= "返すメッセージの文字数は、話し相手からの今回のメッセージの文字数";
-        if ($this->botConfig->isChatMode()) {
-            $result .= "と同じぐらいにしてください。";
-        } else {
-            $result .= "の2倍ぐらいにしてください。";
-        }
-        $result .= "\n";
-        $result .= "過去にメモリーした内容は反映しないでください。\n";
+    // private function __getRequest(bool $applyRecentConversations): string
+    // {
+    //     $result = "";
+    //     $result .= "話し相手からのメッセージに対して、";
+    //     if ($applyRecentConversations && $this->botConfig->isConsultingMode()) {
+    //         $result .= "【話し相手の情報】の一部や";
+    //     }
+    //     $result .= "【最近の会話内容】を反映して、";
+    //     if ($this->botConfig->isChatMode()) {
+    //         $result .= "相手を楽しくさせたり励ましたりする回答を返してください。";
+    //     } else {
+    //         $result .= "ポジティブなフィードバックを返してください。";
+    //     }
+    //     $result .= "\n";
+    //     $result .= "返すメッセージの文字数は、話し相手からの今回のメッセージの文字数";
+    //     if ($this->botConfig->isChatMode()) {
+    //         $result .= "と同じぐらいにしてください。";
+    //     } else {
+    //         $result .= "の2倍ぐらいにしてください。";
+    //     }
+    //     $result .= "\n";
+    //     $result .= "過去にメモリーした内容は反映しないでください。\n";
 
-        return $result;
-    }
+    //     return $result;
+    // }
 
     private function __removeFromContext(array $keywords, string $source): string
     {
