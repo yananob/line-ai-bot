@@ -39,7 +39,6 @@ function main(ServerRequestInterface $request): ResponseInterface
 
     $webhookMessage = new LineWebhookMessage($body);
     $consultant = new PersonalBot(
-        __DIR__ . "/configs/config.json",
         $webhookMessage->getTargetId(),
         $isLocal
     );

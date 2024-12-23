@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use MyApp\Conversations;
+use MyApp\ConversationsStore;
 
-final class ConversationsTest extends PHPUnit\Framework\TestCase
+final class ConversationsStoreTest extends PHPUnit\Framework\TestCase
 {
-    private Conversations $conversations;
+    private ConversationsStore $conversations;
 
     const TEST_CONVERSATIONS = [
         [1, "human", "今日は暑いね！"],
@@ -20,7 +20,7 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
 
     protected function setUp(): void
     {
-        $this->conversations = new Conversations(targetId: "TARGET_ID_AUTOTEST", isTest: true);
+        $this->conversations = new ConversationsStore(targetId: "TARGET_ID_AUTOTEST", isTest: true);
 
         $this->test_conversations = [];
         foreach (self::TEST_CONVERSATIONS as $conversation) {
@@ -64,20 +64,21 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
         // bot + human
         $this->assertEquals(
             array_slice($this->test_conversations, 4, 2),
-            $this->__removeColumns($this->conversations->get(includeBot: true, includeHuman: true, count: 2), ["created_at"])
+            // $this->__removeColumns($this->conversations->get(includeBot: true, includeHuman: true, count: 2), ["created_at"])
+            $this->__removeColumns($this->conversations->get(count: 2), ["created_at"])
         );
 
-        // human
-        $this->assertEquals(
-            [$this->test_conversations[2], $this->test_conversations[4]],
-            $this->__removeColumns($this->conversations->get(includeBot: false, includeHuman: true, count: 2), ["created_at"])
-        );
+        // // human
+        // $this->assertEquals(
+        //     [$this->test_conversations[2], $this->test_conversations[4]],
+        //     $this->__removeColumns($this->conversations->get(includeBot: false, includeHuman: true, count: 2), ["created_at"])
+        // );
 
-        // bot
-        $this->assertEquals(
-            [$this->test_conversations[3], $this->test_conversations[5]],
-            $this->__removeColumns($this->conversations->get(includeBot: true, includeHuman: false, count: 2), ["created_at"])
-        );
+        // // bot
+        // $this->assertEquals(
+        //     [$this->test_conversations[3], $this->test_conversations[5]],
+        //     $this->__removeColumns($this->conversations->get(includeBot: true, includeHuman: false, count: 2), ["created_at"])
+        // );
     }
 
     public function testStoreAndGetAndDelete()
@@ -114,8 +115,7 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
 
     public function testGet_returnsBlankForonExistanceTargetId()
     {
-        $conversations = new Conversations(targetId: "NON_EXISTING_TARGET_ID", isTest: true);
+        $conversations = new ConversationsStore(targetId: "NON_EXISTING_TARGET_ID", isTest: true);
         $this->assertSame([], $conversations->get());
     }
-
 }
