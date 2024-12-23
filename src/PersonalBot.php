@@ -60,9 +60,9 @@ EOM;
     {
         $result = self::GPT_CONTEXT;
         $replaceSettings = [
-            ["search" => "<bot/characteristics>", "replace" => implode("\n", $this->botConfig->getBotCharacteristics())],
+            ["search" => "<bot/characteristics>", "replace" => $this->__formatArray($this->botConfig->getBotCharacteristics())],
             // ["search" => "<requests>", "replace" => $this->__getRequest(!empty($conversations))],
-            ["search" => "<requests>", "replace" => implode("\n", $this->botConfig->getRequests())],
+            ["search" => "<requests>", "replace" => $this->__formatArray($this->botConfig->getRequests())],
         ];
         foreach ($replaceSettings as $replaceSetting) {
             $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);
@@ -72,7 +72,7 @@ EOM;
             $result = $this->__removeFromContext(["<title/human_characteristics>", "<human/characteristics>"], $result);
         } else {
             $result = str_replace("<title/human_characteristics>", "【話し相手の情報】", $result);
-            $result = str_replace("<human/characteristics>", implode("\n", $this->botConfig->getHumanCharacteristics()), $result);
+            $result = str_replace("<human/characteristics>", $this->__formatArray($this->botConfig->getHumanCharacteristics()), $result);
         }
 
         if (empty($conversations)) {
@@ -83,6 +83,11 @@ EOM;
         }
 
         return $result;
+    }
+
+    private function __formatArray(array $inputs): string
+    {
+        return "・" . implode("\n・", $inputs);
     }
 
     // private function __getRequest(bool $applyRecentConversations): string
