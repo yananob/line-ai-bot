@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use MyApp\ConversationsStore;
 
-final class ConversationsTest extends PHPUnit\Framework\TestCase
+final class ConversationsStoreTest extends PHPUnit\Framework\TestCase
 {
     private ConversationsStore $conversations;
 
