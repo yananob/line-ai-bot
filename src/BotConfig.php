@@ -11,7 +11,6 @@ class BotConfig
 {
     private ?array $config;     // memo: 最初のやり取りの際は空になる
     // private DocumentReference $triggersGenerated;
-    // private ?string $mode;
 
     public function __construct(CollectionReference $collectionReference, private ?BotConfig $configDefault)
     {
@@ -54,19 +53,19 @@ class BotConfig
         return $this->__getConfig("requests", true);
     }
 
-    public function getMode(): string
-    {
-        return empty($this->config["mode"]) ? $this->configDefault->getMode() : $this->config["mode"];
-    }
-    public function isChatMode(): bool
-    {
-        return $this->getMode() === Mode::Chat->value;
-    }
+    // public function getMode(): string
+    // {
+    //     return empty($this->config["mode"]) ? $this->configDefault->getMode() : $this->config["mode"];
+    // }
+    // public function isChatMode(): bool
+    // {
+    //     return $this->getMode() === Mode::Chat->value;
+    // }
 
-    public function isConsultingMode(): bool
-    {
-        return $this->getMode() === Mode::Consulting->value;
-    }
+    // public function isConsultingMode(): bool
+    // {
+    //     return $this->getMode() === Mode::Consulting->value;
+    // }
 
     public function getLineTarget(): string
     {

@@ -45,22 +45,22 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
     public function testGetContext_WithOutTargetConfiguration()
     {
         $this->assertStringNotContainsString(
-            "【話し相手の情報】",
+            "【話し相手の情報】\n",
             $this->__invokePrivateMethod($this->bot_default, "__getContext", [])
         );
     }
     public function testGetContext_WithTargetConfiguration()
     {
         $this->assertStringContainsString(
-            "【話し相手の情報】",
+            "【話し相手の情報】\n",
             $this->__invokePrivateMethod($this->bot, "__getContext", [])
         );
     }
 
     public function testGetContext_WithoutRecentConversation()
     {
-        $this->assertStringContainsString(
-            "【最近の会話内容】",
+        $this->assertStringNotContainsString(
+            "【最近の会話内容】\n",
             $this->__invokePrivateMethod($this->bot_default, "__getContext", [])
         );
     }
@@ -74,7 +74,7 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $recentConversations[] = $obj;
 
         $this->assertStringContainsString(
-            "【最近の会話内容】",
+            "【最近の会話内容】\n",
             $this->__invokePrivateMethod($this->bot, "__getContext", $recentConversations)
         );
     }

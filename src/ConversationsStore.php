@@ -24,17 +24,18 @@ class ConversationsStore
         $this->collectionRoot = $this->dbAccessor->collection($collectionName)->document("conversations")->collection($targetId);
     }
 
-    public function get(bool $includeBot = true, bool $includeHuman = true, int $count = 20): array
+    // public function get(bool $includeBot = true, bool $includeHuman = true, int $count = 20): array
+    public function get(int $count = 20): array
     {
         $result = [];
         foreach ($this->collectionRoot->orderBy("id", "DESC")->limit(50)->documents() as $doc) {
             $data = $doc->data();
-            if ($data["by"] === "bot" && !$includeBot) {
-                continue;
-            }
-            if ($data["by"] === "human" && !$includeHuman) {
-                continue;
-            }
+            // if ($data["by"] === "bot" && !$includeBot) {
+            //     continue;
+            // }
+            // if ($data["by"] === "human" && !$includeHuman) {
+            //     continue;
+            // }
 
             $obj = new \stdClass();
             foreach (["id", "by", "content", "created_at"] as $key) {

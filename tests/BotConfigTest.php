@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Google\Cloud\Firestore\FirestoreClient;
 use MyApp\BotConfig;
-use MyApp\Mode;
 
 final class BotConfigTest extends PHPUnit\Framework\TestCase
 {
@@ -41,6 +40,7 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertEquals([
             "男性",
             "年齢：40代",
+            "趣味：ランニング",
         ], $this->botConfigWithoutDefault->getHumanCharacteristics());
     }
     public function testGetHumanCharacteristics_notExists()
@@ -71,18 +71,19 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         ], $this->botConfigWithDefault->getRequests());
     }
 
-    public function testGetMode()
-    {
-        $this->assertSame(Mode::Chat->value, $this->botConfigWithDefault->getMode());
-    }
-    public function testIsChatMode()
-    {
-        $this->assertTrue($this->botConfigWithDefault->isChatMode());
-    }
-    public function testIsConsultingMode()
-    {
-        $this->assertFalse($this->botConfigWithDefault->isConsultingMode());
-    }
+    // public function testGetMode()
+    // {
+    //     $this->assertSame(Mode::Chat->value, $this->botConfigWithDefault->getMode());
+    // }
+    // public function testIsChatMode()
+    // {
+    //     $this->assertTrue($this->botConfigWithDefault->isChatMode());
+    // }
+    // public function testIsConsultingMode()
+    // {
+    //     $this->assertFalse($this->botConfigWithDefault->isConsultingMode());
+    // }
+    
     public function testGetLineTarget()
     {
         $this->assertSame("LINE_TARGET_TEST", $this->botConfigWithDefault->getLineTarget());

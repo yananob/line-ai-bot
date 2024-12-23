@@ -45,8 +45,8 @@ EOM;
         $recentConversations = [];
         if ($applyRecentConversations) {
             $recentConversations = $this->conversationsStore->get(
-                includeBot: $this->botConfig->isChatMode(),
-                includeHuman: true,
+                // includeBot: $this->botConfig->isChatMode(),
+                // includeHuman: true,
             );
         }
 

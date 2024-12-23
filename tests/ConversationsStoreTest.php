@@ -64,20 +64,21 @@ final class ConversationsTest extends PHPUnit\Framework\TestCase
         // bot + human
         $this->assertEquals(
             array_slice($this->test_conversations, 4, 2),
-            $this->__removeColumns($this->conversations->get(includeBot: true, includeHuman: true, count: 2), ["created_at"])
+            // $this->__removeColumns($this->conversations->get(includeBot: true, includeHuman: true, count: 2), ["created_at"])
+            $this->__removeColumns($this->conversations->get(count: 2), ["created_at"])
         );
 
-        // human
-        $this->assertEquals(
-            [$this->test_conversations[2], $this->test_conversations[4]],
-            $this->__removeColumns($this->conversations->get(includeBot: false, includeHuman: true, count: 2), ["created_at"])
-        );
+        // // human
+        // $this->assertEquals(
+        //     [$this->test_conversations[2], $this->test_conversations[4]],
+        //     $this->__removeColumns($this->conversations->get(includeBot: false, includeHuman: true, count: 2), ["created_at"])
+        // );
 
-        // bot
-        $this->assertEquals(
-            [$this->test_conversations[3], $this->test_conversations[5]],
-            $this->__removeColumns($this->conversations->get(includeBot: true, includeHuman: false, count: 2), ["created_at"])
-        );
+        // // bot
+        // $this->assertEquals(
+        //     [$this->test_conversations[3], $this->test_conversations[5]],
+        //     $this->__removeColumns($this->conversations->get(includeBot: true, includeHuman: false, count: 2), ["created_at"])
+        // );
     }
 
     public function testStoreAndGetAndDelete()
