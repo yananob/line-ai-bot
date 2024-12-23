@@ -8,20 +8,20 @@ use MyApp\Mode;
 
 final class BotConfigTest extends PHPUnit\Framework\TestCase
 {
-    private BotConfig $botConfig;
-    private BotConfig $botConfigNotExists;
+    private BotConfig $botConfigWithoutDefault;
     private BotConfig $botConfigWithDefault;
+    private BotConfig $botConfigNotExists;
 
     protected function setUp(): void
     {
         $dbAccessor = new FirestoreClient(["keyFilePath" => __DIR__ . '/../configs/firebase.json']);
         $documentRoot = $dbAccessor->collection("ai-bot-test")->document("configs");
-        $this->botConfig = new BotConfig($documentRoot->collection("TARGET_ID_AUTOTEST"), null);
-        $this->botConfigNotExists = new BotConfig($documentRoot->collection("TARGET_ID_NOT_EXISTS"), null);
+        $this->botConfigWithoutDefault = new BotConfig($documentRoot->collection("TARGET_ID_AUTOTEST"), null);
         $this->botConfigWithDefault = new BotConfig(
             $documentRoot->collection("TARGET_ID_AUTOTEST"),
             new BotConfig($documentRoot->collection("default"), null),
         );
+        $this->botConfigNotExists = new BotConfig($documentRoot->collection("TARGET_ID_NOT_EXISTS"), null);
     }
 
     public function testGetBotCharacteristics_exists()
@@ -29,7 +29,7 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertEquals([
             "丁寧なチャットボット",
             "プログラミングの知識が豊富",
-        ], $this->botConfig->getBotCharacteristics());
+        ], $this->botConfigWithoutDefault->getBotCharacteristics());
     }
     public function testGetBotCharacteristics_notExists()
     {
@@ -41,7 +41,7 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertEquals([
             "男性",
             "年齢：40代",
-        ], $this->botConfig->getHumanCharacteristics());
+        ], $this->botConfigWithoutDefault->getHumanCharacteristics());
     }
     public function testGetHumanCharacteristics_notExists()
     {
@@ -50,7 +50,7 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
 
     public function testHasHumanCharacteristics_exists()
     {
-        $this->assertTrue($this->botConfig->hasHumanCharacteristics());
+        $this->assertTrue($this->botConfigWithoutDefault->hasHumanCharacteristics());
     }
     public function testHasHumanCharacteristics_notExists()
     {
@@ -62,7 +62,7 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertEquals([
             "回答を返して",
             "過去の会話を参照して",
-        ], $this->botConfig->getRequests());
+        ], $this->botConfigWithoutDefault->getRequests());
     }
 
     public function testGetRequests_withDefault()
