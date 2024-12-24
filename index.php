@@ -52,9 +52,9 @@ function main(ServerRequestInterface $request): ResponseInterface
     );
 
     $line = new Line(__DIR__ . "/configs/line.json");
-    $line->sendMessage(
+    $line->sendReply(
         bot: $consultant->getLineTarget(),
-        targetId: $webhookMessage->getTargetId(),
+        // targetId: $webhookMessage->getTargetId(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
     );
