@@ -2841,12 +2841,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/yananob/my-tools.git",
-                "reference": "d515604fbb9d8bbb2326b2fb06097528ef473a2c"
+                "reference": "06346f2d80ae2757efa04c24c0e4f4cee30c8160"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yananob/my-tools/zipball/d515604fbb9d8bbb2326b2fb06097528ef473a2c",
-                "reference": "d515604fbb9d8bbb2326b2fb06097528ef473a2c",
+                "url": "https://api.github.com/repos/yananob/my-tools/zipball/06346f2d80ae2757efa04c24c0e4f4cee30c8160",
+                "reference": "06346f2d80ae2757efa04c24c0e4f4cee30c8160",
                 "shasum": ""
             },
             "require": {
@@ -2869,7 +2869,7 @@
                 "source": "https://github.com/yananob/my-tools/tree/main",
                 "issues": "https://github.com/yananob/my-tools/issues"
             },
-            "time": "2024-12-24T13:47:31+00:00"
+            "time": "2024-12-24T13:53:44+00:00"
         }
     ],
     "packages-dev": [
