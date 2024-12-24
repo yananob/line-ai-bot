@@ -52,11 +52,11 @@ function main(ServerRequestInterface $request): ResponseInterface
     );
 
     $line = new Line(__DIR__ . "/configs/line.json");
-    $line->sendMessage(
+    $line->sendReply(
         bot: $consultant->getLineTarget(),
-        targetId: $webhookMessage->getTargetId(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
+        targetId: $webhookMessage->getTargetId(),
     );
 
     return new Response(200, $headers, '{"result": "ok"}');
