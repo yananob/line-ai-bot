@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -9,12 +11,15 @@ use Psr\Http\Message\ResponseInterface;
 use CloudEvents\V1\CloudEventInterface;
 use GuzzleHttp\Psr7\Response;
 use MyApp\BotConfigsStore;
+use MyApp\Command;
 use yananob\MyTools\Logger;
 // use yananob\MyTools\Utils;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
 use MyApp\LineWebhookMessage;
 use MyApp\PersonalBot;
+
+const TIMER_TRIGGERED_BY_N_MINS = 30;
 
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
@@ -30,33 +35,43 @@ function main(ServerRequestInterface $request): ResponseInterface
     $isLocal = CFUtils::isLocalHttp($request);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
-    /** 
-     * 1. LINE webhook受ける
-     * 2. LINE webhook処理クラスで、target特定する
-     * 3. targetから、Consultantを生成
-     * 4. Consultantからメッセージもらう
-     * 5. メッセージをLINEで送る
-     */
-
     $headers = ['Content-Type' => 'application/json'];
 
+    $logicBot = new LogicBot();
     $webhookMessage = new LineWebhookMessage($body);
-    $consultant = new PersonalBot(
+    $bot = new PersonalBot(
         $webhookMessage->getTargetId(),
         $isLocal
     );
-    $answer = $consultant->getAnswer(
-        applyRecentConversations: true,
-        message: $webhookMessage->getMessage(),
-    );
-    $consultant->storeConversations(
-        message: $webhookMessage->getMessage(),
-        answer: $answer,
-    );
+
+    $command = $logicBot->judgeCommand($webhookMessage->getMessage());
+    $answer = "";
+    switch ($command) {
+        case Command::AddOneTimeTrigger:
+            $trigger = $logicBot->splitOneTimeTrigger($webhookMessage->getMessage());
+            $bot->addOneTimeTrigger($trigger);
+            $answer = "トリガーを追加：" . var_export($trigger);  // TODO: メッセージに
+            break;
+
+        case Command::AddDaiyTrigger:
+            # code...
+            break;
+
+        default:
+            $answer = $bot->getAnswer(
+                applyRecentConversations: true,
+                message: $webhookMessage->getMessage(),
+            );
+            $bot->storeConversations(
+                message: $webhookMessage->getMessage(),
+                answer: $answer,
+            );
+            break;
+    }
 
     $line = new Line(__DIR__ . "/configs/line.json");
     $line->sendReply(
-        bot: $consultant->getLineTarget(),
+        bot: $bot->getLineTarget(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
         targetId: $webhookMessage->getTargetId(),
@@ -91,17 +106,17 @@ function trigger(CloudEventInterface $event): void
             // $logger->log($triggerTime);
             // $logger->log($now);
             // $logger->log($triggerTime->diffInMinutes($now));
-            if (($triggerTime->diffInMinutes($now) > 30) || ($triggerTime->diffInMinutes($now) < 0)) {
+            if (($triggerTime->diffInMinutes($now) > TIMER_TRIGGERED_BY_N_MINS) || ($triggerTime->diffInMinutes($now) < 0)) {
                 continue;
             }
 
-            $consultant = new PersonalBot($user->getId(), $isLocal);
-            $answer =  $consultant->askRequest(
+            $bot = new PersonalBot($user->getId(), $isLocal);
+            $answer =  $bot->askRequest(
                 applyRecentConversations: true,
                 request: $trigger->request
             );
             $line->sendPush(
-                bot: $consultant->getLineTarget(),
+                bot: $bot->getLineTarget(),
                 targetId: $user->getId(),
                 message: $answer,
             );
