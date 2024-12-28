@@ -64,13 +64,20 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         ], $this->botConfigWithoutDefault->getConfigRequests());
     }
 
-    public function testGetConfigRequests_withDefault()
+    public function testGetConfigRequests_withDefaultUsingDefault()
     {
         $this->assertEquals([
             "口調は武士で",
             "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
             "【話し相手の情報】の内容がある場合は、その内容を少しだけ踏まえた回答にしてください。",
         ], $this->botConfigWithDefault->getConfigRequests());
+    }
+
+    public function testGetConfigRequests_withDefaultNotUsingDefault()
+    {
+        $this->assertEquals([
+            "口調は武士で",
+        ], $this->botConfigWithDefault->getConfigRequests(false));
     }
 
     // public function testGetMode()

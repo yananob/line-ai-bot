@@ -23,13 +23,13 @@ class BotConfig
         return $this->collectionId;
     }
 
-    private function __getConfig(string $fieldName, bool $useDefaultAndGenerated): array
+    private function __getConfig(string $fieldName, bool $useDefaultToo): array
     {
         $result = [];
         if (!empty($this->config[$fieldName])) {
             array_push($result, ...$this->config[$fieldName]);
         }
-        if ((empty($result) || $useDefaultAndGenerated) && !empty($this->configDefault)) {
+        if ((empty($result) || $useDefaultToo) && !empty($this->configDefault)) {
             // TODO: ダサい
             if ($fieldName === "bot_characteristics") {
                 array_push($result, ...$this->configDefault->getBotCharacteristics());
@@ -54,9 +54,9 @@ class BotConfig
     {
         return (!empty($this->getHumanCharacteristics()));
     }
-    public function getConfigRequests(): array
+    public function getConfigRequests(bool $useDefaultToo = true): array
     {
-        return $this->__getConfig("requests", true);
+        return $this->__getConfig("requests", $useDefaultToo);
     }
 
     public function getTriggers(): array

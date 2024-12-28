@@ -60,8 +60,12 @@ EOM;
             $recentConversations = $this->conversationsStore->get();
         }
 
+        // requestsは、Triggerの指示＋チャットでの指示にする
+        $requests = $this->botConfig->getTriggerRequests();
+        array_push($requests, ...$this->botConfig->getConfigRequests(useDefaultToo: false));
+
         return $this->gpt->getAnswer(
-            context: $this->__getContext($recentConversations, $this->botConfig->getTriggerRequests()),
+            context: $this->__getContext($recentConversations, $requests),
             message: $request,
         );
     }
