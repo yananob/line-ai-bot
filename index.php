@@ -97,7 +97,7 @@ function trigger(CloudEventInterface $event): void
 
             $consultant = new PersonalBot($user->getId(), $isLocal);
             $answer =  $consultant->askRequest(
-                applyRecentConversations: false,
+                applyRecentConversations: true,
                 request: $trigger->request
             );
             $line->sendPush(
