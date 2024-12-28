@@ -2,9 +2,10 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Google\CloudFunctions\FunctionsFramework;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use CloudEvents\V1\CloudEventInterface;
 use GuzzleHttp\Psr7\Response;
 use yananob\MyTools\Logger;
 // use yananob\MyTools\Utils;
@@ -16,7 +17,7 @@ use MyApp\PersonalBot;
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
 {
-    $logger = new Logger("webhook-receive");
+    $logger = new Logger("line-ai-bot");
     $logger->log(str_repeat("-", 120));
     $logger->log("headers: " . json_encode($request->getHeaders()));
     // $logger->log("params: " . json_encode($request->getQueryParams()));
@@ -60,4 +61,15 @@ function main(ServerRequestInterface $request): ResponseInterface
     );
 
     return new Response(200, $headers, '{"result": "ok"}');
+}
+
+FunctionsFramework::cloudEvent('trigger', 'trigger');
+function trigger(CloudEventInterface $event): void
+{
+    $logger = new Logger("line-ai-bot");
+    $logger->log(str_repeat("-", 120));
+    $isLocal = CFUtils::isLocalEvent($event);
+    $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
+
+    $logger->log("Finished.");
 }
