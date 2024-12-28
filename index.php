@@ -2,11 +2,13 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+use Carbon\Carbon;
 use Google\CloudFunctions\FunctionsFramework;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use CloudEvents\V1\CloudEventInterface;
 use GuzzleHttp\Psr7\Response;
+use MyApp\BotConfigsStore;
 use yananob\MyTools\Logger;
 // use yananob\MyTools\Utils;
 use yananob\MyTools\Line;
@@ -70,6 +72,33 @@ function trigger(CloudEventInterface $event): void
     $logger->log(str_repeat("-", 120));
     $isLocal = CFUtils::isLocalEvent($event);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
+
+    $line = new Line(__DIR__ . "/configs/line.json");
+    $botConfigStore = new BotConfigsStore($isLocal);
+    foreach ($botConfigStore->getUsers() as $user) {
+        foreach ($user->getTriggers() as $trigger) {
+            if ($trigger->getEvent() !== "timer") {
+                continue;
+            }
+
+            $triggerTime = new Carbon($trigger->time);
+            $now = new Carbon();
+            if ($now->diffInMinutes($triggerTime) > 10) {
+                continue;
+            }
+
+            $consultant = new PersonalBot($user->getTargetId(), $isLocal);
+            $answer =  $consultant->getAnswer(
+                applyRecentConversations: true,
+                message: $trigger->getRequest()
+            );
+            $line->sendPush(
+                bot: $consultant->getLineTarget(),
+                targetId: $user->getTargetId(),
+                message: $answer,
+            );
+        }
+    }
 
     $logger->log("Finished.");
 }
