@@ -17,10 +17,7 @@ class ConversationsStore
     public function __construct(string $targetId, bool $isTest = true)
     {
         $this->dbAccessor = new FirestoreClient(["keyFilePath" => __DIR__ . '/../configs/firebase.json']);
-        $collectionName = "ai-bot";
-        if ($isTest) {
-            $collectionName .= "-test";
-        }
+        $collectionName = "ai-bot" . ($isTest ? "-test" : "");
         $this->collectionRoot = $this->dbAccessor->collection($collectionName)->document("conversations")->collection($targetId);
     }
 

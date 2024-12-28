@@ -15,18 +15,27 @@ class BotConfigsStore
     public function __construct(bool $isTest = true)
     {
         $this->dbAccessor = new FirestoreClient(["keyFilePath" => __DIR__ . '/../configs/firebase.json']);
-        $collectionName = "ai-bot";
-        if ($isTest) {
-            $collectionName .= "-test";
-        }
+        $collectionName = "ai-bot" . ($isTest ? "-test" : "");
         $this->documentRoot = $this->dbAccessor->collection($collectionName)->document("configs");
     }
 
-    public function get(string $targetId): ?BotConfig
+    public function getUsers(): array
     {
-        return new BotConfig($this->documentRoot->collection($targetId), $this->getDefault());
+        $result = [];
+        foreach ($this->documentRoot->collections() as $collectionReference) {
+            if (in_array($collectionReference->id(), ["default"], true)) {
+                continue;
+            }
+            $result[] = $this->getConfig($collectionReference->id());
+        }
+        return $result;
     }
-    public function getDefault(): BotConfig
+
+    public function getConfig(string $targetId): ?BotConfig
+    {
+        return new BotConfig($this->documentRoot->collection($targetId), $this->getDefaultConfig());
+    }
+    public function getDefaultConfig(): BotConfig
     {
         return new BotConfig($this->documentRoot->collection("default"), null);
     }

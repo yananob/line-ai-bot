@@ -13,9 +13,20 @@ final class BotConfigsStoreTest extends PHPUnit\Framework\TestCase
         $this->botConfigsStore = new BotConfigsStore(isTest: true);
     }
 
+    public function testGetUsers(): void
+    {
+        $users = $this->botConfigsStore->getUsers();
+        $this->assertSame(
+            ["TARGET_ID_AUTOTEST", "TARGET_ID_AUTOTEST2"],
+            array_map(function ($user) {
+                return $user->getId();
+            }, $users)
+        );
+    }
+
     public function testGet_exists(): void
     {
-        $botConfig = $this->botConfigsStore->get("TARGET_ID_AUTOTEST");
+        $botConfig = $this->botConfigsStore->getConfig("TARGET_ID_AUTOTEST");
         $this->assertNotEmpty($botConfig);
         // $this->assertTrue($botConfig->isChatMode());
         $this->assertNotEmpty($botConfig->getBotCharacteristics());
@@ -25,13 +36,13 @@ final class BotConfigsStoreTest extends PHPUnit\Framework\TestCase
 
     public function testGet_notExists(): void
     {
-        $botConfig = $this->botConfigsStore->get("TARGET_ID_NOT_EXISTS");
+        $botConfig = $this->botConfigsStore->getConfig("TARGET_ID_NOT_EXISTS");
         $this->assertNotEmpty($botConfig);
     }
 
     public function testGetDefault(): void
     {
-        $botConfig = $this->botConfigsStore->getDefault();
+        $botConfig = $this->botConfigsStore->getDefaultConfig();
         // $this->assertTrue($botConfig->isChatMode());
         $this->assertNotEmpty($botConfig->getBotCharacteristics());
         $this->assertEmpty($botConfig->getHumanCharacteristics());

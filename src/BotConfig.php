@@ -9,12 +9,18 @@ use Google\Cloud\Firestore\DocumentSnapshot;
 
 class BotConfig
 {
-    private ?array $config;     // memo: 最初のやり取りの際は空になる
-    // private DocumentReference $triggersGenerated;
+    private ?array $config;     // memo: 初めてのやり取りの際は空になる
+    private string $collectionId;
 
-    public function __construct(CollectionReference $collectionReference, private ?BotConfig $configDefault)
+    public function __construct(private CollectionReference $collectionReference, private ?BotConfig $configDefault)
     {
+        $this->collectionId = $collectionReference->id();
         $this->config = $collectionReference->document("config")->snapshot()->data();
+    }
+
+    public function getId(): string
+    {
+        return $this->collectionId;
     }
 
     private function __getConfig(string $fieldName, bool $useDefaultAndGenerated): array
@@ -51,6 +57,20 @@ class BotConfig
     public function getRequests(): array
     {
         return $this->__getConfig("requests", true);
+    }
+
+    public function getTriggers(): array
+    {
+        $result = [];
+        foreach ($this->collectionReference->document("triggers")->collection("triggers") as $triggerDoc) {
+            $data = $triggerDoc->snapshot()->data();
+            $trigger = new \stdClass();
+            foreach (["event", "date", "time", "request"] as $key) {
+                $trigger->$key = $data[$key];
+            }
+            $result[] = $trigger;
+        }
+        return $result;
     }
 
     // public function getMode(): string

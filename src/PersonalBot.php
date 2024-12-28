@@ -32,7 +32,7 @@ EOM;
     {
         $this->botConfigsStore = new BotConfigsStore($isTest);
         // if ($this->botConfigsStore->exists($targetId)) {
-            $this->botConfig = $this->botConfigsStore->get($targetId);
+        $this->botConfig = $this->botConfigsStore->getConfig($targetId);
         // } else {
         //     $this->botConfig = $this->botConfigsStore->getDefault();
         // }
