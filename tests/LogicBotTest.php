@@ -20,7 +20,8 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
         return [
             // message, expected
             ["1時間後に「できたよ」と送って", Command::AddOneTimeTrigger],
-            ["6時半に「おはよう」と送って", Command::AddOneTimeTrigger],
+            ["明後日の6時半に「おはよう」と送って", Command::AddOneTimeTrigger],
+            ["毎日朝6時半にモーニングメッセージを送って", Command::AddDaiyTrigger],
         ];
     }
 
