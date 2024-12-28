@@ -78,7 +78,6 @@ function trigger(CloudEventInterface $event): void
     foreach ($botConfigStore->getUsers() as $user) {
         foreach ($user->getTriggers() as $trigger) {
             $logger->log("user: {$user->getId()}, trigger: {$trigger->event} {$trigger->time}");
-            // var_dump($trigger);
             if ($trigger->event !== "timer") {
                 continue;
             }
@@ -89,9 +88,9 @@ function trigger(CloudEventInterface $event): void
             }
             $triggerTime = new Carbon($triggerDate . " " . $trigger->time, new DateTimeZone("Asia/Tokyo"));
             $now = new Carbon(timezone: new DateTimeZone("Asia/Tokyo"));
-            $logger->log($triggerTime);
-            $logger->log($now);
-            $logger->log($triggerTime->diffInMinutes($now));
+            // $logger->log($triggerTime);
+            // $logger->log($now);
+            // $logger->log($triggerTime->diffInMinutes($now));
             if (($triggerTime->diffInMinutes($now) > 10) || ($triggerTime->diffInMinutes($now) < 0)) {
                 continue;
             }
