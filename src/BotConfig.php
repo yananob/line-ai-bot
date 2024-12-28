@@ -36,7 +36,7 @@ class BotConfig
             } elseif ($fieldName === "human_characteristics") {
                 array_push($result, ...$this->configDefault->getHumanCharacteristics());
             } else {
-                array_push($result, ...$this->configDefault->getRequests());
+                array_push($result, ...$this->configDefault->getConfigRequests());
             }
         }
         return $result;
@@ -54,7 +54,7 @@ class BotConfig
     {
         return (!empty($this->getHumanCharacteristics()));
     }
-    public function getRequests(): array
+    public function getConfigRequests(): array
     {
         return $this->__getConfig("requests", true);
     }
@@ -71,6 +71,12 @@ class BotConfig
             $result[] = $trigger;
         }
         return $result;
+    }
+
+    public function getTriggerRequests(): array
+    {
+        $data = $this->collectionReference->document("triggers")->snapshot()->data();
+        return empty($data["requests"]) ? $this->configDefault->getTriggerRequests() : $data["requests"];
     }
 
     // public function getMode(): string

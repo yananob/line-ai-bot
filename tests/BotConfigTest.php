@@ -57,18 +57,20 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertFalse($this->botConfigNotExists->hasHumanCharacteristics());
     }
 
-    public function testGetRequests_withoutDefault()
+    public function testGetConfigRequests_withoutDefault()
     {
-        $this->assertEquals(["口調は武士で",
-        ], $this->botConfigWithoutDefault->getRequests());
+        $this->assertEquals([
+            "口調は武士で",
+        ], $this->botConfigWithoutDefault->getConfigRequests());
     }
 
-    public function testGetRequests_withDefault()
+    public function testGetConfigRequests_withDefault()
     {
-        $this->assertEquals(["口調は武士で",
+        $this->assertEquals([
+            "口調は武士で",
             "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
             "【話し相手の情報】の内容がある場合は、その内容を少しだけ踏まえた回答にしてください。",
-        ], $this->botConfigWithDefault->getRequests());
+        ], $this->botConfigWithDefault->getConfigRequests());
     }
 
     // public function testGetMode()
@@ -94,11 +96,18 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
             }, $triggers)
         );
         $this->assertEquals(
-            ["16:00", "07:00"],
+            ["16:00", "14:20"],
             array_map(function ($trigger) {
                 return $trigger->time;
             }, $triggers)
         );
+    }
+
+    public function testGetTriggerRequests()
+    {
+        $this->assertEquals([
+            "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
+        ], $this->botConfigWithDefault->getTriggerRequests());
     }
     
     public function testGetLineTarget()
