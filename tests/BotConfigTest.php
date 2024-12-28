@@ -83,6 +83,23 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
     // {
     //     $this->assertFalse($this->botConfigWithDefault->isConsultingMode());
     // }
+
+    public function testGetTriggers()
+    {
+        $triggers = $this->botConfigWithDefault->getTriggers();
+        $this->assertEquals(
+            ["timer", "timer"],
+            array_map(function ($trigger) {
+                return $trigger->event;
+            }, $triggers)
+        );
+        $this->assertEquals(
+            ["16:00", "07:00"],
+            array_map(function ($trigger) {
+                return $trigger->time;
+            }, $triggers)
+        );
+    }
     
     public function testGetLineTarget()
     {

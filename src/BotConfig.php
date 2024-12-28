@@ -62,8 +62,8 @@ class BotConfig
     public function getTriggers(): array
     {
         $result = [];
-        foreach ($this->collectionReference->document("triggers")->collection("triggers") as $triggerDoc) {
-            $data = $triggerDoc->snapshot()->data();
+        foreach ($this->collectionReference->document("triggers")->collection("triggers")->documents() as $triggerDoc) {
+            $data = $triggerDoc->data();
             $trigger = new \stdClass();
             foreach (["event", "date", "time", "request"] as $key) {
                 $trigger->$key = $data[$key];
