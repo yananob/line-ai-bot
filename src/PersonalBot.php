@@ -31,11 +31,7 @@ EOM;
     public function __construct(string $targetId, bool $isTest = true)
     {
         $this->botConfigsStore = new BotConfigsStore($isTest);
-        // if ($this->botConfigsStore->exists($targetId)) {
         $this->botConfig = $this->botConfigsStore->getConfig($targetId);
-        // } else {
-        //     $this->botConfig = $this->botConfigsStore->getDefault();
-        // }
         $this->conversationsStore = new ConversationsStore($targetId, $isTest);
         $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
     }

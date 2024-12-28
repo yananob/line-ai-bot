@@ -17,6 +17,7 @@ use yananob\MyTools\Logger;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
 use MyApp\LineWebhookMessage;
+use MyApp\LogicBot;
 use MyApp\PersonalBot;
 
 const TIMER_TRIGGERED_BY_N_MINS = 30;

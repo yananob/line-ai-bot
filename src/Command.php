@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace MyApp;
 
-enum Command: string
+enum Command: int
 {
-    case AddOneTimeTrigger = "add_one_time_trigger";
-    case AddDaiyTrigger = "add_daily_trigger";
-    case Other = "other";
+    case AddOneTimeTrigger = 3;
+    case AddDaiyTrigger = 4;
+    case Other = 9;
 }
