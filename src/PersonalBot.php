@@ -32,7 +32,7 @@ EOM;
     {
         $this->botConfigsStore = new BotConfigsStore($isTest);
         // if ($this->botConfigsStore->exists($targetId)) {
-            $this->botConfig = $this->botConfigsStore->get($targetId);
+        $this->botConfig = $this->botConfigsStore->getConfig($targetId);
         // } else {
         //     $this->botConfig = $this->botConfigsStore->getDefault();
         // }
@@ -44,25 +44,39 @@ EOM;
     {
         $recentConversations = [];
         if ($applyRecentConversations) {
-            $recentConversations = $this->conversationsStore->get(
-                // includeBot: $this->botConfig->isChatMode(),
-                // includeHuman: true,
-            );
+            $recentConversations = $this->conversationsStore->get();
         }
 
         return $this->gpt->getAnswer(
-            context: $this->__getContext($recentConversations),
+            context: $this->__getContext($recentConversations, $this->botConfig->getConfigRequests()),
             message: $message,
         );
     }
 
-    private function __getContext(array $conversations): string
+    public function askRequest(bool $applyRecentConversations, string $request): string
+    {
+        $recentConversations = [];
+        if ($applyRecentConversations) {
+            $recentConversations = $this->conversationsStore->get();
+        }
+
+        // requestsは、Triggerの指示＋チャットでの指示にする
+        $requests = $this->botConfig->getTriggerRequests();
+        array_push($requests, ...$this->botConfig->getConfigRequests(useDefaultToo: false));
+
+        return $this->gpt->getAnswer(
+            context: $this->__getContext($recentConversations, $requests),
+            message: $request,
+        );
+    }
+
+    private function __getContext(array $conversations, array $requests): string
     {
         $result = self::GPT_CONTEXT;
         $replaceSettings = [
             ["search" => "<bot/characteristics>", "replace" => $this->__formatArray($this->botConfig->getBotCharacteristics())],
             // ["search" => "<requests>", "replace" => $this->__getRequest(!empty($conversations))],
-            ["search" => "<requests>", "replace" => $this->__formatArray($this->botConfig->getRequests())],
+            ["search" => "<requests>", "replace" => $this->__formatArray($requests)],
         ];
         foreach ($replaceSettings as $replaceSetting) {
             $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);

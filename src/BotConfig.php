@@ -9,28 +9,34 @@ use Google\Cloud\Firestore\DocumentSnapshot;
 
 class BotConfig
 {
-    private ?array $config;     // memo: 最初のやり取りの際は空になる
-    // private DocumentReference $triggersGenerated;
+    private ?array $config;     // memo: 初めてのやり取りの際は空になる
+    private string $collectionId;
 
-    public function __construct(CollectionReference $collectionReference, private ?BotConfig $configDefault)
+    public function __construct(private CollectionReference $collectionReference, private ?BotConfig $configDefault)
     {
+        $this->collectionId = $collectionReference->id();
         $this->config = $collectionReference->document("config")->snapshot()->data();
     }
 
-    private function __getConfig(string $fieldName, bool $useDefaultAndGenerated): array
+    public function getId(): string
+    {
+        return $this->collectionId;
+    }
+
+    private function __getConfig(string $fieldName, bool $useDefaultToo): array
     {
         $result = [];
         if (!empty($this->config[$fieldName])) {
             array_push($result, ...$this->config[$fieldName]);
         }
-        if ((empty($result) || $useDefaultAndGenerated) && !empty($this->configDefault)) {
+        if ((empty($result) || $useDefaultToo) && !empty($this->configDefault)) {
             // TODO: ダサい
             if ($fieldName === "bot_characteristics") {
                 array_push($result, ...$this->configDefault->getBotCharacteristics());
             } elseif ($fieldName === "human_characteristics") {
                 array_push($result, ...$this->configDefault->getHumanCharacteristics());
             } else {
-                array_push($result, ...$this->configDefault->getRequests());
+                array_push($result, ...$this->configDefault->getConfigRequests());
             }
         }
         return $result;
@@ -48,9 +54,29 @@ class BotConfig
     {
         return (!empty($this->getHumanCharacteristics()));
     }
-    public function getRequests(): array
+    public function getConfigRequests(bool $useDefaultToo = true): array
     {
-        return $this->__getConfig("requests", true);
+        return $this->__getConfig("requests", $useDefaultToo);
+    }
+
+    public function getTriggers(): array
+    {
+        $result = [];
+        foreach ($this->collectionReference->document("triggers")->collection("triggers")->documents() as $triggerDoc) {
+            $data = $triggerDoc->data();
+            $trigger = new \stdClass();
+            foreach (["event", "date", "time", "request"] as $key) {
+                $trigger->$key = $data[$key];
+            }
+            $result[] = $trigger;
+        }
+        return $result;
+    }
+
+    public function getTriggerRequests(): array
+    {
+        $data = $this->collectionReference->document("triggers")->snapshot()->data();
+        return empty($data["requests"]) ? $this->configDefault->getTriggerRequests() : $data["requests"];
     }
 
     // public function getMode(): string

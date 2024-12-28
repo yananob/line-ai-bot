@@ -42,18 +42,36 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         ));
     }
 
+    public function testAskRequestWithoutRecentConversation()
+    {
+        $this->assertNotEmpty($this->bot->askRequest(
+            false,
+            "今年のクリスマスメッセージを送って"
+        ));
+    }
+
     public function testGetContext_WithOutTargetConfiguration()
     {
         $this->assertStringNotContainsString(
             "【話し相手の情報】\n",
-            $this->__invokePrivateMethod($this->bot_default, "__getContext", [])
+            $this->__invokePrivateMethod(
+                $this->bot_default,
+                "__getContext",
+                [],
+                ["話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。"]
+            )
         );
     }
     public function testGetContext_WithTargetConfiguration()
     {
         $this->assertStringContainsString(
             "【話し相手の情報】\n",
-            $this->__invokePrivateMethod($this->bot, "__getContext", [])
+            $this->__invokePrivateMethod(
+                $this->bot,
+                "__getContext",
+                [],
+                ["話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。"]
+            )
         );
     }
 
@@ -61,7 +79,12 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
     {
         $this->assertStringNotContainsString(
             "【最近の会話内容】\n",
-            $this->__invokePrivateMethod($this->bot_default, "__getContext", [])
+            $this->__invokePrivateMethod(
+                $this->bot_default,
+                "__getContext",
+                [],
+                ["話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。"]
+            )
         );
     }
     public function testGetContext_WithRecentConversation()
@@ -75,7 +98,12 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
 
         $this->assertStringContainsString(
             "【最近の会話内容】\n",
-            $this->__invokePrivateMethod($this->bot, "__getContext", $recentConversations)
+            $this->__invokePrivateMethod(
+                $this->bot,
+                "__getContext",
+                $recentConversations,
+                ["話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。"]
+            )
         );
     }
 
