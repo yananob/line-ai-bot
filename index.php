@@ -91,7 +91,7 @@ function trigger(CloudEventInterface $event): void
             // $logger->log($triggerTime);
             // $logger->log($now);
             // $logger->log($triggerTime->diffInMinutes($now));
-            if (($triggerTime->diffInMinutes($now) > 10) || ($triggerTime->diffInMinutes($now) < 0)) {
+            if (($triggerTime->diffInMinutes($now) > 30) || ($triggerTime->diffInMinutes($now) < 0)) {
                 continue;
             }
 
