@@ -32,6 +32,24 @@ class LogicBot
 ・天気予報を教えて　→　9
 EOM;
 
+    const PROMPT_SPLIT_ONE_TIME_TRIGGER = <<<EOM
+以下のメッセージを、時刻と依頼内容に分解して。
+・日付は、明記されている場合はその日付を英語で、そうでない場合はtodayとして
+・時刻は、時刻が明確な場合は時刻を、今からX分後の場合は「今＋X分」として
+
+例1：
+・メッセージ：11時半に天気予報を送って
+・日付：today
+・時刻：11:30
+・依頼内容：天気予報を送って
+
+例2：
+・メッセージ：明日の30分後に料理ができたと教えて
+・日付：tomorrow
+・時刻：今＋30分
+・依頼内容：料理ができたと教えて
+EOM;
+
     public function __construct()
     {
         $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
@@ -43,5 +61,20 @@ EOM;
         return Command::from($result);
     }
 
-    public function splitOneTimeTrigger(string $message) {}
+    public function splitOneTimeTrigger(string $message)
+    {
+        $result = $this->gpt->getAnswer(self::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message);
+        // ・日付：tomorrow
+        // ・時刻：今+30分
+        // ・依頼内容：料理ができたと教えて
+        $obj = new \stdClass();
+        preg_match('/・日付：(.+)$/m', $result, $matches);
+        $obj->date = rtrim($matches[1]);
+        preg_match('/・時刻：(.+)$/m', $result, $matches);
+        $obj->time = rtrim($matches[1]);
+        preg_match('/・依頼内容：(.+)$/m', $result, $matches);
+        $obj->request = rtrim($matches[1]);
+
+        return $obj;
+    }
 }
