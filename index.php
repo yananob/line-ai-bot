@@ -77,24 +77,33 @@ function trigger(CloudEventInterface $event): void
     $botConfigStore = new BotConfigsStore($isLocal);
     foreach ($botConfigStore->getUsers() as $user) {
         foreach ($user->getTriggers() as $trigger) {
-            if ($trigger->getEvent() !== "timer") {
+            $logger->log("user: {$user->getId()}, trigger: {$trigger->event} {$trigger->time}");
+            // var_dump($trigger);
+            if ($trigger->event !== "timer") {
                 continue;
             }
 
-            $triggerTime = new Carbon($trigger->time);
-            $now = new Carbon();
-            if ($now->diffInMinutes($triggerTime) > 10) {
+            $triggerDate = $trigger->date;
+            if ($triggerDate === "everyday") {
+                $triggerDate = "today";
+            }
+            $triggerTime = new Carbon($triggerDate . " " . $trigger->time, new DateTimeZone("Asia/Tokyo"));
+            $now = new Carbon(timezone: new DateTimeZone("Asia/Tokyo"));
+            $logger->log($triggerTime);
+            $logger->log($now);
+            $logger->log($triggerTime->diffInMinutes($now));
+            if (($triggerTime->diffInMinutes($now) > 10) || ($triggerTime->diffInMinutes($now) < 0)) {
                 continue;
             }
 
-            $consultant = new PersonalBot($user->getTargetId(), $isLocal);
+            $consultant = new PersonalBot($user->getId(), $isLocal);
             $answer =  $consultant->getAnswer(
                 applyRecentConversations: true,
-                message: $trigger->getRequest()
+                message: $trigger->request
             );
             $line->sendPush(
                 bot: $consultant->getLineTarget(),
-                targetId: $user->getTargetId(),
+                targetId: $user->getId(),
                 message: $answer,
             );
         }
