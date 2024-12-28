@@ -15,8 +15,20 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
         $this->bot = new LogicBot();
     }
 
-    public function testJudgeCommand()
+    public function provideJudgeCommand(): array
     {
-        $this->assertSame(Command::AddOneTimeTrigger, $this->bot->judgeCommand("1時間後に「できたよ」と送って"));
+        return [
+            // message, expected
+            ["1時間後に「できたよ」と送って", Command::AddOneTimeTrigger],
+            ["6時半に「おはよう」と送って", Command::AddOneTimeTrigger],
+        ];
+    }
+
+    /**
+     * @dataProvider provideJudgeCommand
+     */
+    public function testJudgeCommand($message, $expected)
+    {
+        $this->assertSame($expected, $this->bot->judgeCommand($message));
     }
 }
