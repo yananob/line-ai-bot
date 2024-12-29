@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+use Carbon\Carbon;
 use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
 
@@ -155,5 +156,19 @@ EOM;
     {
         $this->conversationsStore->store("human", $message);
         $this->conversationsStore->store("bot", $answer);
+    }
+
+    public function addOneTimeTrigger($trigger): void
+    {
+        $now = new Carbon(timezone: new \DateTimeZone("Asia/Tokyo"));
+        if (str_contains($trigger->time, "今")) {
+            preg_match('/今＋([0-9]+)分/', $trigger->time, $matches);
+            $now->addMinutes((int)$matches[1]);
+        }
+        if ($trigger->date === "today") {
+            $trigger->date = $now->format("Y/m/d");
+        }
+        $trigger->time = $now->format("H:i");
+        $this->botConfig->addTrigger("timer", $trigger);
     }
 }

@@ -40,7 +40,7 @@ function main(ServerRequestInterface $request): ResponseInterface
 
     $logicBot = new LogicBot();
     $webhookMessage = new LineWebhookMessage($body);
-    $bot = new PersonalBot(
+    $personalBot = new PersonalBot(
         $webhookMessage->getTargetId(),
         $isLocal
     );
@@ -50,8 +50,8 @@ function main(ServerRequestInterface $request): ResponseInterface
     switch ($command) {
         case Command::AddOneTimeTrigger:
             $trigger = $logicBot->splitOneTimeTrigger($webhookMessage->getMessage());
-            $bot->addOneTimeTrigger($trigger);
-            $answer = "トリガーを追加：" . var_export($trigger);  // TODO: メッセージに
+            $personalBot->addOneTimeTrigger($trigger);
+            $answer = "トリガーを追加した：" . var_export($trigger);  // TODO: メッセージに
             break;
 
         case Command::AddDaiyTrigger:
@@ -59,11 +59,11 @@ function main(ServerRequestInterface $request): ResponseInterface
             break;
 
         default:
-            $answer = $bot->getAnswer(
+            $answer = $personalBot->getAnswer(
                 applyRecentConversations: true,
                 message: $webhookMessage->getMessage(),
             );
-            $bot->storeConversations(
+            $personalBot->storeConversations(
                 message: $webhookMessage->getMessage(),
                 answer: $answer,
             );
@@ -72,7 +72,7 @@ function main(ServerRequestInterface $request): ResponseInterface
 
     $line = new Line(__DIR__ . "/configs/line.json");
     $line->sendReply(
-        bot: $bot->getLineTarget(),
+        bot: $personalBot->getLineTarget(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
         targetId: $webhookMessage->getTargetId(),
@@ -111,13 +111,13 @@ function trigger(CloudEventInterface $event): void
                 continue;
             }
 
-            $bot = new PersonalBot($user->getId(), $isLocal);
-            $answer =  $bot->askRequest(
+            $personalBot = new PersonalBot($user->getId(), $isLocal);
+            $answer =  $personalBot->askRequest(
                 applyRecentConversations: true,
                 request: $trigger->request
             );
             $line->sendPush(
-                bot: $bot->getLineTarget(),
+                bot: $personalBot->getLineTarget(),
                 targetId: $user->getId(),
                 message: $answer,
             );

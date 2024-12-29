@@ -59,6 +59,11 @@ class BotConfig
         return $this->__getConfig("requests", $useDefaultToo);
     }
 
+    public function getLineTarget(): string
+    {
+        return empty($this->config["line_target"]) ? $this->configDefault->getLineTarget() : $this->config["line_target"];
+    }
+
     public function getTriggers(): array
     {
         $result = [];
@@ -79,22 +84,14 @@ class BotConfig
         return empty($data["requests"]) ? $this->configDefault->getTriggerRequests() : $data["requests"];
     }
 
-    // public function getMode(): string
-    // {
-    //     return empty($this->config["mode"]) ? $this->configDefault->getMode() : $this->config["mode"];
-    // }
-    // public function isChatMode(): bool
-    // {
-    //     return $this->getMode() === Mode::Chat->value;
-    // }
-
-    // public function isConsultingMode(): bool
-    // {
-    //     return $this->getMode() === Mode::Consulting->value;
-    // }
-
-    public function getLineTarget(): string
+    public function addTrigger(string $event, $trigger): void
     {
-        return empty($this->config["line_target"]) ? $this->configDefault->getLineTarget() : $this->config["line_target"];
+        $doc = [
+            "event" => $event,
+            "date" => $trigger->date,
+            "time" => $trigger->time,
+            "request" => $trigger->request,
+        ];
+        $this->collectionReference->document("triggers")->collection("triggers")->add($doc);
     }
 }

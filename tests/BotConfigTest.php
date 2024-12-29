@@ -80,19 +80,11 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         ], $this->botConfigWithDefault->getConfigRequests(false));
     }
 
-    // public function testGetMode()
-    // {
-    //     $this->assertSame(Mode::Chat->value, $this->botConfigWithDefault->getMode());
-    // }
-    // public function testIsChatMode()
-    // {
-    //     $this->assertTrue($this->botConfigWithDefault->isChatMode());
-    // }
-    // public function testIsConsultingMode()
-    // {
-    //     $this->assertFalse($this->botConfigWithDefault->isConsultingMode());
-    // }
-
+    public function testGetLineTarget()
+    {
+        $this->assertSame("LINE_TARGET_TEST", $this->botConfigWithDefault->getLineTarget());
+    }
+    
     public function testGetTriggers()
     {
         $triggers = $this->botConfigWithDefault->getTriggers();
@@ -115,10 +107,5 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertEquals([
             "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
         ], $this->botConfigWithDefault->getTriggerRequests());
-    }
-    
-    public function testGetLineTarget()
-    {
-        $this->assertSame("LINE_TARGET_TEST", $this->botConfigWithDefault->getLineTarget());
     }
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Carbon\Carbon;
+use MyApp\LogicBot;
 use yananob\MyTools\Test;
 use MyApp\PersonalBot;
 
@@ -100,40 +101,6 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         );
     }
 
-    // public function testGetRequest_ChatModeWithoutRecentConversations()
-    // {
-    //     $result = Test::invokePrivateMethod($this->bot, "__getRequest", false);
-    //     foreach (
-    //         [
-    //             "返すメッセージの文字数は、話し相手からの今回のメッセージの文字数と同じぐらい",
-    //         ]
-    //         as $contain
-    //     ) {
-    //         $this->assertStringContainsString($contain, $result);
-    //     }
-    //     foreach (
-    //         [
-    //             "【話し相手の情報】の一部",
-    //         ]
-    //         as $notContain
-    //     ) {
-    //         $this->assertStringNotContainsString($notContain, $result);
-    //     }
-    // }
-    // public function testGetRequest_ConsultingModeWithRecentConversations()
-    // {
-    //     $result = Test::invokePrivateMethod($this->bot_consulting, "__getRequest", true);
-    //     foreach (
-    //         [
-    //             "【話し相手の情報】の一部",
-    //             "メッセージの文字数は、話し相手からの今回のメッセージの文字数の2倍ぐらい",
-    //         ]
-    //         as $contain
-    //     ) {
-    //         $this->assertStringContainsString($contain, $result);
-    //     }
-    // }
-
     public function testGetLineTarget_WithTargetConfiguration()
     {
         $this->assertSame("LINE_TARGET_TEST", $this->bot->getLineTarget());
@@ -142,5 +109,13 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
     public function testGetLineTarget_WithOutTargetConfiguration()
     {
         $this->assertSame("LINE_TARGET_DEFAULT", $this->bot_default->getLineTarget());
+    }
+
+    public function testAddOneTimeTrigger(): void
+    {
+        $logicBot = new LogicBot();
+        $trigger = $logicBot->splitOneTimeTrigger("1時間後に「できたよ」と送って");
+        $this->bot->addOneTimeTrigger($trigger);
+        $this->assertTrue(true);
     }
 }
