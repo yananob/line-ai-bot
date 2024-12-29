@@ -164,12 +164,12 @@ EOM;
         if (str_contains($trigger->getTime(), "今")) {
             preg_match('/今＋([0-9]+)分/', $trigger->getTime(), $matches);
             $now->addMinutes((int)$matches[1]);
+            $trigger->setTime($now->format("H:i"));
         }
         // TODO: ロジックをtimertriggerに移してもいいかも
         if ($trigger->getDate() === "today") {
             $trigger->setDate($now->format("Y/m/d"));
         }
-        $trigger->setTime($now->format("H:i"));
         $this->botConfig->addTrigger($trigger);
     }
 }
