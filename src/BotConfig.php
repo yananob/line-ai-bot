@@ -72,6 +72,7 @@ class BotConfig
             switch ($data["event"]) {
                 case "timer":
                     $trigger = new TimerTrigger($data["date"], $data["time"], $data["request"]);
+                    $trigger->setId($triggerDoc->id());
                     break;
 
                 default:
@@ -88,7 +89,10 @@ class BotConfig
         return empty($data["requests"]) ? $this->configDefault->getTriggerRequests() : $data["requests"];
     }
 
-    public function addTrigger(Trigger $trigger): void
+    /**
+     * @return string Trigger Id
+     */
+    public function addTrigger(Trigger $trigger): string
     {
         if ($trigger instanceof TimerTrigger) {
             $doc = [
@@ -101,6 +105,12 @@ class BotConfig
             throw new \Exception("Unsupported trigger: " . var_export($trigger));
         }
 
-        $this->collectionReference->document("triggers")->collection("triggers")->add($doc);
+        $documentReference = $this->collectionReference->document("triggers")->collection("triggers")->add($doc);
+        return $documentReference->id();
+    }
+
+    public function deleteTriggerById(string $id): void
+    {
+        $this->collectionReference->document("triggers")->collection("triggers")->document($id)->delete();
     }
 }

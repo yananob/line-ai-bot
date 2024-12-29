@@ -6,6 +6,8 @@ namespace MyApp;
 
 class TimerTrigger extends Trigger
 {
+    private string $id;
+
     public function __construct(private string $date, private string $time, private string $request) {}
 
     public function getEvent(): string
@@ -33,5 +35,10 @@ class TimerTrigger extends Trigger
     public function setTime(string $time): void
     {
         $this->time = $time;
+    }
+
+    public function setId(string $id): void
+    {
+        $this->id = $id;
     }
 }
