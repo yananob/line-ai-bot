@@ -167,6 +167,7 @@ EOM;
             $trigger->setTime($now->format("H:i"));
         }
         // TODO: ロジックをtimertriggerに移してもいいかも
+        // TODO: support tomorrow
         if ($trigger->getDate() === "today") {
             $trigger->setDate($now->format("Y/m/d"));
         }
