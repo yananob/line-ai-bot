@@ -37,8 +37,17 @@ class TimerTrigger extends Trigger
         $this->time = $time;
     }
 
+    public function getId(): string
+    {
+        return $this->id;
+    }
     public function setId(string $id): void
     {
         $this->id = $id;
+    }
+
+    public function __toString(): string
+    {
+        return $this->date . " " . $this->time . "：" . $this->request;
     }
 }

@@ -52,7 +52,7 @@ function main(ServerRequestInterface $request): ResponseInterface
         case Command::AddOneTimeTrigger:
             $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
             $personalBot->addOneTimeTrigger($trigger);
-            $answer = "トリガーを追加した：" . var_export($trigger);  // TODO: メッセージに
+            $answer = "追加しました：" . $trigger;  // TODO: メッセージに
             break;
 
         case Command::AddDaiyTrigger:
