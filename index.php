@@ -39,13 +39,18 @@ function main(ServerRequestInterface $request): ResponseInterface
 
     $headers = ['Content-Type' => 'application/json'];
 
-    $logicBot = new LogicBot();
     $webhookMessage = new LineWebhookMessage($body);
     $personalBot = new PersonalBot(
         $webhookMessage->getTargetId(),
         $isLocal
     );
+    $line = new Line(__DIR__ . "/configs/line.json");
+    $line->showLoading(
+        bot: $personalBot->getLineTarget(),
+        targetId: $webhookMessage->getTargetId(),
+    );
 
+    $logicBot = new LogicBot();
     $command = $logicBot->judgeCommand($webhookMessage->getMessage());
     $answer = "";
     switch ($command) {
@@ -71,12 +76,10 @@ function main(ServerRequestInterface $request): ResponseInterface
             break;
     }
 
-    $line = new Line(__DIR__ . "/configs/line.json");
     $line->sendReply(
         bot: $personalBot->getLineTarget(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
-        targetId: $webhookMessage->getTargetId(),
     );
 
     return new Response(200, $headers, '{"result": "ok"}');
