@@ -158,17 +158,18 @@ EOM;
         $this->conversationsStore->store("bot", $answer);
     }
 
-    public function addOneTimeTrigger($trigger): void
+    public function addOneTimeTrigger(TimerTrigger $trigger): void
     {
-        $now = new Carbon(timezone: new \DateTimeZone("Asia/Tokyo"));
-        if (str_contains($trigger->time, "今")) {
-            preg_match('/今＋([0-9]+)分/', $trigger->time, $matches);
+        $now = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        if (str_contains($trigger->getTime(), "今")) {
+            preg_match('/今＋([0-9]+)分/', $trigger->getTime(), $matches);
             $now->addMinutes((int)$matches[1]);
         }
-        if ($trigger->date === "today") {
-            $trigger->date = $now->format("Y/m/d");
+        // TODO: ロジックをtimertriggerに移してもいいかも
+        if ($trigger->getDate() === "today") {
+            $trigger->setDate($now->format("Y/m/d"));
         }
-        $trigger->time = $now->format("H:i");
-        $this->botConfig->addTrigger("timer", $trigger);
+        $trigger->setTime($now->format("H:i"));
+        $this->botConfig->addTrigger($trigger);
     }
 }

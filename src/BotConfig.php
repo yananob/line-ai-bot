@@ -69,9 +69,13 @@ class BotConfig
         $result = [];
         foreach ($this->collectionReference->document("triggers")->collection("triggers")->documents() as $triggerDoc) {
             $data = $triggerDoc->data();
-            $trigger = new \stdClass();
-            foreach (["event", "date", "time", "request"] as $key) {
-                $trigger->$key = $data[$key];
+            switch ($data["event"]) {
+                case "timer":
+                    $trigger = new TimerTrigger($data["date"], $data["time"], $data["request"]);
+                    break;
+
+                default:
+                    throw new \Exception(("Unsupported event: " . $data["event"]));
             }
             $result[] = $trigger;
         }
@@ -84,14 +88,19 @@ class BotConfig
         return empty($data["requests"]) ? $this->configDefault->getTriggerRequests() : $data["requests"];
     }
 
-    public function addTrigger(string $event, $trigger): void
+    public function addTrigger(Trigger $trigger): void
     {
-        $doc = [
-            "event" => $event,
-            "date" => $trigger->date,
-            "time" => $trigger->time,
-            "request" => $trigger->request,
-        ];
+        if ($trigger instanceof TimerTrigger) {
+            $doc = [
+                "event" => $trigger->getEvent(),
+                "date" => $trigger->getDate(),
+                "time" => $trigger->getTime(),
+                "request" => $trigger->getRequest(),
+            ];
+        } else {
+            throw new \Exception("Unsupported trigger: " . var_export($trigger));
+        }
+
         $this->collectionReference->document("triggers")->collection("triggers")->add($doc);
     }
 }

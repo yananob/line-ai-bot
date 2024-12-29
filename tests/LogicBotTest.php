@@ -46,9 +46,9 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
      */
     public function testSplitOneTimeTrigger($message, $expected)
     {
-        $result = $this->bot->splitOneTimeTrigger($message);
-        $this->assertSame($expected[0], $result->date);
-        $this->assertSame($expected[1], $result->time);
-        $this->assertSame($expected[2], $result->request);
+        $result = $this->bot->generateOneTimeTrigger($message);
+        $this->assertSame($expected[0], $result->getDate());
+        $this->assertSame($expected[1], $result->getTime());
+        $this->assertSame($expected[2], $result->getRequest());
     }
 }

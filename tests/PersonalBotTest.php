@@ -114,7 +114,7 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
     public function testAddOneTimeTrigger(): void
     {
         $logicBot = new LogicBot();
-        $trigger = $logicBot->splitOneTimeTrigger("1時間後に「できたよ」と送って");
+        $trigger = $logicBot->generateOneTimeTrigger("1時間後に「できたよ」と送って");
         $this->bot->addOneTimeTrigger($trigger);
         $this->assertTrue(true);
     }

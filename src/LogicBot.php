@@ -61,20 +61,19 @@ EOM;
         return Command::from($result);
     }
 
-    public function splitOneTimeTrigger(string $message)
+    public function generateOneTimeTrigger(string $message): TimerTrigger
     {
         $result = $this->gpt->getAnswer(self::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message);
         // ・日付：tomorrow
         // ・時刻：今+30分
         // ・依頼内容：料理ができたと教えて
-        $obj = new \stdClass();
         preg_match('/・日付：(.+)$/m', $result, $matches);
-        $obj->date = rtrim($matches[1]);
+        $date = rtrim($matches[1]);
         preg_match('/・時刻：(.+)$/m', $result, $matches);
-        $obj->time = rtrim($matches[1]);
+        $time = rtrim($matches[1]);
         preg_match('/・依頼内容：(.+)$/m', $result, $matches);
-        $obj->request = rtrim($matches[1]);
+        $request = rtrim($matches[1]);
 
-        return $obj;
+        return new TimerTrigger($date, $time, $request);
     }
 }

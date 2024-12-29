@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Google\Cloud\Firestore\FirestoreClient;
 use MyApp\BotConfig;
+use MyApp\TimerTrigger;
 
 final class BotConfigTest extends PHPUnit\Framework\TestCase
 {
@@ -107,5 +108,14 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertEquals([
             "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
         ], $this->botConfigWithDefault->getTriggerRequests());
+    }
+
+    public function testAddTrigger()
+    {
+        $triggersOld = $this->botConfigWithDefault->getTriggers();
+        $trigger = new TimerTrigger("2024/1/1", "11:30", "モーニングメッセージを送って");
+        $this->botConfigWithDefault->addTrigger($trigger);
+        $triggersNew = $this->botConfigWithDefault->getTriggers();
+        $this->assertEquals([$trigger], array_diff($triggersNew, $triggersOld));
     }
 }

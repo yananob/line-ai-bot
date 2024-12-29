@@ -10,15 +10,16 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use CloudEvents\V1\CloudEventInterface;
 use GuzzleHttp\Psr7\Response;
-use MyApp\BotConfigsStore;
-use MyApp\Command;
 use yananob\MyTools\Logger;
 // use yananob\MyTools\Utils;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
+use MyApp\Consts;
+use MyApp\Command;
 use MyApp\LineWebhookMessage;
-use MyApp\LogicBot;
+use MyApp\BotConfigsStore;
 use MyApp\PersonalBot;
+use MyApp\LogicBot;
 
 const TIMER_TRIGGERED_BY_N_MINS = 30;
 
@@ -49,7 +50,7 @@ function main(ServerRequestInterface $request): ResponseInterface
     $answer = "";
     switch ($command) {
         case Command::AddOneTimeTrigger:
-            $trigger = $logicBot->splitOneTimeTrigger($webhookMessage->getMessage());
+            $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
             $personalBot->addOneTimeTrigger($trigger);
             $answer = "トリガーを追加した：" . var_export($trigger);  // TODO: メッセージに
             break;
@@ -102,8 +103,8 @@ function trigger(CloudEventInterface $event): void
             if ($triggerDate === "everyday") {
                 $triggerDate = "today";
             }
-            $triggerTime = new Carbon($triggerDate . " " . $trigger->time, new DateTimeZone("Asia/Tokyo"));
-            $now = new Carbon(timezone: new DateTimeZone("Asia/Tokyo"));
+            $triggerTime = new Carbon($triggerDate . " " . $trigger->time, new DateTimeZone(Consts::TIMEZONE));
+            $now = new Carbon(timezone: new DateTimeZone(Consts::TIMEZONE));
             // $logger->log($triggerTime);
             // $logger->log($now);
             // $logger->log($triggerTime->diffInMinutes($now));
