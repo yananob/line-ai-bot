@@ -27,7 +27,7 @@ FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
 {
     $logger = new Logger("line-ai-bot");
-    $logger->log(str_repeat("-", 120));
+    $logger->logSplitter();
     $logger->log("headers: " . json_encode($request->getHeaders()));
     // $logger->log("params: " . json_encode($request->getQueryParams()));
     // $logger->log("parsedBody: " . json_encode($request->getParsedBody()));
@@ -89,7 +89,7 @@ FunctionsFramework::cloudEvent('trigger', 'trigger');
 function trigger(CloudEventInterface $event): void
 {
     $logger = new Logger("line-ai-bot");
-    $logger->log(str_repeat("-", 120));
+    $logger->logSplitter();
     $isLocal = CFUtils::isLocalEvent($event);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
@@ -97,7 +97,7 @@ function trigger(CloudEventInterface $event): void
     $botConfigStore = new BotConfigsStore($isLocal);
     foreach ($botConfigStore->getUsers() as $user) {
         foreach ($user->getTriggers() as $trigger) {
-            $logger->log("user: {$user->getId()}, trigger: {$trigger->getEvent()} {$trigger->getTime()}");
+            $logger->log("user: {$user->getId()}, trigger: {$trigger->getEvent()} {$trigger->getDate()} {$trigger->getTime()}");
             if ($trigger->getEvent() !== "timer") {
                 continue;
             }
