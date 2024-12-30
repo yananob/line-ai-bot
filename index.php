@@ -97,16 +97,16 @@ function trigger(CloudEventInterface $event): void
     $botConfigStore = new BotConfigsStore($isLocal);
     foreach ($botConfigStore->getUsers() as $user) {
         foreach ($user->getTriggers() as $trigger) {
-            $logger->log("user: {$user->getId()}, trigger: {$trigger->event} {$trigger->time}");
-            if ($trigger->event !== "timer") {
+            $logger->log("user: {$user->getId()}, trigger: {$trigger->getEvent()} {$trigger->getTime()}");
+            if ($trigger->getEvent() !== "timer") {
                 continue;
             }
 
-            $triggerDate = $trigger->date;
+            $triggerDate = $trigger->getDate();
             if ($triggerDate === "everyday") {
                 $triggerDate = "today";
             }
-            $triggerTime = new Carbon($triggerDate . " " . $trigger->time, new DateTimeZone(Consts::TIMEZONE));
+            $triggerTime = new Carbon($triggerDate . " " . $trigger->getTime(), new DateTimeZone(Consts::TIMEZONE));
             $now = new Carbon(timezone: new DateTimeZone(Consts::TIMEZONE));
             // $logger->log($triggerTime);
             // $logger->log($now);
@@ -118,7 +118,7 @@ function trigger(CloudEventInterface $event): void
             $personalBot = new PersonalBot($user->getId(), $isLocal);
             $answer =  $personalBot->askRequest(
                 applyRecentConversations: true,
-                request: $trigger->request
+                request: $trigger->getRequest()
             );
             $line->sendPush(
                 bot: $personalBot->getLineTarget(),
