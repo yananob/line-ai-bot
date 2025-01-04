@@ -103,19 +103,7 @@ function trigger(CloudEventInterface $event): void
             if ($trigger->getEvent() !== "timer") {
                 continue;
             }
-
-            // TODO: $trigger->shouldRun()
-
-            $triggerDate = $trigger->getDate();
-            if ($triggerDate === "everyday") {
-                $triggerDate = "today";
-            }
-            $triggerTime = new Carbon($triggerDate . " " . $trigger->getTime(), new DateTimeZone(Consts::TIMEZONE));
-            $now = new Carbon(timezone: new DateTimeZone(Consts::TIMEZONE));
-            // $logger->log($triggerTime);
-            // $logger->log($now);
-            // $logger->log($triggerTime->diffInMinutes($now));
-            if (($triggerTime->diffInMinutes($now) > TIMER_TRIGGERED_BY_N_MINS) || ($triggerTime->diffInMinutes($now) < 0)) {
+            if (!$trigger->shouldRunNow(TIMER_TRIGGERED_BY_N_MINS)) {
                 continue;
             }
 

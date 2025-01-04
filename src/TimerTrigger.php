@@ -71,4 +71,19 @@ class TimerTrigger extends Trigger
     {
         return $this->date . " " . $this->time . "：" . $this->request;
     }
+
+    public function shouldRunNow(int $triggerDurationMins): bool
+    {
+        $triggerDate = $this->getDate();
+        if ($triggerDate === "everyday") {
+            $triggerDate = "today";
+        }
+        $triggerTime = new Carbon($triggerDate . " " . $this->getTime(), new \DateTimeZone(Consts::TIMEZONE));
+        $diff = (int)$triggerTime->diffInMinutes(new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE)));
+        if (($diff >= $triggerDurationMins) || ($diff < 0)) {
+            return false;
+        }
+
+        return true;
+    }
 }
