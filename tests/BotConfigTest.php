@@ -92,13 +92,13 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
         $this->assertEquals(
             ["timer", "timer"],
             array_map(function ($trigger) {
-                return $trigger->event;
+                return $trigger->getEvent();
             }, $triggers)
         );
         $this->assertEquals(
             ["16:00", "14:20"],
             array_map(function ($trigger) {
-                return $trigger->time;
+                return $trigger->getTime();
             }, $triggers)
         );
     }
