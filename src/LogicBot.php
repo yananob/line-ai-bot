@@ -34,18 +34,18 @@ EOM;
 
     const PROMPT_SPLIT_ONE_TIME_TRIGGER = <<<EOM
 以下のメッセージを、時刻と依頼内容に分解して。
-・日付は、明記されている場合はその日付を英語で、そうでない場合はtodayとして
+・日付は、明記されている場合はその日付を英語で、そうでない場合は「今日」として
 ・時刻は、時刻が明確な場合は時刻を、今からX分後の場合は「今＋X分」として
 
 例1：
 ・メッセージ：11時半に天気予報を送って
-・日付：today
+・日付：今日
 ・時刻：11:30
 ・依頼内容：天気予報を送って
 
 例2：
 ・メッセージ：明日の30分後に料理ができたと教えて
-・日付：tomorrow
+・日付：明日
 ・時刻：今＋30分
 ・依頼内容：料理ができたと教えて
 EOM;
@@ -64,7 +64,7 @@ EOM;
     public function generateOneTimeTrigger(string $message): TimerTrigger
     {
         $result = $this->gpt->getAnswer(self::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message);
-        // ・日付：tomorrow
+        // ・日付：明日
         // ・時刻：今+30分
         // ・依頼内容：料理ができたと教えて
         preg_match('/・日付：(.+)$/m', $result, $matches);

@@ -168,7 +168,7 @@ EOM;
         }
         // TODO: ロジックをtimertriggerに移してもいいかも
         // TODO: support tomorrow
-        if ($trigger->getDate() === "today") {
+        if ($trigger->getDate() === "今日") {
             $trigger->setDate($now->format("Y/m/d"));
         }
         $this->botConfig->addTrigger($trigger);

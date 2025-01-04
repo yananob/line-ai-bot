@@ -37,8 +37,8 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
     {
         return [
             // message, expected [date, time, request]
-            ["1時間後に「できたよ」と送って", ["today", "今＋60分", "「できたよ」と送って"]],
-            ["明日の6時半に「おはよう」と送って", ["tomorrow", "6:30", "「おはよう」と送って"]],
+            ["1時間後に「できたよ」と送って", ["今日", "今＋60分", "「できたよ」と送って"]],
+            ["明日の6時半に「おはよう」と送って", ["明日", "6:30", "「おはよう」と送って"]],
         ];
     }
     /**
