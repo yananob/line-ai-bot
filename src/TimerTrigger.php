@@ -4,11 +4,32 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+use Carbon\Carbon;
+
 class TimerTrigger extends Trigger
 {
     private string $id;
 
-    public function __construct(private string $date, private string $time, private string $request) {}
+    public function __construct(private string $date, private string $time, private string $request)
+    {
+        $now = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        // 実時間に変換
+        if (str_contains($time, "今")) {
+            preg_match('/今＋([0-9]+)分/', $time, $matches);
+            $now->addMinutes((int)$matches[1]);
+            $this->setTime($now->format("H:i"));
+        }
+        // 実日付に変換
+        if ($date === "今日") {
+            $this->setDate($now->format("Y/m/d"));
+        } elseif ($date === "明日") {
+            $now->addDay();
+            $this->setDate($now->format("Y/m/d"));
+        } elseif ($date === "明後日") {
+            $now->addDays(2);
+            $this->setDate($now->format("Y/m/d"));
+        }
+    }
 
     public function getEvent(): string
     {

@@ -12,6 +12,7 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
 
     protected function setUp(): void
     {
+        Carbon::setTestNow(new Carbon("2025/01/01T09:00:00+09:00"));
         $this->bot = new LogicBot();
     }
 
@@ -37,8 +38,8 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
     {
         return [
             // message, expected [date, time, request]
-            ["1時間後に「できたよ」と送って", ["今日", "今＋60分", "「できたよ」と送って"]],
-            ["明日の6時半に「おはよう」と送って", ["明日", "06:30", "「おはよう」と送って"]],
+            ["1時間後に「できたよ」と送って", ["2025/01/01", "10:00", "「できたよ」と送って"]],
+            ["明日の6時半に「おはよう」と送って", ["2025/01/02", "06:30", "「おはよう」と送って"]],
         ];
     }
     /**

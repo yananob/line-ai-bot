@@ -161,18 +161,6 @@ EOM;
 
     public function addOneTimeTrigger(TimerTrigger $trigger): void
     {
-        // 実日付・時間に変換
-        // TODO: ロジックをtimertriggerに移してもいいかも
-        $now = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
-        if (str_contains($trigger->getTime(), "今")) {
-            preg_match('/今＋([0-9]+)分/', $trigger->getTime(), $matches);
-            $now->addMinutes((int)$matches[1]);
-            $trigger->setTime($now->format("H:i"));
-        }
-        // TODO: support tomorrow
-        if ($trigger->getDate() === "今日") {
-            $trigger->setDate($now->format("Y/m/d"));
-        }
         $this->botConfig->addTrigger($trigger);
     }
 }
