@@ -111,15 +111,18 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $this->assertSame("LINE_TARGET_DEFAULT", $this->bot_default->getLineTarget());
     }
 
-    public function testAddOneTimeTrigger(): void
+    public function testAddTimerTrigger(): void
     {
         $logicBot = new LogicBot();
 
         $trigger = $logicBot->generateOneTimeTrigger("1時間後に「できたよ」と送って");
-        $this->bot->addOneTimeTrigger($trigger);
+        $this->bot->addTimerTrigger($trigger);
 
         $trigger = $logicBot->generateOneTimeTrigger("11時半に「ご飯だよ」と送って");
-        $this->bot->addOneTimeTrigger($trigger);
+        $this->bot->addTimerTrigger($trigger);
+
+        $trigger = $logicBot->generateDailyTrigger("毎日7時半に天気予報を送って");
+        $this->bot->addTimerTrigger($trigger);
 
         $this->assertTrue(true);
     }

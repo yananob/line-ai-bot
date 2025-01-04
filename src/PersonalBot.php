@@ -159,7 +159,7 @@ EOM;
         $this->conversationsStore->store("bot", $answer);
     }
 
-    public function addOneTimeTrigger(TimerTrigger $trigger): void
+    public function addTimerTrigger(TimerTrigger $trigger): void
     {
         $this->botConfig->addTrigger($trigger);
     }

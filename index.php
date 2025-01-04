@@ -56,13 +56,13 @@ function main(ServerRequestInterface $request): ResponseInterface
     switch ($command) {
         case Command::AddOneTimeTrigger:
             $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
-            $personalBot->addOneTimeTrigger($trigger);
+            $personalBot->addTimerTrigger($trigger);
             $answer = "追加しました：" . $trigger;  // TODO: メッセージに
             break;
 
         case Command::AddDaiyTrigger:
             $trigger = $logicBot->generateDailyTrigger($webhookMessage->getMessage());
-            $personalBot->addDailyTrigger($trigger);
+            $personalBot->addTimerTrigger($trigger);
             $answer = "追加しました：" . $trigger;  // TODO: メッセージに
             break;
 
