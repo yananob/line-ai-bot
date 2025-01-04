@@ -14,20 +14,29 @@ class TimerTrigger extends Trigger
     {
         $now = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
         // 実時間に変換
-        if (str_contains($time, "今")) {
-            preg_match('/今＋([0-9]+)分/', $time, $matches);
+        if (str_contains($time, "now")) {
+            preg_match('/now \+([0-9]+) mins/', $time, $matches);
             $now->addMinutes((int)$matches[1]);
             $this->setTime($now->format("H:i"));
         }
         // 実日付に変換
-        if ($date === "今日") {
-            $this->setDate($now->format("Y/m/d"));
-        } elseif ($date === "明日") {
-            $now->addDay();
-            $this->setDate($now->format("Y/m/d"));
-        } elseif ($date === "明後日") {
-            $now->addDays(2);
-            $this->setDate($now->format("Y/m/d"));
+        switch ($date) {
+            case 'everyday':
+            case 'today':
+                $this->setDate($now->format("Y/m/d"));
+                break;
+
+            case 'tomorrow':
+                $now->addDay();
+                $this->setDate($now->format("Y/m/d"));
+                break;
+
+            case 'day after tomorrow':
+                $now->addDays(2);
+                $this->setDate($now->format("Y/m/d"));
+
+            default:
+                break;
         }
     }
 

@@ -2,4 +2,4 @@
 set -eu
 
 bash ./deploy-http-prod.sh
-bash ./deploy-topic-prod.sh
+bash ./deploy-event-prod.sh

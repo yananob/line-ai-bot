@@ -327,7 +327,7 @@
         },
         {
             "name": "google/apiclient-services",
-            "version": "v0.387.0",
+            "version": "v0.388.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/googleapis/google-api-php-client-services.git",
@@ -365,7 +365,7 @@
             ],
             "support": {
                 "issues": "https://github.com/googleapis/google-api-php-client-services/issues",
-                "source": "https://github.com/googleapis/google-api-php-client-services/tree/v0.387.0"
+                "source": "https://github.com/googleapis/google-api-php-client-services/tree/v0.388.0"
             },
             "time": "2024-12-21T01:06:13+00:00"
         },
@@ -555,16 +555,16 @@
         },
         {
             "name": "google/cloud-functions-framework",
-            "version": "v1.4.1",
+            "version": "v1.4.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/GoogleCloudPlatform/functions-framework-php.git",
-                "reference": "a556a03792811f6aff485a9998fb4d7553e4d09f"
+                "reference": "e6c79221b8e22ecfbfbebaaf4b65bb44d4452ae8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/GoogleCloudPlatform/functions-framework-php/zipball/a556a03792811f6aff485a9998fb4d7553e4d09f",
-                "reference": "a556a03792811f6aff485a9998fb4d7553e4d09f",
+                "url": "https://api.github.com/repos/GoogleCloudPlatform/functions-framework-php/zipball/e6c79221b8e22ecfbfbebaaf4b65bb44d4452ae8",
+                "reference": "e6c79221b8e22ecfbfbebaaf4b65bb44d4452ae8",
                 "shasum": ""
             },
             "require": {
@@ -596,9 +596,9 @@
             "description": "Google Cloud Functions Framework for PHP",
             "support": {
                 "issues": "https://github.com/GoogleCloudPlatform/functions-framework-php/issues",
-                "source": "https://github.com/GoogleCloudPlatform/functions-framework-php/tree/v1.4.1"
+                "source": "https://github.com/GoogleCloudPlatform/functions-framework-php/tree/v1.4.2"
             },
-            "time": "2024-10-03T21:26:48+00:00"
+            "time": "2025-01-03T20:00:05+00:00"
         },
         {
             "name": "google/common-protos",
@@ -2629,16 +2629,16 @@
         },
         {
             "name": "symfony/translation",
-            "version": "v7.2.0",
+            "version": "v7.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/translation.git",
-                "reference": "dc89e16b44048ceecc879054e5b7f38326ab6cc5"
+                "reference": "e2674a30132b7cc4d74540d6c2573aa363f05923"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/translation/zipball/dc89e16b44048ceecc879054e5b7f38326ab6cc5",
-                "reference": "dc89e16b44048ceecc879054e5b7f38326ab6cc5",
+                "url": "https://api.github.com/repos/symfony/translation/zipball/e2674a30132b7cc4d74540d6c2573aa363f05923",
+                "reference": "e2674a30132b7cc4d74540d6c2573aa363f05923",
                 "shasum": ""
             },
             "require": {
@@ -2704,7 +2704,7 @@
             "description": "Provides tools to internationalize your application",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/translation/tree/v7.2.0"
+                "source": "https://github.com/symfony/translation/tree/v7.2.2"
             },
             "funding": [
                 {
@@ -2720,7 +2720,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-11-12T20:47:56+00:00"
+            "time": "2024-12-07T08:18:10+00:00"
         },
         {
             "name": "symfony/translation-contracts",
@@ -2841,12 +2841,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/yananob/my-tools.git",
-                "reference": "30c85e031e48dba6e857d10a7882a8d38bc015d0"
+                "reference": "d404e2fa7d114e0b5cd3c136025c47a9b0c569fa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yananob/my-tools/zipball/30c85e031e48dba6e857d10a7882a8d38bc015d0",
-                "reference": "30c85e031e48dba6e857d10a7882a8d38bc015d0",
+                "url": "https://api.github.com/repos/yananob/my-tools/zipball/d404e2fa7d114e0b5cd3c136025c47a9b0c569fa",
+                "reference": "d404e2fa7d114e0b5cd3c136025c47a9b0c569fa",
                 "shasum": ""
             },
             "require": {
@@ -2869,7 +2869,7 @@
                 "source": "https://github.com/yananob/my-tools/tree/main",
                 "issues": "https://github.com/yananob/my-tools/issues"
             },
-            "time": "2024-12-30T00:22:29+00:00"
+            "time": "2025-01-04T05:56:43+00:00"
         }
     ],
     "packages-dev": [
@@ -2935,16 +2935,16 @@
         },
         {
             "name": "nikic/php-parser",
-            "version": "v5.3.1",
+            "version": "v5.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "8eea230464783aa9671db8eea6f8c6ac5285794b"
+                "reference": "447a020a1f875a434d62f2a401f53b82a396e494"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/8eea230464783aa9671db8eea6f8c6ac5285794b",
-                "reference": "8eea230464783aa9671db8eea6f8c6ac5285794b",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/447a020a1f875a434d62f2a401f53b82a396e494",
+                "reference": "447a020a1f875a434d62f2a401f53b82a396e494",
                 "shasum": ""
             },
             "require": {
@@ -2987,9 +2987,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nikic/PHP-Parser/issues",
-                "source": "https://github.com/nikic/PHP-Parser/tree/v5.3.1"
+                "source": "https://github.com/nikic/PHP-Parser/tree/v5.4.0"
             },
-            "time": "2024-10-08T18:51:32+00:00"
+            "time": "2024-12-30T11:07:19+00:00"
         },
         {
             "name": "phar-io/manifest",
@@ -3111,16 +3111,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.12.13",
+            "version": "1.12.14",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "9b469068840cfa031e1deaf2fa1886d00e20680f"
+                "reference": "e73868f809e68fff33be961ad4946e2e43ec9e38"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9b469068840cfa031e1deaf2fa1886d00e20680f",
-                "reference": "9b469068840cfa031e1deaf2fa1886d00e20680f",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e73868f809e68fff33be961ad4946e2e43ec9e38",
+                "reference": "e73868f809e68fff33be961ad4946e2e43ec9e38",
                 "shasum": ""
             },
             "require": {
@@ -3165,7 +3165,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-12-17T17:00:20+00:00"
+            "time": "2024-12-31T07:26:13+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",

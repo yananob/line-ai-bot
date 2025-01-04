@@ -19,9 +19,10 @@ final class TimerTriggerTest extends PHPUnit\Framework\TestCase
     {
         return [
             // date, time, request, expected
-            ["今日", "10:30", "「できたよ」と送って", "2025/01/01 10:30：「できたよ」と送って"],
-            ["明日", "今", "「おはよう」と送って", "2025/01/02 09:00：「おはよう」と送って"],
-            ["明後日", "今＋60分", "「さよなら」と送って", "2025/01/03 10:00：「さよなら」と送って"],
+            ["everyday", "23:00", "「お休み」と送って", "2025/01/01 23:00：「お休み」と送って"],
+            ["today", "10:30", "「できたよ」と送って", "2025/01/01 10:30：「できたよ」と送って"],
+            ["tomorrow", "now", "「おはよう」と送って", "2025/01/02 09:00：「おはよう」と送って"],
+            ["day after tomorrow", "now +60 mins", "「さよなら」と送って", "2025/01/03 10:00：「さよなら」と送って"],
         ];
     }
     /**
@@ -37,10 +38,10 @@ final class TimerTriggerTest extends PHPUnit\Framework\TestCase
     {
         return [
             // date, time, _, expected
-            ["今日", "08:30", "", false],
-            ["今日", "08:31", "", true],
-            ["今日", "09:00", "", true],
-            ["今日", "09:01", "", false],
+            ["today", "08:30", "", false],
+            ["today", "08:31", "", true],
+            ["today", "09:00", "", true],
+            ["today", "09:01", "", false],
         ];
     }
     /**
