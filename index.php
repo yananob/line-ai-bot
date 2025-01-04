@@ -104,6 +104,8 @@ function trigger(CloudEventInterface $event): void
                 continue;
             }
 
+            // TODO: $trigger->shouldRun()
+
             $triggerDate = $trigger->getDate();
             if ($triggerDate === "everyday") {
                 $triggerDate = "today";
