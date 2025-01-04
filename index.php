@@ -61,7 +61,9 @@ function main(ServerRequestInterface $request): ResponseInterface
             break;
 
         case Command::AddDaiyTrigger:
-            # code...
+            $trigger = $logicBot->generateDailyTrigger($webhookMessage->getMessage());
+            $personalBot->addDailyTrigger($trigger);
+            $answer = "追加しました：" . $trigger;  // TODO: メッセージに
             break;
 
         default:

@@ -7,6 +7,7 @@ namespace MyApp;
 use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
 
+// TODO: extends GptBot
 class LogicBot
 {
     private Gpt $gpt;
@@ -22,7 +23,7 @@ class LogicBot
 
 例：
 ・武士口調で返して　→　1
-・悩み相談に答えて　右　1
+・悩み相談に答えて　→　1
 ・学校の先生になって　→　2
 ・武士になって　→　2
 ・明日の7時半にお知らせメッセージを送って　→　3
@@ -34,13 +35,13 @@ EOM;
 
     const PROMPT_SPLIT_ONE_TIME_TRIGGER = <<<EOM
 以下のメッセージを、時刻と依頼内容に分解して。
-・日付は、明記されている場合はその日付を英語で、そうでない場合は「今日」として
+・日付は、明記されている場合はその日付を、そうでない場合は「今日」として
 ・時刻は、時刻が明確な場合は時刻を、今からX分後の場合は「今＋X分」として
 
 例1：
-・メッセージ：11時半に天気予報を送って
+・メッセージ：6時半に天気予報を送って
 ・日付：今日
-・時刻：11:30
+・時刻：06:30
 ・依頼内容：天気予報を送って
 
 例2：
@@ -48,6 +49,22 @@ EOM;
 ・日付：明日
 ・時刻：今＋30分
 ・依頼内容：料理ができたと教えて
+EOM;
+
+    const PROMPT_SPLIT_DAILY_TRIGGER = <<<EOM
+以下のメッセージを、時刻と依頼内容に分解して。
+
+例1：
+・メッセージ：7時半に天気予報を送って
+・日付：毎日
+・時刻：07:30
+・依頼内容：天気予報を送って
+
+例2：
+・メッセージ：夜の10時にお休みと送って
+・日付：毎日
+・時刻：22:00
+・依頼内容：お休みと送って
 EOM;
 
     public function __construct()
@@ -63,10 +80,19 @@ EOM;
 
     public function generateOneTimeTrigger(string $message): TimerTrigger
     {
-        $result = $this->gpt->getAnswer(self::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message);
-        // ・日付：明日
-        // ・時刻：今+30分
-        // ・依頼内容：料理ができたと教えて
+        return $this->__generateTimerTrigger(self::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message);
+    }
+
+    public function generateDailyTrigger(string $message): TimerTrigger
+    {
+        return $this->__generateTimerTrigger(self::PROMPT_SPLIT_DAILY_TRIGGER, $message);
+    }
+
+    private function __generateTimerTrigger(string $prompt, string $message): TimerTrigger
+    {
+        $result = $this->gpt->getAnswer($prompt, $message);
+        var_dump($result);
+
         preg_match('/・日付：(.+)$/m', $result, $matches);
         $date = rtrim($matches[1]);
         preg_match('/・時刻：(.+)$/m', $result, $matches);

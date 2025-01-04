@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
 
+// TODO: extends GptBot
 class PersonalBot
 {
     private BotConfigsStore $botConfigsStore;

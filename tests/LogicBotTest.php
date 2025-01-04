@@ -38,7 +38,7 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
         return [
             // message, expected [date, time, request]
             ["1時間後に「できたよ」と送って", ["今日", "今＋60分", "「できたよ」と送って"]],
-            ["明日の6時半に「おはよう」と送って", ["明日", "6:30", "「おはよう」と送って"]],
+            ["明日の6時半に「おはよう」と送って", ["明日", "06:30", "「おはよう」と送って"]],
         ];
     }
     /**
@@ -47,6 +47,25 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
     public function testSplitOneTimeTrigger($message, $expected)
     {
         $result = $this->bot->generateOneTimeTrigger($message);
+        $this->assertSame($expected[0], $result->getDate());
+        $this->assertSame($expected[1], $result->getTime());
+        $this->assertSame($expected[2], $result->getRequest());
+    }
+
+    public function provideSplitDailyTrigger(): array
+    {
+        return [
+            // message, expected [date, time, request]
+            ["8時半に「いってらっしゃい」と送って", ["毎日", "08:30", "「いってらっしゃい」と送って"]],
+            ["夜の11時半に「もう寝ましょう」と送って", ["毎日", "23:30", "「もう寝ましょう」と送って"]],
+        ];
+    }
+    /**
+     * @dataProvider provideSplitDailyTrigger
+     */
+    public function testSplitDailyTrigger($message, $expected)
+    {
+        $result = $this->bot->generateDailyTrigger($message);
         $this->assertSame($expected[0], $result->getDate());
         $this->assertSame($expected[1], $result->getTime());
         $this->assertSame($expected[2], $result->getRequest());
