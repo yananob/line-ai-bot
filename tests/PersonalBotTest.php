@@ -116,13 +116,16 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $logicBot = new LogicBot();
 
         $trigger = $logicBot->generateOneTimeTrigger("1時間後に「できたよ」と送って");
-        $this->bot->addTimerTrigger($trigger);
+        $id = $this->bot->addTimerTrigger($trigger);
+        $this->bot->deleteTrigger($id);
 
         $trigger = $logicBot->generateOneTimeTrigger("11時半に「ご飯だよ」と送って");
-        $this->bot->addTimerTrigger($trigger);
+        $id = $this->bot->addTimerTrigger($trigger);
+        $this->bot->deleteTrigger($id);
 
         $trigger = $logicBot->generateDailyTrigger("毎日7時半に天気予報を送って");
-        $this->bot->addTimerTrigger($trigger);
+        $id = $this->bot->addTimerTrigger($trigger);
+        $this->bot->deleteTrigger($id);
 
         $this->assertTrue(true);
     }

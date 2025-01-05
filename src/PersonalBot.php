@@ -159,13 +159,22 @@ EOM;
         $this->conversationsStore->store("bot", $answer);
     }
 
-    public function addTimerTrigger(TimerTrigger $trigger): void
-    {
-        $this->botConfig->addTrigger($trigger);
-    }
-
     public function getTriggers(): array
     {
         return $this->botConfig->getTriggers();
     }
+
+    /**
+     * @return string Trigger Id
+     */
+    public function addTimerTrigger(TimerTrigger $trigger): string
+    {
+        return $this->botConfig->addTrigger($trigger);
+    }
+
+    public function deleteTrigger(string $id): void
+    {
+        $this->botConfig->deleteTriggerById($id);
+    }
+
 }

@@ -51,38 +51,53 @@ function main(ServerRequestInterface $request): ResponseInterface
         targetId: $webhookMessage->getTargetId(),
     );
 
-    $logicBot = new LogicBot();
-    $command = $logicBot->judgeCommand($webhookMessage->getMessage());
-    $answer = "";
-    $quickReply = null;
-    switch ($command) {
-        case Command::AddOneTimeTrigger:
-            $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
-            $personalBot->addTimerTrigger($trigger);
-            $answer = "追加しました：" . $trigger;  // TODO: メッセージに
-            break;
+    if ($webhookMessage->getType() === LineWebhookMessage::TYPE_MESSAGE) {
+        $logicBot = new LogicBot();
+        $command = $logicBot->judgeCommand($webhookMessage->getMessage());
+        $answer = "";
+        $quickReply = null;
+        switch ($command) {
+            case Command::AddOneTimeTrigger:
+                $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
+                $personalBot->addTimerTrigger($trigger);
+                $answer = "追加しました：" . $trigger;  // TODO: メッセージに
+                break;
 
-        case Command::AddDaiyTrigger:
-            $trigger = $logicBot->generateDailyTrigger($webhookMessage->getMessage());
-            $personalBot->addTimerTrigger($trigger);
-            $answer = "追加しました：" . $trigger;  // TODO: メッセージに
-            break;
+            case Command::AddDaiyTrigger:
+                $trigger = $logicBot->generateDailyTrigger($webhookMessage->getMessage());
+                $personalBot->addTimerTrigger($trigger);
+                $answer = "追加しました：" . $trigger;  // TODO: メッセージに
+                break;
 
-        case Command::RemoveTrigger:
-            $answer = "止めたいものを選択してください。";
-            $quickReply = Tools::convertTriggersToQuickReply($personalBot->getTriggers());
-            break;
+            case Command::RemoveTrigger:
+                $answer = "止めたいものを選択してください。";
+                $quickReply = Tools::convertTriggersToQuickReply(LineWebhookMessage::CMD_REMOVE_TRIGGER, $personalBot->getTriggers());
+                break;
 
-        default:
-            $answer = $personalBot->getAnswer(
-                applyRecentConversations: true,
-                message: $webhookMessage->getMessage(),
-            );
-            $personalBot->storeConversations(
-                message: $webhookMessage->getMessage(),
-                answer: $answer,
-            );
-            break;
+            default:
+                $answer = $personalBot->getAnswer(
+                    applyRecentConversations: true,
+                    message: $webhookMessage->getMessage(),
+                );
+                $personalBot->storeConversations(
+                    message: $webhookMessage->getMessage(),
+                    answer: $answer,
+                );
+                break;
+        }
+    } elseif ($webhookMessage->getType() === LineWebhookMessage::TYPE_POSTBACK) {
+        parse_str($webhookMessage->getPostbackData(), $params);
+        switch ($params["command"]) {
+            case LineWebhookMessage::CMD_REMOVE_TRIGGER:
+                $personalBot->deleteTrigger($params["id"]);
+                $answer = "削除しました：" . $params["trigger"];  // TODO: メッセージに
+                break;
+
+            default:
+                throw new Exception("Unsupported command: " . $params["command"]);
+        }
+    } else {
+        throw new Exception("Unsupported message type: " . $webhookMessage->getType());
     }
 
     $line->sendReply(
@@ -91,7 +106,7 @@ function main(ServerRequestInterface $request): ResponseInterface
         replyToken: $webhookMessage->getReplyToken(),
         quickReply: $quickReply,
     );
-
+        
     return new Response(200, $headers, '{"result": "ok"}');
 }
 

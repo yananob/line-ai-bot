@@ -6,7 +6,7 @@ namespace MyApp;
 
 class Tools
 {
-    public static function convertTriggersToQuickReply(array $triggers): array
+    public static function convertTriggersToQuickReply(string $command, array $triggers): array
     {
         $result = [];
 
@@ -16,7 +16,7 @@ class Tools
                 "action" => [
                     "type" => "postback",
                     "label" => mb_strimwidth("{$trigger}", 0, 20, "…"),
-                    "data" => $trigger->getId(),
+                    "data" => "command={$command}&id=" . $trigger->getId() . "&trigger={$trigger}",
                     "displayText" => "{$trigger}",
                 ],
             ];
