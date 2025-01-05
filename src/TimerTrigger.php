@@ -9,6 +9,7 @@ use Carbon\Carbon;
 class TimerTrigger extends Trigger
 {
     private string $id;
+    private string $actualDate;
 
     public function __construct(private string $date, private string $time, private string $request)
     {
@@ -17,23 +18,30 @@ class TimerTrigger extends Trigger
         if (str_contains($time, "now")) {
             preg_match('/now \+([0-9]+) mins/', $time, $matches);
             $now->addMinutes((int)$matches[1]);
-            $this->setTime($now->format("H:i"));
+            $this->time = $now->format("H:i");
         }
         // 実日付に変換
-        switch ($date) {
+        switch ($this->date) {
             case 'everyday':
+                $this->actualDate = $now->format("Y/m/d");
+                break;
+
             case 'today':
-                $this->setDate($now->format("Y/m/d"));
+                $this->actualDate = $now->format("Y/m/d");
+                $this->date = $this->actualDate;
                 break;
 
             case 'tomorrow':
                 $now->addDay();
-                $this->setDate($now->format("Y/m/d"));
+                $this->actualDate = $now->format("Y/m/d");
+                $this->date = $this->actualDate;
                 break;
 
             case 'day after tomorrow':
                 $now->addDays(2);
-                $this->setDate($now->format("Y/m/d"));
+                $this->actualDate = $now->format("Y/m/d");
+                $this->date = $this->actualDate;
+                break;
 
             default:
                 break;
@@ -58,14 +66,14 @@ class TimerTrigger extends Trigger
         return $this->request;
     }
 
-    public function setDate(string $date): void
-    {
-        $this->date = $date;
-    }
-    public function setTime(string $time): void
-    {
-        $this->time = $time;
-    }
+    // private function __setDate(string $date): void
+    // {
+    //     $this->date = $date;
+    // }
+    // public function setTime(string $time): void
+    // {
+    //     $this->time = $time;
+    // }
 
     public function getId(): string
     {
@@ -78,12 +86,14 @@ class TimerTrigger extends Trigger
 
     public function __toString(): string
     {
-        return $this->date . " " . $this->time . " " . $this->request;
+        $outputDate = $this->date;
+        $outputDate = str_replace(["everyday"], ["毎日"], $outputDate);
+        return $outputDate . " " . $this->time . " " . $this->request;
     }
 
     public function shouldRunNow(int $triggerDurationMins): bool
     {
-        $triggerDate = $this->getDate();
+        $triggerDate = $this->actualDate;
         // 使われてない：　TODO: トリガー日と実際の登録日は、区別する必要がありそう
         // if ($triggerDate === "everyday") {
         //     $triggerDate = "today";

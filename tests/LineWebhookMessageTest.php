@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use MyApp\Consts;
 use MyApp\LineWebhookMessage;
 
 final class LineWebhookMessageTest extends PHPUnit\Framework\TestCase
@@ -114,7 +115,7 @@ EOM;
     public function testGetPostbackData(): void
     {
         parse_str($this->userPostback->getPostbackData(), $params);
-        $this->assertSame(LineWebhookMessage::CMD_REMOVE_TRIGGER, $params["command"]);
+        $this->assertSame(Consts::CMD_REMOVE_TRIGGER, $params["command"]);
         $this->assertSame("123456", $params["id"]);
     }
 

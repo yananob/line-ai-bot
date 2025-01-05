@@ -51,11 +51,11 @@ function main(ServerRequestInterface $request): ResponseInterface
         targetId: $webhookMessage->getTargetId(),
     );
 
+    $answer = "";
+    $quickReply = null;
     if ($webhookMessage->getType() === LineWebhookMessage::TYPE_MESSAGE) {
         $logicBot = new LogicBot();
         $command = $logicBot->judgeCommand($webhookMessage->getMessage());
-        $answer = "";
-        $quickReply = null;
         switch ($command) {
             case Command::AddOneTimeTrigger:
                 $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
@@ -71,7 +71,7 @@ function main(ServerRequestInterface $request): ResponseInterface
 
             case Command::RemoveTrigger:
                 $answer = "止めたいものを選択してください。";
-                $quickReply = Tools::convertTriggersToQuickReply(LineWebhookMessage::CMD_REMOVE_TRIGGER, $personalBot->getTriggers());
+                $quickReply = Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $personalBot->getTriggers());
                 break;
 
             default:
@@ -88,7 +88,7 @@ function main(ServerRequestInterface $request): ResponseInterface
     } elseif ($webhookMessage->getType() === LineWebhookMessage::TYPE_POSTBACK) {
         parse_str($webhookMessage->getPostbackData(), $params);
         switch ($params["command"]) {
-            case LineWebhookMessage::CMD_REMOVE_TRIGGER:
+            case Consts::CMD_REMOVE_TRIGGER:
                 $personalBot->deleteTrigger($params["id"]);
                 $answer = "削除しました：" . $params["trigger"];  // TODO: メッセージに
                 break;

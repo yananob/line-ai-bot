@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use MyApp\LineWebhookMessage;
+use MyApp\Consts;
 use MyApp\TimerTrigger;
 use MyApp\Tools;
 
@@ -28,7 +28,7 @@ final class ToolsTest extends PHPUnit\Framework\TestCase
                 "action" => [
                     "type" => "postback",
                     "label" => "2025/01/01 09:00 お…",
-                    "displayText" => "2025/01/01 09:00 おはようと送って",
+                    "displayText" => "削除：2025/01/01 09:00 おはようと送って",
                     "data" => "command=delete_trigger&id=ID001&trigger=2025/01/01 09:00 おはようと送って",
                 ]
             ]
@@ -40,6 +40,6 @@ final class ToolsTest extends PHPUnit\Framework\TestCase
             $trigger->setId($line[3]);
             $triggers[] = $trigger;
         }
-        $this->assertEquals($expected, Tools::convertTriggersToQuickReply(LineWebhookMessage::CMD_REMOVE_TRIGGER, $triggers));
+        $this->assertEquals($expected, Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $triggers));
     }
 }
