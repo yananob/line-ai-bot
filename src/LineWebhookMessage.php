@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+// TODO: MyToolsに移す
 class LineWebhookMessage
 {
     private $bodyObj;

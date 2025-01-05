@@ -163,4 +163,9 @@ EOM;
     {
         $this->botConfig->addTrigger($trigger);
     }
+
+    public function getTriggers(): array
+    {
+        return $this->botConfig->getTriggers();
+    }
 }

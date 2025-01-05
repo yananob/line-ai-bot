@@ -19,6 +19,7 @@ use MyApp\LineWebhookMessage;
 use MyApp\BotConfigsStore;
 use MyApp\PersonalBot;
 use MyApp\LogicBot;
+use MyApp\Tools;
 
 const TIMER_TRIGGERED_BY_N_MINS = 30;
 
@@ -39,6 +40,7 @@ function main(ServerRequestInterface $request): ResponseInterface
     $headers = ['Content-Type' => 'application/json'];
 
     $webhookMessage = new LineWebhookMessage($body);
+    // TODO: イベントの種類に応じて処理変える（postbackだと別処理させる）
     $personalBot = new PersonalBot(
         $webhookMessage->getTargetId(),
         $isLocal
@@ -52,6 +54,7 @@ function main(ServerRequestInterface $request): ResponseInterface
     $logicBot = new LogicBot();
     $command = $logicBot->judgeCommand($webhookMessage->getMessage());
     $answer = "";
+    $quickReply = null;
     switch ($command) {
         case Command::AddOneTimeTrigger:
             $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
@@ -63,6 +66,11 @@ function main(ServerRequestInterface $request): ResponseInterface
             $trigger = $logicBot->generateDailyTrigger($webhookMessage->getMessage());
             $personalBot->addTimerTrigger($trigger);
             $answer = "追加しました：" . $trigger;  // TODO: メッセージに
+            break;
+
+        case Command::RemoveTrigger:
+            $answer = "止めたいものを選択してください。";
+            $quickReply = Tools::convertTriggersToQuickReply($personalBot->getTriggers());
             break;
 
         default:
@@ -81,6 +89,7 @@ function main(ServerRequestInterface $request): ResponseInterface
         bot: $personalBot->getLineTarget(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
+        quickReply: $quickReply,
     );
 
     return new Response(200, $headers, '{"result": "ok"}');

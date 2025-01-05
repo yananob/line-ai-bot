@@ -78,15 +78,16 @@ class TimerTrigger extends Trigger
 
     public function __toString(): string
     {
-        return $this->date . " " . $this->time . "：" . $this->request;
+        return $this->date . " " . $this->time . " " . $this->request;
     }
 
     public function shouldRunNow(int $triggerDurationMins): bool
     {
         $triggerDate = $this->getDate();
-        if ($triggerDate === "everyday") {
-            $triggerDate = "today";
-        }
+        // 使われてない：　TODO: トリガー日と実際の登録日は、区別する必要がありそう
+        // if ($triggerDate === "everyday") {
+        //     $triggerDate = "today";
+        // }
         $triggerTime = new Carbon($triggerDate . " " . $this->getTime(), new \DateTimeZone(Consts::TIMEZONE));
         $diff = (int)$triggerTime->diffInMinutes(new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE)));
         if (($diff >= $triggerDurationMins) || ($diff < 0)) {
