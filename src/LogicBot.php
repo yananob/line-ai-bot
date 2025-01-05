@@ -78,7 +78,12 @@ EOM;
     public function judgeCommand(string $message): Command
     {
         $result = $this->gpt->getAnswer(self::PROMPT_JUDGE_COMMAND, $message);
-        return Command::from($result);
+        try {
+            $command = Command::from($result);
+        } catch (\ValueError $e) {
+            $command = Command::Other;
+        }
+        return $command;
     }
 
     public function generateOneTimeTrigger(string $message): TimerTrigger
