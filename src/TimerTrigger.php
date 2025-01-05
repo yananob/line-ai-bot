@@ -44,6 +44,7 @@ class TimerTrigger extends Trigger
                 break;
 
             default:
+                $this->actualDate = $now->format("Y/m/d");
                 break;
         }
     }

@@ -17,7 +17,7 @@ class Tools
                     "type" => "postback",
                     "label" => mb_strimwidth("{$trigger}", 0, 20, "…"),
                     "data" => "command={$command}&id=" . $trigger->getId() . "&trigger={$trigger}",
-                    "displayText" => "{$trigger}",
+                    "displayText" => Consts::CMD_LABELS[$command] . "：{$trigger}",
                 ],
             ];
         }

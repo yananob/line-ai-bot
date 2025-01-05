@@ -14,8 +14,6 @@ class LineWebhookMessage
     const TYPE_MESSAGE = "message";
     const TYPE_POSTBACK = "postback";
 
-    const CMD_REMOVE_TRIGGER = "delete_trigger";
-
     public function __construct(string $messageBody)
     {
         $this->bodyObj = json_decode($messageBody, false);

@@ -26,7 +26,7 @@ class PersonalBot
 <title/recentConversations>
 <recentConversations>
 
-【依頼事項】
+【依頼事項の前提】
 <requests>
 EOM;
 
