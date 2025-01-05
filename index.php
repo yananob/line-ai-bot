@@ -1,26 +1,33 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-use Carbon\Carbon;
 use Google\CloudFunctions\FunctionsFramework;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use CloudEvents\V1\CloudEventInterface;
 use GuzzleHttp\Psr7\Response;
-use MyApp\BotConfigsStore;
 use yananob\MyTools\Logger;
 // use yananob\MyTools\Utils;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
+use MyApp\Consts;
+use MyApp\Command;
 use MyApp\LineWebhookMessage;
+use MyApp\BotConfigsStore;
 use MyApp\PersonalBot;
+use MyApp\LogicBot;
+use MyApp\Tools;
+
+const TIMER_TRIGGERED_BY_N_MINS = 30;
 
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
 {
     $logger = new Logger("line-ai-bot");
-    $logger->log(str_repeat("-", 120));
+    $logger->logSplitter();
     $logger->log("headers: " . json_encode($request->getHeaders()));
     // $logger->log("params: " . json_encode($request->getQueryParams()));
     // $logger->log("parsedBody: " . json_encode($request->getParsedBody()));
@@ -30,38 +37,76 @@ function main(ServerRequestInterface $request): ResponseInterface
     $isLocal = CFUtils::isLocalHttp($request);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
-    /** 
-     * 1. LINE webhook受ける
-     * 2. LINE webhook処理クラスで、target特定する
-     * 3. targetから、Consultantを生成
-     * 4. Consultantからメッセージもらう
-     * 5. メッセージをLINEで送る
-     */
-
     $headers = ['Content-Type' => 'application/json'];
 
     $webhookMessage = new LineWebhookMessage($body);
-    $consultant = new PersonalBot(
+    // TODO: イベントの種類に応じて処理変える（postbackだと別処理させる）
+    $personalBot = new PersonalBot(
         $webhookMessage->getTargetId(),
         $isLocal
     );
-    $answer = $consultant->getAnswer(
-        applyRecentConversations: true,
-        message: $webhookMessage->getMessage(),
-    );
-    $consultant->storeConversations(
-        message: $webhookMessage->getMessage(),
-        answer: $answer,
-    );
-
     $line = new Line(__DIR__ . "/configs/line.json");
-    $line->sendReply(
-        bot: $consultant->getLineTarget(),
-        message: $answer,
-        replyToken: $webhookMessage->getReplyToken(),
+    $line->showLoading(
+        bot: $personalBot->getLineTarget(),
         targetId: $webhookMessage->getTargetId(),
     );
 
+    $answer = "";
+    $quickReply = null;
+    if ($webhookMessage->getType() === LineWebhookMessage::TYPE_MESSAGE) {
+        $logicBot = new LogicBot();
+        $command = $logicBot->judgeCommand($webhookMessage->getMessage());
+        switch ($command) {
+            case Command::AddOneTimeTrigger:
+                $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
+                $personalBot->addTimerTrigger($trigger);
+                $answer = "追加しました：" . $trigger;  // TODO: メッセージに
+                break;
+
+            case Command::AddDaiyTrigger:
+                $trigger = $logicBot->generateDailyTrigger($webhookMessage->getMessage());
+                $personalBot->addTimerTrigger($trigger);
+                $answer = "追加しました：" . $trigger;  // TODO: メッセージに
+                break;
+
+            case Command::RemoveTrigger:
+                $answer = "止めたいものを選択してください。";
+                $quickReply = Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $personalBot->getTriggers());
+                break;
+
+            default:
+                $answer = $personalBot->getAnswer(
+                    applyRecentConversations: true,
+                    message: $webhookMessage->getMessage(),
+                );
+                $personalBot->storeConversations(
+                    message: $webhookMessage->getMessage(),
+                    answer: $answer,
+                );
+                break;
+        }
+    } elseif ($webhookMessage->getType() === LineWebhookMessage::TYPE_POSTBACK) {
+        parse_str($webhookMessage->getPostbackData(), $params);
+        switch ($params["command"]) {
+            case Consts::CMD_REMOVE_TRIGGER:
+                $personalBot->deleteTrigger($params["id"]);
+                $answer = "削除しました：" . $params["trigger"];  // TODO: メッセージに
+                break;
+
+            default:
+                throw new Exception("Unsupported command: " . $params["command"]);
+        }
+    } else {
+        throw new Exception("Unsupported message type: " . $webhookMessage->getType());
+    }
+
+    $line->sendReply(
+        bot: $personalBot->getLineTarget(),
+        message: $answer,
+        replyToken: $webhookMessage->getReplyToken(),
+        quickReply: $quickReply,
+    );
+        
     return new Response(200, $headers, '{"result": "ok"}');
 }
 
@@ -69,7 +114,7 @@ FunctionsFramework::cloudEvent('trigger', 'trigger');
 function trigger(CloudEventInterface $event): void
 {
     $logger = new Logger("line-ai-bot");
-    $logger->log(str_repeat("-", 120));
+    $logger->logSplitter();
     $isLocal = CFUtils::isLocalEvent($event);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
@@ -77,31 +122,21 @@ function trigger(CloudEventInterface $event): void
     $botConfigStore = new BotConfigsStore($isLocal);
     foreach ($botConfigStore->getUsers() as $user) {
         foreach ($user->getTriggers() as $trigger) {
-            $logger->log("user: {$user->getId()}, trigger: {$trigger->event} {$trigger->time}");
-            if ($trigger->event !== "timer") {
+            $logger->log("user: {$user->getId()}, trigger: {$trigger}");
+            if ($trigger->getEvent() !== "timer") {
+                continue;
+            }
+            if (!$trigger->shouldRunNow(TIMER_TRIGGERED_BY_N_MINS)) {
                 continue;
             }
 
-            $triggerDate = $trigger->date;
-            if ($triggerDate === "everyday") {
-                $triggerDate = "today";
-            }
-            $triggerTime = new Carbon($triggerDate . " " . $trigger->time, new DateTimeZone("Asia/Tokyo"));
-            $now = new Carbon(timezone: new DateTimeZone("Asia/Tokyo"));
-            // $logger->log($triggerTime);
-            // $logger->log($now);
-            // $logger->log($triggerTime->diffInMinutes($now));
-            if (($triggerTime->diffInMinutes($now) > 30) || ($triggerTime->diffInMinutes($now) < 0)) {
-                continue;
-            }
-
-            $consultant = new PersonalBot($user->getId(), $isLocal);
-            $answer =  $consultant->askRequest(
+            $personalBot = new PersonalBot($user->getId(), $isLocal);
+            $answer =  $personalBot->askRequest(
                 applyRecentConversations: true,
-                request: $trigger->request
+                request: $trigger->getRequest()
             );
             $line->sendPush(
-                bot: $consultant->getLineTarget(),
+                bot: $personalBot->getLineTarget(),
                 targetId: $user->getId(),
                 message: $answer,
             );

@@ -4,21 +4,38 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+// TODO: MyToolsに移す
 class LineWebhookMessage
 {
     private $bodyObj;
     private $event;
+    private string $type;
+
+    const TYPE_MESSAGE = "message";
+    const TYPE_POSTBACK = "postback";
 
     public function __construct(string $messageBody)
     {
         $this->bodyObj = json_decode($messageBody, false);
         $this->event = $this->bodyObj->events[0];
+        $this->type = $this->event->type;
     }
 
-    public function getMessage(): string
+    public function getType(): string
     {
-        return $this->event->message->text;
+        return $this->type;
     }
+
+    public function getMessage(): ?string
+    {
+        return $this->type === self::TYPE_MESSAGE ? $this->event->message->text : null;
+    }
+
+    public function getPostbackData(): ?string
+    {
+        return $this->type === self::TYPE_POSTBACK ? $this->event->postback->data : null;
+    }
+
     public function getTargetId(): string
     {
         $type = $this->event->source->type;
@@ -33,6 +50,7 @@ class LineWebhookMessage
             throw new \Exception("Unknown type :" + $type);
         }
     }
+
     public function getReplyToken(): string
     {
         return $this->event->replyToken;

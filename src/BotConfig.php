@@ -23,20 +23,20 @@ class BotConfig
         return $this->collectionId;
     }
 
-    private function __getConfig(string $fieldName, bool $useDefaultToo): array
+    private function __getConfig(string $fieldName, bool $usePersonal, bool $useDefault): array
     {
         $result = [];
-        if (!empty($this->config[$fieldName])) {
+        if ($usePersonal && !empty($this->config[$fieldName])) {
             array_push($result, ...$this->config[$fieldName]);
         }
-        if ((empty($result) || $useDefaultToo) && !empty($this->configDefault)) {
+        if ($useDefault && !empty($this->configDefault)) {
             // TODO: ダサい
             if ($fieldName === "bot_characteristics") {
                 array_push($result, ...$this->configDefault->getBotCharacteristics());
             } elseif ($fieldName === "human_characteristics") {
                 array_push($result, ...$this->configDefault->getHumanCharacteristics());
             } else {
-                array_push($result, ...$this->configDefault->getConfigRequests());
+                array_push($result, ...$this->configDefault->getConfigRequests(usePersonal: true, useDefault: false));
             }
         }
         return $result;
@@ -44,19 +44,24 @@ class BotConfig
 
     public function getBotCharacteristics(): array
     {
-        return $this->__getConfig("bot_characteristics", false);
+        return $this->__getConfig("bot_characteristics", usePersonal: true, useDefault: false);
     }
     public function getHumanCharacteristics(): array
     {
-        return $this->__getConfig("human_characteristics", false);
+        return $this->__getConfig("human_characteristics", usePersonal: true, useDefault: false);
     }
     public function hasHumanCharacteristics(): bool
     {
         return (!empty($this->getHumanCharacteristics()));
     }
-    public function getConfigRequests(bool $useDefaultToo = true): array
+    public function getConfigRequests(bool $usePersonal, bool $useDefault): array
     {
-        return $this->__getConfig("requests", $useDefaultToo);
+        return $this->__getConfig("requests",  usePersonal: $usePersonal, useDefault: $useDefault);
+    }
+
+    public function getLineTarget(): string
+    {
+        return empty($this->config["line_target"]) ? $this->configDefault->getLineTarget() : $this->config["line_target"];
     }
 
     public function getTriggers(): array
@@ -64,9 +69,14 @@ class BotConfig
         $result = [];
         foreach ($this->collectionReference->document("triggers")->collection("triggers")->documents() as $triggerDoc) {
             $data = $triggerDoc->data();
-            $trigger = new \stdClass();
-            foreach (["event", "date", "time", "request"] as $key) {
-                $trigger->$key = $data[$key];
+            switch ($data["event"]) {
+                case "timer":
+                    $trigger = new TimerTrigger($data["date"], $data["time"], $data["request"]);
+                    $trigger->setId($triggerDoc->id());
+                    break;
+
+                default:
+                    throw new \Exception(("Unsupported event: " . $data["event"]));
             }
             $result[] = $trigger;
         }
@@ -79,22 +89,28 @@ class BotConfig
         return empty($data["requests"]) ? $this->configDefault->getTriggerRequests() : $data["requests"];
     }
 
-    // public function getMode(): string
-    // {
-    //     return empty($this->config["mode"]) ? $this->configDefault->getMode() : $this->config["mode"];
-    // }
-    // public function isChatMode(): bool
-    // {
-    //     return $this->getMode() === Mode::Chat->value;
-    // }
-
-    // public function isConsultingMode(): bool
-    // {
-    //     return $this->getMode() === Mode::Consulting->value;
-    // }
-
-    public function getLineTarget(): string
+    /**
+     * @return string Trigger Id
+     */
+    public function addTrigger(Trigger $trigger): string
     {
-        return empty($this->config["line_target"]) ? $this->configDefault->getLineTarget() : $this->config["line_target"];
+        if ($trigger instanceof TimerTrigger) {
+            $doc = [
+                "event" => $trigger->getEvent(),
+                "date" => $trigger->getDate(),
+                "time" => $trigger->getTime(),
+                "request" => $trigger->getRequest(),
+            ];
+        } else {
+            throw new \Exception("Unsupported trigger: " . var_export($trigger));
+        }
+
+        $documentReference = $this->collectionReference->document("triggers")->collection("triggers")->add($doc);
+        return $documentReference->id();
+    }
+
+    public function deleteTriggerById(string $id): void
+    {
+        $this->collectionReference->document("triggers")->collection("triggers")->document($id)->delete();
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Google\Cloud\Firestore\FirestoreClient;
 use MyApp\BotConfig;
+use MyApp\TimerTrigger;
 
 final class BotConfigTest extends PHPUnit\Framework\TestCase
 {
@@ -61,7 +62,7 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
     {
         $this->assertEquals([
             "口調は武士で",
-        ], $this->botConfigWithoutDefault->getConfigRequests());
+        ], $this->botConfigWithoutDefault->getConfigRequests(usePersonal: true, useDefault: false));
     }
 
     public function testGetConfigRequests_withDefaultUsingDefault()
@@ -70,42 +71,35 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
             "口調は武士で",
             "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
             "【話し相手の情報】の内容がある場合は、その内容を少しだけ踏まえた回答にしてください。",
-        ], $this->botConfigWithDefault->getConfigRequests());
+        ], $this->botConfigWithDefault->getConfigRequests(usePersonal: true, useDefault: true));
     }
 
-    public function testGetConfigRequests_withDefaultNotUsingDefault()
+    public function testGetConfigRequests_withDefaultNotUsingPersonal()
     {
         $this->assertEquals([
-            "口調は武士で",
-        ], $this->botConfigWithDefault->getConfigRequests(false));
+            "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
+            "【話し相手の情報】の内容がある場合は、その内容を少しだけ踏まえた回答にしてください。",
+        ], $this->botConfigWithDefault->getConfigRequests(usePersonal: false, useDefault: true));
     }
 
-    // public function testGetMode()
-    // {
-    //     $this->assertSame(Mode::Chat->value, $this->botConfigWithDefault->getMode());
-    // }
-    // public function testIsChatMode()
-    // {
-    //     $this->assertTrue($this->botConfigWithDefault->isChatMode());
-    // }
-    // public function testIsConsultingMode()
-    // {
-    //     $this->assertFalse($this->botConfigWithDefault->isConsultingMode());
-    // }
-
+    public function testGetLineTarget()
+    {
+        $this->assertSame("LINE_TARGET_TEST", $this->botConfigWithDefault->getLineTarget());
+    }
+    
     public function testGetTriggers()
     {
         $triggers = $this->botConfigWithDefault->getTriggers();
         $this->assertEquals(
             ["timer", "timer"],
             array_map(function ($trigger) {
-                return $trigger->event;
+                return $trigger->getEvent();
             }, $triggers)
         );
         $this->assertEquals(
             ["16:00", "14:20"],
             array_map(function ($trigger) {
-                return $trigger->time;
+                return $trigger->getTime();
             }, $triggers)
         );
     }
@@ -116,9 +110,21 @@ final class BotConfigTest extends PHPUnit\Framework\TestCase
             "話し相手からのメッセージに対して、【最近の会話内容】を反映して、回答を返してください。",
         ], $this->botConfigWithDefault->getTriggerRequests());
     }
-    
-    public function testGetLineTarget()
+
+    public function testAddTrigger()
     {
-        $this->assertSame("LINE_TARGET_TEST", $this->botConfigWithDefault->getLineTarget());
+        $trigger = new TimerTrigger("2024/1/1", "11:30", "モーニングメッセージを送って");
+        $id = $this->botConfigWithDefault->addTrigger($trigger);
+        $triggersNew = $this->botConfigWithDefault->getTriggers();
+        foreach ($triggersNew as $triggerNew) {
+            if (($trigger->getEvent() === $triggerNew->getEvent()) &&
+                ($trigger->getDate() === $triggerNew->getDate()) &&
+                ($trigger->getTime() === $triggerNew->getTime()) &&
+                ($trigger->getRequest() === $triggerNew->getRequest())
+            ) {
+                $this->assertTrue(true);
+            }
+        }
+        $this->botConfigWithDefault->deleteTriggerById($id);
     }
 }

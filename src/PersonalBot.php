@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+use Carbon\Carbon;
 use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
 
+// TODO: extends GptBot
 class PersonalBot
 {
     private BotConfigsStore $botConfigsStore;
@@ -24,18 +26,14 @@ class PersonalBot
 <title/recentConversations>
 <recentConversations>
 
-【依頼事項】
+【依頼事項の前提】
 <requests>
 EOM;
 
     public function __construct(string $targetId, bool $isTest = true)
     {
         $this->botConfigsStore = new BotConfigsStore($isTest);
-        // if ($this->botConfigsStore->exists($targetId)) {
         $this->botConfig = $this->botConfigsStore->getConfig($targetId);
-        // } else {
-        //     $this->botConfig = $this->botConfigsStore->getDefault();
-        // }
         $this->conversationsStore = new ConversationsStore($targetId, $isTest);
         $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
     }
@@ -48,7 +46,7 @@ EOM;
         }
 
         return $this->gpt->getAnswer(
-            context: $this->__getContext($recentConversations, $this->botConfig->getConfigRequests()),
+            context: $this->__getContext($recentConversations, $this->botConfig->getConfigRequests(usePersonal: true, useDefault: true)),
             message: $message,
         );
     }
@@ -62,7 +60,7 @@ EOM;
 
         // requestsは、Triggerの指示＋チャットでの指示にする
         $requests = $this->botConfig->getTriggerRequests();
-        array_push($requests, ...$this->botConfig->getConfigRequests(useDefaultToo: false));
+        array_push($requests, ...$this->botConfig->getConfigRequests(usePersonal: true, useDefault: false));
 
         return $this->gpt->getAnswer(
             context: $this->__getContext($recentConversations, $requests),
@@ -160,4 +158,23 @@ EOM;
         $this->conversationsStore->store("human", $message);
         $this->conversationsStore->store("bot", $answer);
     }
+
+    public function getTriggers(): array
+    {
+        return $this->botConfig->getTriggers();
+    }
+
+    /**
+     * @return string Trigger Id
+     */
+    public function addTimerTrigger(TimerTrigger $trigger): string
+    {
+        return $this->botConfig->addTrigger($trigger);
+    }
+
+    public function deleteTrigger(string $id): void
+    {
+        $this->botConfig->deleteTriggerById($id);
+    }
+
 }
