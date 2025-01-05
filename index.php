@@ -122,7 +122,7 @@ function trigger(CloudEventInterface $event): void
     $botConfigStore = new BotConfigsStore($isLocal);
     foreach ($botConfigStore->getUsers() as $user) {
         foreach ($user->getTriggers() as $trigger) {
-            $logger->log("user: {$user->getId()}, trigger: {$trigger->getEvent()} {$trigger->getDate()} {$trigger->getTime()}");
+            $logger->log("user: {$user->getId()}, trigger: {$trigger}");
             if ($trigger->getEvent() !== "timer") {
                 continue;
             }
