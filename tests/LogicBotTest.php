@@ -20,6 +20,9 @@ final class LogicBotTest extends PHPUnit\Framework\TestCase
     {
         return [
             // message, expected
+            // MEMO: Commandに追加していたいものは、Command::Otherとして戻される
+            ["教師口調になって", Command::Other],
+            ["学校の教師になって", Command::Other],
             ["1時間後に「できたよ」と送って", Command::AddOneTimeTrigger],
             ["明後日の6時半に「おはよう」と送って", Command::AddOneTimeTrigger],
             ["毎日朝6時半にモーニングメッセージを送って", Command::AddDaiyTrigger],
