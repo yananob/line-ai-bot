@@ -31,7 +31,7 @@ final class BotConfigsStoreTest extends PHPUnit\Framework\TestCase
         // $this->assertTrue($botConfig->isChatMode());
         $this->assertNotEmpty($botConfig->getBotCharacteristics());
         $this->assertNotEmpty($botConfig->getHumanCharacteristics());
-        $this->assertNotEmpty($botConfig->getConfigRequests());
+        $this->assertNotEmpty($botConfig->getConfigRequests(usePersonal: true, useDefault: true));
     }
 
     public function testGet_notExists(): void
@@ -46,7 +46,7 @@ final class BotConfigsStoreTest extends PHPUnit\Framework\TestCase
         // $this->assertTrue($botConfig->isChatMode());
         $this->assertNotEmpty($botConfig->getBotCharacteristics());
         $this->assertEmpty($botConfig->getHumanCharacteristics());
-        $this->assertNotEmpty($botConfig->getConfigRequests());
+        $this->assertNotEmpty($botConfig->getConfigRequests(usePersonal: true, useDefault: false));
     }
 
     // public function testExists_true(): void

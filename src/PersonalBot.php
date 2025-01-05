@@ -46,7 +46,7 @@ EOM;
         }
 
         return $this->gpt->getAnswer(
-            context: $this->__getContext($recentConversations, $this->botConfig->getConfigRequests()),
+            context: $this->__getContext($recentConversations, $this->botConfig->getConfigRequests(usePersonal: true, useDefault: true)),
             message: $message,
         );
     }
@@ -60,7 +60,7 @@ EOM;
 
         // requestsは、Triggerの指示＋チャットでの指示にする
         $requests = $this->botConfig->getTriggerRequests();
-        array_push($requests, ...$this->botConfig->getConfigRequests(useDefaultToo: false));
+        array_push($requests, ...$this->botConfig->getConfigRequests(usePersonal: true, useDefault: false));
 
         return $this->gpt->getAnswer(
             context: $this->__getContext($recentConversations, $requests),
