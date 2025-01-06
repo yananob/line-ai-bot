@@ -44,7 +44,7 @@ class TimerTrigger extends Trigger
                 break;
 
             default:
-                $this->actualDate = $now->format("Y/m/d");
+                $this->actualDate = $this->date;
                 break;
         }
     }
@@ -100,7 +100,7 @@ class TimerTrigger extends Trigger
         //     $triggerDate = "today";
         // }
         $triggerTime = new Carbon($triggerDate . " " . $this->getTime(), new \DateTimeZone(Consts::TIMEZONE));
-        $diff = (int)$triggerTime->diffInMinutes(new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE)));
+        $diff = (int)(new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE)))->diffInMinutes($triggerTime);
         if (($diff >= $triggerDurationMins) || ($diff < 0)) {
             return false;
         }
