@@ -8,11 +8,11 @@ use MyApp\TimerTrigger;
 
 final class TimerTriggerTest extends PHPUnit\Framework\TestCase
 {
-    const TIMER_TRIGGERED_BY_N_MINS = 30;
+    const TIMER_TRIGGERED_BY_N_MINS = 10;
 
     protected function setUp(): void
     {
-        Carbon::setTestNow(new Carbon("2025/01/01T09:00:00+09:00"));
+        Carbon::setTestNow(new Carbon("2025/01/01T09:00:20+09:00"));
     }
 
     public function provideConstructor(): array
@@ -40,11 +40,13 @@ final class TimerTriggerTest extends PHPUnit\Framework\TestCase
         return [
             // date, time, _, expected
             ["today", "08:59", "", false],
-            ["today", "09:00", "", true],
-            ["today", "09:29", "", true],
-            ["today", "09:30", "", false],
-            ["2025/01/01", "09:00", "", true],
-            ["2025/01/02", "09:00", "", false],
+            ["today", "09:00", "", false],
+            ["today", "09:09", "", true],
+            ["today", "09:10", "", true],
+            ["today", "09:11", "", false],
+            ["2025/01/01", "09:00", "", false],
+            ["2025/01/01", "09:01", "", true],
+            ["2025/01/02", "09:01", "", false],
         ];
     }
     /**

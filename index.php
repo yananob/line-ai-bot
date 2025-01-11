@@ -21,7 +21,7 @@ use MyApp\PersonalBot;
 use MyApp\LogicBot;
 use MyApp\Tools;
 
-const TIMER_TRIGGERED_BY_N_MINS = 30;
+const TIMER_TRIGGERED_BY_N_MINS = 10;
 
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
