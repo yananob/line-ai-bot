@@ -11,5 +11,6 @@ enum Command: string
     case AddOneTimeTrigger = "3";
     case AddDaiyTrigger = "4";
     case RemoveTrigger = "5";
+    case ShowHelp = "8";
     case Other = "9";
 }

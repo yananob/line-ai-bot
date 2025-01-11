@@ -10,7 +10,6 @@ use Psr\Http\Message\ResponseInterface;
 use CloudEvents\V1\CloudEventInterface;
 use GuzzleHttp\Psr7\Response;
 use yananob\MyTools\Logger;
-// use yananob\MyTools\Utils;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
 use MyApp\Consts;
@@ -19,6 +18,7 @@ use MyApp\LineWebhookMessage;
 use MyApp\BotConfigsStore;
 use MyApp\PersonalBot;
 use MyApp\LogicBot;
+use MyApp\Messages;
 use MyApp\Tools;
 
 const TIMER_TRIGGERED_BY_N_MINS = 10;
@@ -40,7 +40,6 @@ function main(ServerRequestInterface $request): ResponseInterface
     $headers = ['Content-Type' => 'application/json'];
 
     $webhookMessage = new LineWebhookMessage($body);
-    // TODO: イベントの種類に応じて処理変える（postbackだと別処理させる）
     $personalBot = new PersonalBot(
         $webhookMessage->getTargetId(),
         $isLocal
@@ -57,20 +56,24 @@ function main(ServerRequestInterface $request): ResponseInterface
         $logicBot = new LogicBot();
         $command = $logicBot->judgeCommand($webhookMessage->getMessage());
         switch ($command) {
+            case Command::ShowHelp:
+                $answer = Messages::HELP;
+                break;
+
             case Command::AddOneTimeTrigger:
                 $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
                 $personalBot->addTimerTrigger($trigger);
-                $answer = "追加しました：" . $trigger;  // TODO: メッセージに
+                $answer = "タイマーを追加しました：" . $trigger;  // TODO: メッセージに
                 break;
 
             case Command::AddDaiyTrigger:
                 $trigger = $logicBot->generateDailyTrigger($webhookMessage->getMessage());
                 $personalBot->addTimerTrigger($trigger);
-                $answer = "追加しました：" . $trigger;  // TODO: メッセージに
+                $answer = "タイマーを追加しました：" . $trigger;  // TODO: メッセージに
                 break;
 
             case Command::RemoveTrigger:
-                $answer = "止めたいものを選択してください。";
+                $answer = "どのタイマーを止めますか？";
                 $quickReply = Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $personalBot->getTriggers());
                 break;
 
