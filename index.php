@@ -26,7 +26,7 @@ const TIMER_TRIGGERED_BY_N_MINS = 10;
 FunctionsFramework::http('main', 'main');
 function main(ServerRequestInterface $request): ResponseInterface
 {
-    $logger = new Logger("line-ai-bot");
+    $logger = new Logger(CFUtils::getFunctionName());
     $logger->logSplitter();
     $logger->log("headers: " . json_encode($request->getHeaders()));
     // $logger->log("params: " . json_encode($request->getQueryParams()));
@@ -116,7 +116,7 @@ function main(ServerRequestInterface $request): ResponseInterface
 FunctionsFramework::cloudEvent('trigger', 'trigger');
 function trigger(CloudEventInterface $event): void
 {
-    $logger = new Logger("line-ai-bot");
+    $logger = new Logger(CFUtils::getFunctionName());
     $logger->logSplitter();
     $isLocal = CFUtils::isLocalEvent($event);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");

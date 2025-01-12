@@ -2806,12 +2806,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/yananob/my-gcp-tools.git",
-                "reference": "63bd4e47ddcf3b82b2e8599c802ce8003d0de87d"
+                "reference": "2c615ff90eb8024c954d4ac3e89571260bae17dd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yananob/my-gcp-tools/zipball/63bd4e47ddcf3b82b2e8599c802ce8003d0de87d",
-                "reference": "63bd4e47ddcf3b82b2e8599c802ce8003d0de87d",
+                "url": "https://api.github.com/repos/yananob/my-gcp-tools/zipball/2c615ff90eb8024c954d4ac3e89571260bae17dd",
+                "reference": "2c615ff90eb8024c954d4ac3e89571260bae17dd",
                 "shasum": ""
             },
             "require": {
@@ -2833,7 +2833,7 @@
                 "source": "https://github.com/yananob/my-gcp-tools/tree/main",
                 "issues": "https://github.com/yananob/my-gcp-tools/issues"
             },
-            "time": "2025-01-12T02:00:29+00:00"
+            "time": "2025-01-12T03:46:49+00:00"
         },
         {
             "name": "yananob/my-tools",
