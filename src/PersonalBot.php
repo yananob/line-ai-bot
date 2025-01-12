@@ -151,7 +151,7 @@ EOM;
 
     public function getLineTarget(): string
     {
-        return $this->botConfig->getLineTarget();
+        return CFUtils::isTestingEnv() ? "test" : $this->botConfig->getLineTarget();
     }
 
     public function storeConversations(string $message, string $answer): void
