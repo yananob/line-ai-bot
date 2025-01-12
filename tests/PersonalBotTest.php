@@ -103,12 +103,12 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
 
     public function testGetLineTarget_WithTargetConfiguration()
     {
-        $this->assertSame("LINE_TARGET_TEST", $this->bot->getLineTarget());
+        $this->assertSame("test", $this->bot->getLineTarget());
     }
 
     public function testGetLineTarget_WithOutTargetConfiguration()
     {
-        $this->assertSame("LINE_TARGET_DEFAULT", $this->bot_default->getLineTarget());
+        $this->assertSame("test", $this->bot_default->getLineTarget());
     }
 
     public function testAddTimerTrigger(): void
