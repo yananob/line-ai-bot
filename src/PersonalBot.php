@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MyApp;
 
 use Carbon\Carbon;
+use yananob\MyGcpTools\CFUtils;
 use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
 
@@ -150,7 +151,7 @@ EOM;
 
     public function getLineTarget(): string
     {
-        return $this->botConfig->getLineTarget();
+        return CFUtils::isTestingEnv() ? "test" : $this->botConfig->getLineTarget();
     }
 
     public function storeConversations(string $message, string $answer): void
