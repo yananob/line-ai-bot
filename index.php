@@ -104,7 +104,7 @@ function main(ServerRequestInterface $request): ResponseInterface
     }
 
     $line->sendReply(
-        bot: $personalBot->getLineTarget(),
+        bot: CFUtils::isTestingEnv() ? "test" : $personalBot->getLineTarget(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
         quickReply: $quickReply,
