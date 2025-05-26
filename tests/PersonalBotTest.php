@@ -225,39 +225,44 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
     public function testGetAnswerPerformsSearchWhenIndicatedAndIncludesResultsInContext(): void
     {
         $userMessage = "What is the weather like?";
-        $searchQuery = $userMessage; // Assuming message is used directly as query
-        $searchResults = "Placeholder search results for query: " . $searchQuery; // This is what WebSearchTool::search() returns
+        $dummySearchQuery = "weather query"; // Expected from PROMPT_GENERATE_SEARCH_QUERY
+        // This is the expected result when WebSearchTool::search is called with null API key/CX
+        $expectedSearchResultsInContext = "Error: API key or CX ID is not configured for web search.";
         $expectedFinalAnswer = "The weather is fine based on web search.";
 
         $gptMock = $this->createMock(Gpt::class);
 
-        // Expectation for __shouldPerformWebSearch's GPT call
-        $gptMock->expects($this->at(0)) // First call to gpt->getAnswer
+        // Expectation 1: __shouldPerformWebSearch's GPT call
+        $gptMock->expects($this->at(0))
                 ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
                 ->willReturn('はい'); // Yes, search
 
-        // Expectation for the final answer generation GPT call
-        // This expectation implicitly verifies that WebSearchTool::search was called
-        // because its results are expected in the context.
-        $gptMock->expects($this->at(1)) // Second call to gpt->getAnswer
+        // Expectation 2: __generateSearchQuery's GPT call
+        $gptMock->expects($this->at(1))
+                ->method('getAnswer')
+                ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
+                ->willReturn($dummySearchQuery);
+
+        // Expectation 3: Final answer generation GPT call
+        $gptMock->expects($this->at(2))
                 ->method('getAnswer')
                 ->with(
-                    $this->callback(function ($context) use ($searchResults) {
+                    $this->callback(function ($context) use ($expectedSearchResultsInContext) {
                         $this->assertStringContainsString("【Web検索結果】", $context);
-                        $this->assertStringContainsString($searchResults, $context);
+                        $this->assertStringContainsString($expectedSearchResultsInContext, $context);
                         return true; // Context is good
                     }),
                     $userMessage
                 )
                 ->willReturn($expectedFinalAnswer);
 
-        $bot = new PersonalBot("TARGET_ID_GETANSWER_SEARCH"); // Using a distinct target ID for clarity
+        $bot = new PersonalBot("TARGET_ID_GETANSWER_SEARCH"); // This target ID should not have a search_api.json
         $this->setPrivateProperty($bot, 'gpt', $gptMock);
-        // Ensure BotConfig for TARGET_ID_GETANSWER_SEARCH is set up if it needs specific non-default characteristics.
-        // For this test, default characteristics might be fine as we primarily test context manipulation.
+        // PersonalBot's constructor ensures API keys are null for this test ID
+        // as configs/search_api.json for TARGET_ID_GETANSWER_SEARCH won't exist.
 
-        $actualAnswer = $bot->getAnswer(true, $userMessage); // applyRecentConversations = true
+        $actualAnswer = $bot->getAnswer(true, $userMessage);
         $this->assertSame($expectedFinalAnswer, $actualAnswer);
     }
 
@@ -291,5 +296,54 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
 
         $actualAnswer = $bot->getAnswer(true, $userMessage); // applyRecentConversations = true
         $this->assertSame($expectedFinalAnswer, $actualAnswer);
+    }
+
+    public function testGenerateSearchQueryUsesGptResponse(): void
+    {
+        $userMessage = "What is the weather like tomorrow in Tokyo?";
+        $expectedQuery = "weather tomorrow Tokyo";
+
+        $gptMock = $this->createMock(Gpt::class);
+        $gptMock->method('getAnswer')
+                ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
+                ->willReturn($expectedQuery);
+
+        $bot = new PersonalBot("TARGET_ID_GENERATE_QUERY"); // Use a distinct ID if needed
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+
+        $actualQuery = Test::invokePrivateMethod($bot, '__generateSearchQuery', $userMessage);
+        $this->assertSame($expectedQuery, $actualQuery);
+    }
+
+    public function testGenerateSearchQueryFallbackToOriginalMessageIfGptResponseIsEmpty(): void
+    {
+        $userMessage = "A complex question with no easy keywords.";
+        
+        $gptMock = $this->createMock(Gpt::class);
+        $gptMock->method('getAnswer')
+                ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
+                ->willReturn(''); // Empty response from GPT
+
+        $bot = new PersonalBot("TARGET_ID_GENERATE_QUERY_EMPTY");
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+
+        $actualQuery = Test::invokePrivateMethod($bot, '__generateSearchQuery', $userMessage);
+        $this->assertSame($userMessage, $actualQuery); // Should fallback to original
+    }
+
+    public function testGenerateSearchQueryFallbackToOriginalMessageIfGptResponseIsTooShort(): void
+    {
+        $userMessage = "Another question.";
+        
+        $gptMock = $this->createMock(Gpt::class);
+        $gptMock->method('getAnswer')
+                ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
+                ->willReturn('a'); // Too short response
+
+        $bot = new PersonalBot("TARGET_ID_GENERATE_QUERY_SHORT");
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+
+        $actualQuery = Test::invokePrivateMethod($bot, '__generateSearchQuery', $userMessage);
+        $this->assertSame($userMessage, $actualQuery); // Should fallback to original
     }
 }

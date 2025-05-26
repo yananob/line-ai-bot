@@ -36,9 +36,49 @@ The core of the task involved modifying the `PersonalBot` class to:
     *   Added tests for `getAnswer` (mocking GPT for decision and final response, verifying context passed to GPT).
     *   Used `$this->at()` to specify sequences of mocked GPT calls within `getAnswer` tests.
 
+## Web Search API Integration Details
+
+To provide real web search capabilities, the bot now integrates with the **Google Custom Search API**.
+
+### API Used
+- **Google Custom Search API**: This API allows you to create a custom search engine that can be tailored to search specific websites or the entire web. It provides structured search results in JSON format.
+
+### Setup and Configuration
+
+1.  **Obtain a Google API Key**:
+    - Go to the [Google Cloud Console](https://console.cloud.google.com/).
+    - Create a new project or select an existing one.
+    - Enable the "Custom Search API" for your project (usually found under "APIs & Services" > "Library").
+    - Create credentials for the API: Go to "APIs & Services" > "Credentials" and create an "API key".
+    - **Important**: Restrict your API key to only allow access to the "Custom Search API" for security.
+
+2.  **Create a Custom Search Engine ID (CX ID)**:
+    - Go to the [Custom Search Engine control panel](https://programmablesearch.google.com/controlpanel/all).
+    - Create a new search engine.
+    - Configure it to search the entire web or specific sites as needed. For general information, select "Search the entire web".
+    - Once created, find your "Search engine ID" (this is your CX ID) in the setup overview.
+
+3.  **Configure the Application**:
+    - In the `configs/` directory of this project, you'll find a sample file `search_api.json.sample`.
+    - Create a copy of this file named `search_api.json`.
+    - Edit `search_api.json` and replace the placeholder values with your actual Google API Key and CX ID:
+      ```json
+      {
+          "google_custom_search_api_key": "YOUR_ACTUAL_GOOGLE_API_KEY",
+          "google_custom_search_cx_id": "YOUR_ACTUAL_CX_ID"
+      }
+      ```
+    - The `configs/search_api.json` file is included in `.gitignore`, so your credentials will not be committed to the repository.
+
+### Implementation Notes
+- The `WebSearchTool::search()` method now uses the `google/apiclient` library to communicate with the Google Custom Search API.
+- API key and CX ID are loaded by `PersonalBot` from `configs/search_api.json` and passed to `WebSearchTool`.
+- The tool fetches a few top results and extracts their titles and snippets to form a summary for the bot's context.
+- Basic error handling is in place for API communication issues or missing configuration.
+
 ## Future Considerations
 
-*   **Real Web Search API Integration**: The `WebSearchTool::search()` is currently a placeholder. Integrating a real search API (e.g., Google Search API, Bing Search API, or a library like SerpAPI) would be the next step for full functionality. This would also involve API key management and potentially error handling for network issues or API limits.
+*   **Advanced Web Search API Usage**: While basic Google Custom Search API integration is complete, future work could involve more robust error handling, exploring other search APIs, or using more advanced features of the current API (e.g., filtering, sorting, pagination if more results are needed).
 *   **Refining Search Queries**: The user's message is directly used as a search query. NLP techniques could be applied to extract better search terms from the message.
 *   **Summarizing Search Results**: Real search results can be verbose. A summarization step (possibly another GPT call or a different model) might be needed to make the information concise for the bot's context.
 *   **Caching**: For identical or similar queries, caching search results could optimize performance and reduce API calls.

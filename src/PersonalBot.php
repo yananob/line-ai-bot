@@ -16,6 +16,8 @@ class PersonalBot
     private BotConfig $botConfig;
     private ConversationsStore $conversationsStore;
     private Gpt $gpt;
+    private ?string $googleApiKey = null;
+    private ?string $googleCxId = null;
 
     const GPT_CONTEXT = <<<EOM
 【チャットボット（あなた）の情報】
@@ -40,12 +42,30 @@ EOM;
 Web検索が必要な場合は「はい」、そうでない場合は「いいえ」とだけ答えてください。
 EOM;
 
+    const PROMPT_GENERATE_SEARCH_QUERY = <<<EOM
+ユーザーのメッセージ内容から、Web検索エンジンで検索するための最も効果的な検索クエリを生成してください。
+検索クエリは簡潔で、主要なキーワードを含むべきです。元のメッセージの意図を保持するようにしてください。
+生成された検索クエリのみを返してください。
+EOM;
+
     public function __construct(string $targetId, bool $isTest = true)
     {
         $this->botConfigsStore = new BotConfigsStore($isTest);
         $this->botConfig = $this->botConfigsStore->getConfig($targetId);
         $this->conversationsStore = new ConversationsStore($targetId, $isTest);
         $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
+
+        // Load Search API configuration
+        $searchApiConfigFile = __DIR__ . "/../configs/search_api.json";
+        if (file_exists($searchApiConfigFile)) {
+            $searchApiConfig = json_decode(file_get_contents($searchApiConfigFile), true);
+            $this->googleApiKey = $searchApiConfig['google_custom_search_api_key'] ?? null;
+            $this->googleCxId = $searchApiConfig['google_custom_search_cx_id'] ?? null;
+        } else {
+            // In a real application, you might want to log a warning or error if the config file is missing,
+            // especially if web search is a critical feature. For now, it defaults to null.
+            // error_log("Search API config file not found: " . $searchApiConfigFile);
+        }
     }
 
     public function getAnswer(bool $applyRecentConversations, string $message): string
@@ -57,9 +77,15 @@ EOM;
 
         $webSearchResults = null;
         if ($this->__shouldPerformWebSearch($message)) {
-            // Use the WebSearchTool class we created earlier
-            // Ensure MyApp\WebSearchTool is imported or called with full namespace if not already.
-            $webSearchResults = \MyApp\WebSearchTool::search($message);
+            $searchQuery = $this->__generateSearchQuery($message); // Generate refined query
+            $webSearchResults = \MyApp\WebSearchTool::search(
+                $searchQuery,
+                $this->googleApiKey,
+                $this->googleCxId
+                // Optionally, you can pass the number of results, e.g., 3
+                // $this->googleCxId,
+                // 3 // for $numResults
+            );
         }
 
         return $this->gpt->getAnswer(
@@ -182,6 +208,19 @@ EOM;
         $response = trim($this->gpt->getAnswer(context: self::PROMPT_JUDGE_WEB_SEARCH, message: $message));
         // We expect a simple "yes" (hai) or "no" (iie) in Japanese.
         return $response === "はい";
+    }
+
+    private function __generateSearchQuery(string $message): string
+    {
+        $searchQuery = trim($this->gpt->getAnswer(context: self::PROMPT_GENERATE_SEARCH_QUERY, message: $message));
+        
+        // Fallback if GPT provides an empty or very short query
+        if (empty($searchQuery) || mb_strlen($searchQuery) < 3) {
+            // Using the original message as a fallback.
+            // This could be improved with simple keyword extraction if needed.
+            return $message; 
+        }
+        return $searchQuery;
     }
 
     public function getLineTarget(): string
