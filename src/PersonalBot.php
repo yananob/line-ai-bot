@@ -27,8 +27,17 @@ class PersonalBot
 <title/recentConversations>
 <recentConversations>
 
+<title/web_search_results>
+<web_search_results>
+
 【依頼事項の前提】
 <requests>
+EOM;
+
+    const PROMPT_JUDGE_WEB_SEARCH = <<<EOM
+あなたはユーザーからのメッセージを分析するアシスタントです。
+ユーザーのメッセージに答えるためにWeb検索が必要かどうかを判断してください。
+Web検索が必要な場合は「はい」、そうでない場合は「いいえ」とだけ答えてください。
 EOM;
 
     public function __construct(string $targetId, bool $isTest = true)
@@ -46,8 +55,19 @@ EOM;
             $recentConversations = $this->conversationsStore->get();
         }
 
+        $webSearchResults = null;
+        if ($this->__shouldPerformWebSearch($message)) {
+            // Use the WebSearchTool class we created earlier
+            // Ensure MyApp\WebSearchTool is imported or called with full namespace if not already.
+            $webSearchResults = \MyApp\WebSearchTool::search($message);
+        }
+
         return $this->gpt->getAnswer(
-            context: $this->__getContext($recentConversations, $this->botConfig->getConfigRequests(usePersonal: true, useDefault: true)),
+            context: $this->__getContext(
+                $recentConversations,
+                $this->botConfig->getConfigRequests(usePersonal: true, useDefault: true),
+                $webSearchResults // Pass search results to __getContext
+            ),
             message: $message,
         );
     }
@@ -69,7 +89,7 @@ EOM;
         );
     }
 
-    private function __getContext(array $conversations, array $requests): string
+    private function __getContext(array $conversations, array $requests, ?string $webSearchResults = null): string
     {
         $result = self::GPT_CONTEXT;
         $replaceSettings = [
@@ -93,6 +113,14 @@ EOM;
         } else {
             $result = str_replace("<title/recentConversations>", "【最近の会話内容】", $result);
             $result = str_replace("<recentConversations>", $this->__convertConversationsToText($conversations), $result);
+        }
+
+        // New section for web search results
+        if (empty($webSearchResults)) {
+            $result = $this->__removeFromContext(["<title/web_search_results>", "<web_search_results>"], $result);
+        } else {
+            $result = str_replace("<title/web_search_results>", "【Web検索結果】", $result); // Japanese title for "Web Search Results"
+            $result = str_replace("<web_search_results>", $webSearchResults, $result);
         }
 
         return $result;
@@ -147,6 +175,13 @@ EOM;
             $result .= str_repeat("-", 80) . "\n";
         }
         return $result;
+    }
+
+    private function __shouldPerformWebSearch(string $message): bool
+    {
+        $response = trim($this->gpt->getAnswer(context: self::PROMPT_JUDGE_WEB_SEARCH, message: $message));
+        // We expect a simple "yes" (hai) or "no" (iie) in Japanese.
+        return $response === "はい";
     }
 
     public function getLineTarget(): string

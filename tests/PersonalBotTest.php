@@ -6,6 +6,8 @@ use Carbon\Carbon;
 use MyApp\LogicBot;
 use yananob\MyTools\Test;
 use MyApp\PersonalBot;
+use yananob\MyTools\Gpt; // For mocking
+// PHPUnit\Framework\TestCase is typically available globally or via autoloader
 
 final class PersonalBotTest extends PHPUnit\Framework\TestCase
 {
@@ -128,5 +130,166 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $this->bot->deleteTrigger($id);
 
         $this->assertTrue(true);
+    }
+
+    // Helper method for setting private properties
+    protected function setPrivateProperty($object, string $propertyName, $value): void
+    {
+        $reflection = new \ReflectionClass($object);
+        $property = $reflection->getProperty($propertyName);
+        $property->setAccessible(true);
+        $property->setValue($object, $value);
+    }
+
+    // Tests for __shouldPerformWebSearch
+    public function testShouldPerformWebSearchReturnsTrueWhenGptSaysYes(): void
+    {
+        $gptMock = $this->createMock(Gpt::class);
+        $gptMock->method('getAnswer')
+                ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, 'some message')
+                ->willReturn('はい'); // "Yes" in Japanese
+
+        $bot = new PersonalBot("TARGET_ID_AUTOTEST_SEARCH_YES");
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+
+        $result = Test::invokePrivateMethod($bot, '__shouldPerformWebSearch', 'some message');
+        $this->assertTrue($result);
+    }
+
+    public function testShouldPerformWebSearchReturnsFalseWhenGptSaysNo(): void
+    {
+        $gptMock = $this->createMock(Gpt::class);
+        $gptMock->method('getAnswer')
+                ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, 'another message')
+                ->willReturn('いいえ'); // "No" in Japanese
+
+        $bot = new PersonalBot("TARGET_ID_AUTOTEST_SEARCH_NO");
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+
+        $result = Test::invokePrivateMethod($bot, '__shouldPerformWebSearch', 'another message');
+        $this->assertFalse($result);
+    }
+
+    public function testShouldPerformWebSearchReturnsFalseOnUnexpectedGptResponse(): void
+    {
+        $gptMock = $this->createMock(Gpt::class);
+        $gptMock->method('getAnswer')
+                ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, 'different message')
+                ->willReturn('わかりません'); // "I don't know"
+
+        $bot = new PersonalBot("TARGET_ID_AUTOTEST_SEARCH_UNEXPECTED");
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+
+        $result = Test::invokePrivateMethod($bot, '__shouldPerformWebSearch', 'different message');
+        $this->assertFalse($result);
+    }
+
+    // Tests for __getContext (related to web search results)
+    public function testGetContextIncludesWebSearchResultsWhenProvided(): void
+    {
+        $bot = $this->bot; // Use existing bot instance from setUp
+        $conversations = [];
+        $requests = ["some request"];
+        $searchResults = "Found web information: A, B, C.";
+
+        $context = Test::invokePrivateMethod(
+            $bot,
+            '__getContext',
+            $conversations, // arg1 for __getContext
+            $requests,      // arg2 for __getContext
+            $searchResults  // arg3 for __getContext
+        );
+
+        $this->assertStringContainsString("【Web検索結果】", $context);
+        $this->assertStringContainsString($searchResults, $context);
+    }
+
+    public function testGetContextExcludesWebSearchResultsWhenNull(): void
+    {
+        $bot = $this->bot;
+        $conversations = [];
+        $requests = ["some request"];
+
+        $context = Test::invokePrivateMethod(
+            $bot,
+            '__getContext',
+            $conversations,
+            $requests,
+            null // webSearchResults argument
+        );
+
+        $this->assertStringNotContainsString("【Web検索結果】", $context);
+        $this->assertStringNotContainsString("<web_search_results>", $context); // Placeholder should be removed
+    }
+
+    public function testGetAnswerPerformsSearchWhenIndicatedAndIncludesResultsInContext(): void
+    {
+        $userMessage = "What is the weather like?";
+        $searchQuery = $userMessage; // Assuming message is used directly as query
+        $searchResults = "Placeholder search results for query: " . $searchQuery; // This is what WebSearchTool::search() returns
+        $expectedFinalAnswer = "The weather is fine based on web search.";
+
+        $gptMock = $this->createMock(Gpt::class);
+
+        // Expectation for __shouldPerformWebSearch's GPT call
+        $gptMock->expects($this->at(0)) // First call to gpt->getAnswer
+                ->method('getAnswer')
+                ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
+                ->willReturn('はい'); // Yes, search
+
+        // Expectation for the final answer generation GPT call
+        // This expectation implicitly verifies that WebSearchTool::search was called
+        // because its results are expected in the context.
+        $gptMock->expects($this->at(1)) // Second call to gpt->getAnswer
+                ->method('getAnswer')
+                ->with(
+                    $this->callback(function ($context) use ($searchResults) {
+                        $this->assertStringContainsString("【Web検索結果】", $context);
+                        $this->assertStringContainsString($searchResults, $context);
+                        return true; // Context is good
+                    }),
+                    $userMessage
+                )
+                ->willReturn($expectedFinalAnswer);
+
+        $bot = new PersonalBot("TARGET_ID_GETANSWER_SEARCH"); // Using a distinct target ID for clarity
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+        // Ensure BotConfig for TARGET_ID_GETANSWER_SEARCH is set up if it needs specific non-default characteristics.
+        // For this test, default characteristics might be fine as we primarily test context manipulation.
+
+        $actualAnswer = $bot->getAnswer(true, $userMessage); // applyRecentConversations = true
+        $this->assertSame($expectedFinalAnswer, $actualAnswer);
+    }
+
+    public function testGetAnswerDoesNotSearchWhenNotIndicatedAndExcludesResultsFromContext(): void
+    {
+        $userMessage = "Hello there!";
+        $expectedFinalAnswer = "Hello to you too!";
+
+        $gptMock = $this->createMock(Gpt::class);
+
+        // Expectation for __shouldPerformWebSearch's GPT call
+        $gptMock->expects($this->at(0)) // First call to gpt->getAnswer
+                ->method('getAnswer')
+                ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
+                ->willReturn('いいえ'); // No, do not search
+
+        // Expectation for the final answer generation GPT call
+        $gptMock->expects($this->at(1)) // Second call to gpt->getAnswer
+                ->method('getAnswer')
+                ->with(
+                    $this->callback(function ($context) {
+                        $this->assertStringNotContainsString("【Web検索結果】", $context);
+                        return true; // Context is good
+                    }),
+                    $userMessage
+                )
+                ->willReturn($expectedFinalAnswer);
+        
+        $bot = new PersonalBot("TARGET_ID_GETANSWER_NOSEARCH"); // Using a distinct target ID
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+
+        $actualAnswer = $bot->getAnswer(true, $userMessage); // applyRecentConversations = true
+        $this->assertSame($expectedFinalAnswer, $actualAnswer);
     }
 }
