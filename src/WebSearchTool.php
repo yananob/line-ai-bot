@@ -68,9 +68,9 @@ class WebSearchTool
             if (empty($summary)) {
                 return "Could not extract useful information from search results for: " . htmlspecialchars($query);
             }
-            
+
             // Return up to $numResults summaries
-            return "Web Search Results:
+            return "
 - " . implode("
 - ", array_slice($summary, 0, $numResults));
 
