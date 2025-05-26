@@ -99,8 +99,8 @@ EOM;
             // Call the non-static search method on the instance
             $webSearchResults = $this->webSearchTool->search(
                 $searchQuery,
-                $this->googleCxId 
-                // numResults can be passed if needed, e.g., 3
+                $this->googleCxId,
+                5
             );
         } elseif (empty($this->googleApiKey) && $this->__shouldPerformWebSearch($message)) {
             // Case where search was desired, but API key was missing (webSearchTool not initialized)
