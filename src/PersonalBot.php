@@ -8,6 +8,10 @@ use Carbon\Carbon;
 use yananob\MyGcpTools\CFUtils;
 use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
+use MyApp\WebSearchTool; // For the refactored tool
+use Google_Client;       // If not already present implicitly
+use Google_Service_Customsearch; // If not already present implicitly
+use Exception;           // For general error handling if needed during instantiation
 
 // TODO: extends GptBot
 class PersonalBot
@@ -18,6 +22,7 @@ class PersonalBot
     private Gpt $gpt;
     private ?string $googleApiKey = null;
     private ?string $googleCxId = null;
+    private ?WebSearchTool $webSearchTool = null;
 
     const GPT_CONTEXT = <<<EOM
 【チャットボット（あなた）の情報】
@@ -66,6 +71,19 @@ EOM;
             // especially if web search is a critical feature. For now, it defaults to null.
             // error_log("Search API config file not found: " . $searchApiConfigFile);
         }
+
+        if (!empty($this->googleApiKey)) {
+            try {
+                $client = new Google_Client();
+                $client->setDeveloperKey($this->googleApiKey);
+                $customSearchService = new Google_Service_Customsearch($client);
+                $this->webSearchTool = new WebSearchTool($customSearchService);
+            } catch (Exception $e) {
+                // Log this error in a real application
+                // error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
+                $this->webSearchTool = null; // Ensure it's null if initialization fails
+            }
+        }
     }
 
     public function getAnswer(bool $applyRecentConversations, string $message): string
@@ -76,16 +94,20 @@ EOM;
         }
 
         $webSearchResults = null;
-        if ($this->__shouldPerformWebSearch($message)) {
-            $searchQuery = $this->__generateSearchQuery($message); // Generate refined query
-            $webSearchResults = \MyApp\WebSearchTool::search(
+        if ($this->webSearchTool instanceof WebSearchTool && !empty($this->googleCxId) && $this->__shouldPerformWebSearch($message)) {
+            $searchQuery = $this->__generateSearchQuery($message);
+            // Call the non-static search method on the instance
+            $webSearchResults = $this->webSearchTool->search(
                 $searchQuery,
-                $this->googleApiKey,
-                $this->googleCxId
-                // Optionally, you can pass the number of results, e.g., 3
-                // $this->googleCxId,
-                // 3 // for $numResults
+                $this->googleCxId 
+                // numResults can be passed if needed, e.g., 3
             );
+        } elseif (empty($this->googleApiKey) && $this->__shouldPerformWebSearch($message)) {
+            // Case where search was desired, but API key was missing (webSearchTool not initialized)
+            $webSearchResults = "Error: Web search is not available due to missing API key configuration.";
+        } elseif ($this->webSearchTool instanceof WebSearchTool && empty($this->googleCxId) && $this->__shouldPerformWebSearch($message)) {
+            // Case where search was desired, webSearchTool initialized (API key was present), but CX ID is missing
+            $webSearchResults = "Error: Web search is not available due to missing Custom Search Engine ID (CX) configuration.";
         }
 
         return $this->gpt->getAnswer(

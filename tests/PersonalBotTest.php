@@ -7,6 +7,7 @@ use MyApp\LogicBot;
 use yananob\MyTools\Test;
 use MyApp\PersonalBot;
 use yananob\MyTools\Gpt; // For mocking
+use MyApp\WebSearchTool; // For mocking the WebSearchTool instance
 // PHPUnit\Framework\TestCase is typically available globally or via autoloader
 
 final class PersonalBotTest extends PHPUnit\Framework\TestCase
@@ -233,19 +234,19 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $gptMock = $this->createMock(Gpt::class);
 
         // Expectation 1: __shouldPerformWebSearch's GPT call
-        $gptMock->expects($this->exactly(0))
+        $gptMock->expects($this->at(0))
                 ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
                 ->willReturn('はい'); // Yes, search
 
         // Expectation 2: __generateSearchQuery's GPT call
-        $gptMock->expects($this->exactly(1))
+        $gptMock->expects($this->at(1))
                 ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
                 ->willReturn($dummySearchQuery);
 
         // Expectation 3: Final answer generation GPT call
-        $gptMock->expects($this->exactly(2))
+        $gptMock->expects($this->at(2))
                 ->method('getAnswer')
                 ->with(
                     $this->callback(function ($context) use ($expectedSearchResultsInContext) {
@@ -274,14 +275,14 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $gptMock = $this->createMock(Gpt::class);
 
         // Expectation for __shouldPerformWebSearch's GPT call
-        $gptMock->expects($this->exactly(0)) // First call to gpt->getAnswer
-            ->method('getAnswer')
+        $gptMock->expects($this->at(0)) // First call to gpt->getAnswer
+                ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
                 ->willReturn('いいえ'); // No, do not search
 
         // Expectation for the final answer generation GPT call
-        $gptMock->expects($this->exactly(1)) // Second call to gpt->getAnswer
-            ->method('getAnswer')
+        $gptMock->expects($this->at(1)) // Second call to gpt->getAnswer
+                ->method('getAnswer')
                 ->with(
                     $this->callback(function ($context) {
                         $this->assertStringNotContainsString("【Web検索結果】", $context);
@@ -345,5 +346,60 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
 
         $actualQuery = Test::invokePrivateMethod($bot, '__generateSearchQuery', $userMessage);
         $this->assertSame($userMessage, $actualQuery); // Should fallback to original
+    }
+
+    public function testGetAnswerUsesWebSearchToolInstanceWhenConfigured(): void
+    {
+        $userMessage = "Tell me about cats.";
+        $dummySearchQuery = "cats information";
+        $mockedSearchResults = "Web Search Results:
+- Title: Cats are great. Snippet: Yes they are.";
+        $expectedFinalAnswer = "Based on my research, cats are indeed great.";
+
+        // Mock for Gpt (for decision, query gen, and final answer)
+        $gptMock = $this->createMock(Gpt::class);
+        $gptMock->expects($this->at(0)) // PROMPT_JUDGE_WEB_SEARCH
+                ->method('getAnswer')
+                ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
+                ->willReturn('はい');
+        $gptMock->expects($this->at(1)) // PROMPT_GENERATE_SEARCH_QUERY
+                ->method('getAnswer')
+                ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
+                ->willReturn($dummySearchQuery);
+        $gptMock->expects($this->at(2)) // Final Answer
+                ->method('getAnswer')
+                ->with(
+                    $this->callback(function ($context) use ($mockedSearchResults) {
+                        $this->assertStringContainsString("【Web検索結果】", $context);
+                        $this->assertStringContainsString($mockedSearchResults, $context);
+                        return true;
+                    }),
+                    $userMessage
+                )
+                ->willReturn($expectedFinalAnswer);
+
+        // Mock for WebSearchTool
+        $webSearchToolMock = $this->createMock(WebSearchTool::class);
+        $webSearchToolMock->expects($this->once())
+            ->method('search')
+            ->with($dummySearchQuery, "DUMMY_CX_ID") // Assert query and CX ID are passed
+            ->willReturn($mockedSearchResults);
+
+        // Create PersonalBot instance
+        // For this test, we need $this->googleApiKey and $this->googleCxId to be set,
+        // and $this->webSearchTool to be our mock.
+        $bot = new PersonalBot("TARGET_ID_WEBSEARCH_CONFIGURED"); 
+        $this->setPrivateProperty($bot, 'gpt', $gptMock);
+        
+        // Manually set API key, CX ID (as if loaded from a file) and inject the mock WebSearchTool
+        $this->setPrivateProperty($bot, 'googleApiKey', "DUMMY_API_KEY");
+        $this->setPrivateProperty($bot, 'googleCxId', "DUMMY_CX_ID");
+        $this->setPrivateProperty($bot, 'webSearchTool', $webSearchToolMock); 
+        // Note: By setting webSearchTool directly, we bypass PersonalBot's own instantiation
+        // of WebSearchTool and Google_Client/Google_Service_Customsearch. This is fine for testing
+        // PersonalBot's logic that *uses* an already instantiated WebSearchTool.
+
+        $actualAnswer = $bot->getAnswer(true, $userMessage);
+        $this->assertSame($expectedFinalAnswer, $actualAnswer);
     }
 }
