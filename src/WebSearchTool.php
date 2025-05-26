@@ -6,7 +6,7 @@ namespace MyApp;
 
 // Add these if not present (assuming google/apiclient is available)
 use Google_Client;
-use Google_Service_Customsearch;
+use Google\Service\CustomSearchAPI;
 use Exception; // For error handling
 
 class WebSearchTool
@@ -29,7 +29,7 @@ class WebSearchTool
         try {
             $client = new Google_Client();
             $client->setDeveloperKey($apiKey);
-            $service = new Google_Service_Customsearch($client);
+            $service = new CustomSearchAPI($client);
 
             $params = [
                 'q' => $query,

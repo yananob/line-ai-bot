@@ -10,7 +10,8 @@
         "yananob/my-tools": "dev-main",
         "yananob/my-gcp-tools": "dev-main",
         "nesbot/carbon": "^3.8",
-        "google/apiclient": "^2.15"
+        "google/apiclient": "^2.18",
+        "google/apiclient-services": "^0.396.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.3",
