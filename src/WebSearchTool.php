@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace MyApp;
 
-use Google_Service_Customsearch;
+use Google\Service\CustomSearchAPI;
 use Exception;
 
 class WebSearchTool
 {
-    private Google_Service_Customsearch $customSearchService;
+    private CustomSearchAPI $customSearchService;
 
     /**
      * Constructor.
      *
-     * @param Google_Service_Customsearch $customSearchService An initialized Google Custom Search service client.
+     * @param CustomSearchAPI $customSearchService An initialized Google Custom Search service client.
      */
-    public function __construct(Google_Service_Customsearch $customSearchService)
+    public function __construct(CustomSearchAPI $customSearchService)
     {
         $this->customSearchService = $customSearchService;
     }

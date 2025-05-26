@@ -234,19 +234,19 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $gptMock = $this->createMock(Gpt::class);
 
         // Expectation 1: __shouldPerformWebSearch's GPT call
-        $gptMock->expects($this->at(0))
+        $gptMock->expects($this->exactly(0))
                 ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
                 ->willReturn('はい'); // Yes, search
 
         // Expectation 2: __generateSearchQuery's GPT call
-        $gptMock->expects($this->at(1))
+        $gptMock->expects($this->exactly(1))
                 ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
                 ->willReturn($dummySearchQuery);
 
         // Expectation 3: Final answer generation GPT call
-        $gptMock->expects($this->at(2))
+        $gptMock->expects($this->exactly(2))
                 ->method('getAnswer')
                 ->with(
                     $this->callback(function ($context) use ($expectedSearchResultsInContext) {
@@ -275,14 +275,14 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $gptMock = $this->createMock(Gpt::class);
 
         // Expectation for __shouldPerformWebSearch's GPT call
-        $gptMock->expects($this->at(0)) // First call to gpt->getAnswer
-                ->method('getAnswer')
+        $gptMock->expects($this->exactly(0)) // First call to gpt->getAnswer
+            ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
                 ->willReturn('いいえ'); // No, do not search
 
         // Expectation for the final answer generation GPT call
-        $gptMock->expects($this->at(1)) // Second call to gpt->getAnswer
-                ->method('getAnswer')
+        $gptMock->expects($this->exactly(1)) // Second call to gpt->getAnswer
+            ->method('getAnswer')
                 ->with(
                     $this->callback(function ($context) {
                         $this->assertStringNotContainsString("【Web検索結果】", $context);
@@ -358,16 +358,16 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
 
         // Mock for Gpt (for decision, query gen, and final answer)
         $gptMock = $this->createMock(Gpt::class);
-        $gptMock->expects($this->at(0)) // PROMPT_JUDGE_WEB_SEARCH
-                ->method('getAnswer')
+        $gptMock->expects($this->exactly(0)) // PROMPT_JUDGE_WEB_SEARCH
+            ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
                 ->willReturn('はい');
-        $gptMock->expects($this->at(1)) // PROMPT_GENERATE_SEARCH_QUERY
-                ->method('getAnswer')
+        $gptMock->expects($this->exactly(1)) // PROMPT_GENERATE_SEARCH_QUERY
+            ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
                 ->willReturn($dummySearchQuery);
-        $gptMock->expects($this->at(2)) // Final Answer
-                ->method('getAnswer')
+        $gptMock->expects($this->exactly(2)) // Final Answer
+            ->method('getAnswer')
                 ->with(
                     $this->callback(function ($context) use ($mockedSearchResults) {
                         $this->assertStringContainsString("【Web検索結果】", $context);

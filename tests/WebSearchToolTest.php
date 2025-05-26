@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests;
+// namespace MyApp\Tests;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use MyApp\WebSearchTool;
-use Google_Service_Customsearch;
-use Google_Service_Customsearch_Resource_Cse; // Resource class for cse->listCse
-use Google_Service_Customsearch_Search;       // Return type of listCse method
-use Google_Service_Customsearch_Result;       // Type for individual search items
+use Google\Service\CustomSearchAPI;
+use Google\Service\CustomSearchAPI\Resource\Cse; // Resource class for cse->listCse
+use Google\Service\CustomSearchAPI\Search;       // Return type of listCse method
+use Google\Service\CustomSearchAPI\Result;       // Type for individual search items
 use Exception; // For testing exception handling
 
 class WebSearchToolTest extends TestCase
@@ -24,10 +24,10 @@ class WebSearchToolTest extends TestCase
         parent::setUp();
 
         // Mock for Google_Service_Customsearch_Resource_Cse
-        $this->mockCseResource = $this->createMock(Google_Service_Customsearch_Resource_Cse::class);
+        $this->mockCseResource = $this->createMock(Cse::class);
 
         // Mock for Google_Service_Customsearch
-        $this->mockCustomSearchService = $this->createMock(Google_Service_Customsearch::class);
+        $this->mockCustomSearchService = $this->createMock(CustomSearchAPI::class);
         // The 'cse' property is public. We can assign our mock resource to it.
         $this->mockCustomSearchService->cse = $this->mockCseResource;
 
@@ -50,20 +50,20 @@ class WebSearchToolTest extends TestCase
         $numResults = 2;
 
         // Prepare mock search result items
-        $item1 = $this->createMock(Google_Service_Customsearch_Result::class);
+        $item1 = $this->createMock(Result::class);
         $item1->method('getTitle')->willReturn("Title 1");
         $item1->method('getSnippet')->willReturn("Snippet for item 1.");
 
-        $item2 = $this->createMock(Google_Service_Customsearch_Result::class);
+        $item2 = $this->createMock(Result::class);
         $item2->method('getTitle')->willReturn("Title 2");
         $item2->method('getSnippet')->willReturn("Snippet for item 2"); // No trailing period
 
-        $item3 = $this->createMock(Google_Service_Customsearch_Result::class);
+        $item3 = $this->createMock(Result::class);
         $item3->method('getTitle')->willReturn("Title 3 Only"); // No snippet
         $item3->method('getSnippet')->willReturn(null);
 
 
-        $mockSearchResults = $this->createMock(Google_Service_Customsearch_Search::class);
+        $mockSearchResults = $this->createMock(Search::class);
         $mockSearchResults->method('getItems')->willReturn([$item1, $item2, $item3]);
 
         $this->mockCseResource->expects($this->once())
@@ -90,11 +90,11 @@ class WebSearchToolTest extends TestCase
         $cx = "test_cx_less";
         $numResults = 3; // Request 3
 
-        $item1 = $this->createMock(Google_Service_Customsearch_Result::class);
+        $item1 = $this->createMock(Result::class);
         $item1->method('getTitle')->willReturn("Title A");
         $item1->method('getSnippet')->willReturn("Snippet A.");
 
-        $mockSearchResults = $this->createMock(Google_Service_Customsearch_Search::class);
+        $mockSearchResults = $this->createMock(Search::class);
         $mockSearchResults->method('getItems')->willReturn([$item1]); // API returns only 1
 
         $this->mockCseResource->expects($this->once())
@@ -116,7 +116,7 @@ class WebSearchToolTest extends TestCase
         $query = "no results query";
         $cx = "test_cx_no_results";
 
-        $mockSearchResults = $this->createMock(Google_Service_Customsearch_Search::class);
+        $mockSearchResults = $this->createMock(Search::class);
         $mockSearchResults->method('getItems')->willReturn([]); // Empty array of items
 
         $this->mockCseResource->expects($this->once())
@@ -134,11 +134,11 @@ class WebSearchToolTest extends TestCase
         $cx = "test_cx_empty_items";
 
         // Prepare mock search result items with no title or snippet
-        $item1 = $this->createMock(Google_Service_Customsearch_Result::class);
+        $item1 = $this->createMock(Result::class);
         $item1->method('getTitle')->willReturn(null);
         $item1->method('getSnippet')->willReturn(null);
 
-        $mockSearchResults = $this->createMock(Google_Service_Customsearch_Search::class);
+        $mockSearchResults = $this->createMock(Search::class);
         $mockSearchResults->method('getItems')->willReturn([$item1]);
 
         $this->mockCseResource->expects($this->once())

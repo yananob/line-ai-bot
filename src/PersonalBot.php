@@ -10,7 +10,7 @@ use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
 use MyApp\WebSearchTool; // For the refactored tool
 use Google_Client;       // If not already present implicitly
-use Google_Service_Customsearch; // If not already present implicitly
+use Google\Service\CustomSearchAPI; // If not already present implicitly
 use Exception;           // For general error handling if needed during instantiation
 
 // TODO: extends GptBot
@@ -76,7 +76,7 @@ EOM;
             try {
                 $client = new Google_Client();
                 $client->setDeveloperKey($this->googleApiKey);
-                $customSearchService = new Google_Service_Customsearch($client);
+                $customSearchService = new CustomSearchAPI($client);
                 $this->webSearchTool = new WebSearchTool($customSearchService);
             } catch (Exception $e) {
                 // Log this error in a real application
