@@ -233,19 +233,19 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $gptMock = $this->createMock(Gpt::class);
 
         // Expectation 1: __shouldPerformWebSearch's GPT call
-        $gptMock->expects($this->at(0))
+        $gptMock->expects(self::at(0))
                 ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
                 ->willReturn('はい'); // Yes, search
 
         // Expectation 2: __generateSearchQuery's GPT call
-        $gptMock->expects($this->at(1))
+        $gptMock->expects(self::at(1))
                 ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_GENERATE_SEARCH_QUERY, $userMessage)
                 ->willReturn($dummySearchQuery);
 
         // Expectation 3: Final answer generation GPT call
-        $gptMock->expects($this->at(2))
+        $gptMock->expects(self::at(2))
                 ->method('getAnswer')
                 ->with(
                     $this->callback(function ($context) use ($expectedSearchResultsInContext) {
@@ -274,13 +274,13 @@ final class PersonalBotTest extends PHPUnit\Framework\TestCase
         $gptMock = $this->createMock(Gpt::class);
 
         // Expectation for __shouldPerformWebSearch's GPT call
-        $gptMock->expects($this->at(0)) // First call to gpt->getAnswer
+        $gptMock->expects(self::at(0)) // First call to gpt->getAnswer
                 ->method('getAnswer')
                 ->with(PersonalBot::PROMPT_JUDGE_WEB_SEARCH, $userMessage)
                 ->willReturn('いいえ'); // No, do not search
 
         // Expectation for the final answer generation GPT call
-        $gptMock->expects($this->at(1)) // Second call to gpt->getAnswer
+        $gptMock->expects(self::at(1)) // Second call to gpt->getAnswer
                 ->method('getAnswer')
                 ->with(
                     $this->callback(function ($context) {

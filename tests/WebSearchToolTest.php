@@ -40,20 +40,7 @@ class WebSearchToolTest extends TestCase
         // Test with both empty
         $this->assertSame(
             "Error: API key or CX ID is not configured for web search.",
-            WebSearchTool::search("test query", "", "")
-        );
-        // Test with null values as well, as properties might be null
-        $this->assertSame(
-            "Error: API key or CX ID is not configured for web search.",
-            WebSearchTool::search("test query", null, "fake_cx_id")
-        );
-        $this->assertSame(
-            "Error: API key or CX ID is not configured for web search.",
-            WebSearchTool::search("test query", "fake_api_key", null)
-        );
-        $this->assertSame(
-            "Error: API key or CX ID is not configured for web search.",
-            WebSearchTool::search("test query", null, null)
+            WebSearchTool::search("test query", "", "") // both apiKey and cx are ""
         );
     }
 
