@@ -8,3 +8,4 @@ _deploy/
 cache/
 templates_c/
 vendor/
+configs/search_api.json
