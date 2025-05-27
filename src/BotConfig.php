@@ -6,6 +6,8 @@ namespace MyApp;
 
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\DocumentSnapshot;
+use MyApp\Domain\Bot\Trigger\Trigger; // New Trigger interface
+use MyApp\Domain\Bot\Trigger\TimerTrigger; // New TimerTrigger class
 
 class BotConfig
 {
@@ -71,16 +73,19 @@ class BotConfig
             $data = $triggerDoc->data();
             switch ($data["event"]) {
                 case "timer":
-                    $trigger = new TimerTrigger($data["date"], $data["time"], $data["request"]);
+                    $trigger = new \MyApp\Domain\Bot\Trigger\TimerTrigger($data["date"], $data["time"], $data["request"]);
                     $trigger->setId($triggerDoc->id());
                     break;
 
                 default:
-                    throw new \Exception(("Unsupported event: " . $data["event"]));
+                    // It's good practice to handle unknown event types.
+                    // Depending on requirements, this could log an error, skip the trigger, or throw an exception.
+                    // For now, let's assume we want to be strict and throw an exception.
+                    throw new \Exception("Unsupported event type: " . $data["event"]);
             }
             $result[] = $trigger;
         }
-        return $result;
+        return $result; // This should return an array of Trigger interface compliant objects
     }
 
     public function getTriggerRequests(): array
@@ -92,20 +97,33 @@ class BotConfig
     /**
      * @return string Trigger Id
      */
-    public function addTrigger(Trigger $trigger): string
+    public function addTrigger(Trigger $trigger): string // Type hinted with the new Trigger interface
     {
-        if ($trigger instanceof TimerTrigger) {
+        // Check if the trigger is an instance of the new TimerTrigger
+        if ($trigger instanceof \MyApp\Domain\Bot\Trigger\TimerTrigger) {
             $doc = [
-                "event" => $trigger->getEvent(),
-                "date" => $trigger->getDate(),
-                "time" => $trigger->getTime(),
+                "id"      => $trigger->getId(), // Persist ID if available, though Firestore generates one too
+                "event"   => $trigger->getEvent(),
+                "date"    => $trigger->getDate(),
+                "time"    => $trigger->getTime(),
                 "request" => $trigger->getRequest(),
             ];
         } else {
-            throw new \Exception("Unsupported trigger: " . var_export($trigger));
+            // Handle other trigger types or throw an exception if only TimerTrigger is supported here.
+            throw new \Exception("Unsupported trigger type: " . get_class($trigger));
         }
 
+        // Firestore generates its own ID upon adding a document.
+        // If we need to use the ID from $trigger->getId(), we'd use ->document($trigger->getId())->set($doc)
+        // For now, let Firestore generate the ID.
         $documentReference = $this->collectionReference->document("triggers")->collection("triggers")->add($doc);
+        
+        // If the trigger ID was null and is now set by Firestore, update the trigger object.
+        // This might be problematic if $trigger is passed by value.
+        // However, the current method signature implies we return Firestore's generated ID.
+        // If $trigger->setId() was meant to update the object passed in, PHP's object handling
+        // (passed by reference by default for objects) should allow it if it were called here.
+        // For now, we just return the new ID from Firestore.
         return $documentReference->id();
     }
 

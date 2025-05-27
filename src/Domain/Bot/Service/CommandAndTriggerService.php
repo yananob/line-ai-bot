@@ -1,14 +1,12 @@
-<?php
+<?php declare(strict_types=1);
 
-declare(strict_types=1);
+namespace MyApp\Domain\Bot\Service;
 
-namespace MyApp;
-
-use yananob\MyTools\Utils;
 use yananob\MyTools\Gpt;
+use MyApp\Command;
+use MyApp\Domain\Bot\Trigger\TimerTrigger;
 
-// TODO: extends GptBot
-class LogicBot
+class CommandAndTriggerService
 {
     private Gpt $gpt;
 
@@ -74,16 +72,23 @@ EOM;
 
     public function __construct()
     {
-        $this->gpt = new Gpt(__DIR__ . "/../configs/gpt.json");
+        // Path is relative to this file: src/Domain/Bot/Service/
+        // Up to src/ -> ../../../
+        // Then into configs/ -> ../../../../configs/gpt.json
+        $this->gpt = new Gpt(__DIR__ . "/../../../../configs/gpt.json");
     }
 
     public function judgeCommand(string $message): Command
     {
         $result = $this->gpt->getAnswer(self::PROMPT_JUDGE_COMMAND, $message);
         try {
-            $command = Command::from($result);
+            // Assuming Command::from() is a method that can handle string values.
+            // If Command is an enum, this might need adjustment based on PHP version.
+            // For PHP 8.1+ enums with string backing: Command::tryFrom($result) ?? Command::Other
+            $commandValue = is_numeric($result) ? (int)$result : $result;
+            $command = Command::from($commandValue);
         } catch (\ValueError $e) {
-            $command = Command::Other;
+            $command = Command::Other; // Default to 'Other' if parsing fails
         }
         return $command;
     }
@@ -101,14 +106,26 @@ EOM;
     private function __generateTimerTrigger(string $prompt, string $message): TimerTrigger
     {
         $result = $this->gpt->getAnswer($prompt, $message);
-        var_dump($result);
 
-        preg_match('/・日付：(.+)$/m', $result, $matches);
-        $date = rtrim($matches[1]);
-        preg_match('/・時刻：(.+)$/m', $result, $matches);
-        $time = rtrim($matches[1]);
-        preg_match('/・依頼内容：(.+)$/m', $result, $matches);
-        $request = rtrim($matches[1]);
+        // Default values in case regex fails
+        $date = "today";
+        $time = "now"; 
+        $request = "Could not parse request";
+
+        $matchesDate = [];
+        if (preg_match('/・日付：(.+)$/m', $result, $matchesDate)) {
+            $date = rtrim($matchesDate[1]);
+        }
+
+        $matchesTime = [];
+        if (preg_match('/・時刻：(.+)$/m', $result, $matchesTime)) {
+            $time = rtrim($matchesTime[1]);
+        }
+        
+        $matchesRequest = [];
+        if (preg_match('/・依頼内容：(.+)$/m', $result, $matchesRequest)) {
+            $request = rtrim($matchesRequest[1]);
+        }
 
         return new TimerTrigger($date, $time, $request);
     }
