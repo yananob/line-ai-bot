@@ -51,6 +51,17 @@ class WebSearchTool
             'temperature' => 0.7,
         ];
 
+        // System prompt to guide the AI's response format
+        $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
+For each finding, strictly format it as:
+Title: [The title of the finding]
+Snippet: [A brief snippet of the finding]
+
+Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
+
+        // User prompt with the actual query
+        $userPrompt = "Search the web for: " . htmlspecialchars($query);
+
         try {
             // Note: The actual method might be slightly different based on client version for experimental features
             // Assuming $this->openaiClient->responses()->create(...) is the correct path.
@@ -69,6 +80,14 @@ class WebSearchTool
             error_log("Generic error in WebSearchTool (responses): " . $e->getMessage());
             return "Error performing web search. An unexpected error occurred. " . $e->getMessage();
         }
+
+        if (empty($findings)) {
+            // Log $rawContent here for debugging if needed
+            // error_log("Could not parse any findings from OpenAI response for query '{$query}'. Raw: " . $rawContent);
+            return "Could not extract useful information from AI response for: " . htmlspecialchars($query) . ". The AI might not have found relevant information or the format was unexpected.";
+        }
+
+        return "\n- " . implode("\n- ", $findings);
     }
 
     /**
