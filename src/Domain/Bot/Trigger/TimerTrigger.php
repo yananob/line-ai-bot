@@ -105,7 +105,7 @@ class TimerTrigger implements Trigger
 
         // Check if current time is within the window [targetDate, targetDate + $timerTriggeredByNMins)
         // $now >= $targetDate && $now < $targetDate->copy()->addMinutes($timerTriggeredByNMins)
-        return $now->isBetween($targetDate, $targetDate->copy()->addMinutes($timerTriggeredByNMins), true, false);
+        return $now->isBetween($targetDate, $targetDate->copy()->addMinutes($timerTriggeredByNMins));
         // Note: isBetween($a, $b, $equalA, $equalB)
         // $equalA = true means comparison is >= $a
         // $equalB = false means comparison is < $b

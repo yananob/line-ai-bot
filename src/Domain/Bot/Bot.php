@@ -13,12 +13,12 @@ class Bot
     private array $configRequests = [];
     private string $lineTarget = '';
     private array $triggers = []; // This will hold Trigger objects
-    private ?BotConfig $configDefault;
+    private ?Bot $defaultBot;
 
-    public function __construct(string $id, ?BotConfig $configDefault = null)
+    public function __construct(string $id, ?Bot $defaultBot = null)
     {
         $this->id = $id;
-        $this->configDefault = $configDefault;
+        $this->defaultBot = $defaultBot;
     }
 
     public function getId(): string
@@ -28,23 +28,23 @@ class Bot
 
     public function getBotCharacteristics(): array
     {
-        if (empty($this->botCharacteristics) && $this->configDefault !== null) {
-            return $this->configDefault->getBotCharacteristics();
+        if (empty($this->botCharacteristics) && $this->defaultBot !== null) {
+            return $this->defaultBot->getBotCharacteristics();
         }
         return $this->botCharacteristics;
     }
 
     public function getHumanCharacteristics(): array
     {
-        if (empty($this->humanCharacteristics) && $this->configDefault !== null) {
-            return $this->configDefault->getHumanCharacteristics();
+        if (empty($this->humanCharacteristics) && $this->defaultBot !== null) {
+            return $this->defaultBot->getHumanCharacteristics();
         }
         return $this->humanCharacteristics;
     }
 
     public function hasHumanCharacteristics(): bool
     {
-        return !empty($this->humanCharacteristics) || ($this->configDefault !== null && $this->configDefault->hasHumanCharacteristics());
+        return !empty($this->humanCharacteristics) || ($this->defaultBot !== null && $this->defaultBot->hasHumanCharacteristics());
     }
 
     public function getConfigRequests(bool $usePersonal = true, bool $useDefault = true): array
@@ -54,9 +54,9 @@ class Bot
             $requests = $this->configRequests;
         }
 
-        if ($useDefault && $this->configDefault !== null) {
+        if ($useDefault && $this->defaultBot !== null) {
             // Assuming BotConfig::getConfigRequests(true, false) returns only personal configRequests
-            $defaultRequests = $this->configDefault->getConfigRequests(true, false);
+            $defaultRequests = $this->defaultBot->getConfigRequests(true, false);
             // Simple merge, could be more sophisticated depending on desired behavior for duplicates
             $requests = array_merge($defaultRequests, $requests);
         }
@@ -65,8 +65,8 @@ class Bot
 
     public function getLineTarget(): string
     {
-        if (empty($this->lineTarget) && $this->configDefault !== null) {
-            return $this->configDefault->getLineTarget();
+        if (empty($this->lineTarget) && $this->defaultBot !== null) {
+            return $this->defaultBot->getLineTarget();
         }
         return $this->lineTarget;
     }

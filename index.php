@@ -52,10 +52,10 @@ function main(ServerRequestInterface $request): ResponseInterface
             $webhookMessage->getTargetId(),
             $botRepository,
             $conversationRepository,
-            $isLocal
+            // $isLocal
         );
     } catch (\RuntimeException $e) {
-        $logger->error("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
+        $logger->log("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
         return new Response(500, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Bot initialization failed."}');
     }
     
@@ -161,16 +161,16 @@ function trigger(CloudEventInterface $event): void
                     $botUser->getId(),
                     $botRepository, // Pass the already instantiated repository
                     $conversationRepository, // Pass the already instantiated repository
-                    $isLocal
+                    // $isLocal
                 );
             } catch (\RuntimeException $e) {
-                $logger->error("TRIGGER: Failed to initialize ChatApplicationService for user {$botUser->getId()}: " . $e->getMessage());
+                $logger->log("TRIGGER: Failed to initialize ChatApplicationService for user {$botUser->getId()}: " . $e->getMessage());
                 continue; // Skip to next botUser
             }
 
             $answer =  $chatService->askRequest(
                 applyRecentConversations: true,
-                request: $trigger->getRequest()
+                requestMessage: $trigger->getRequest()
             );
             $line->sendPush(
                 bot: $chatService->getLineTarget(),

@@ -36,7 +36,7 @@ class FirestoreConversationRepository implements ConversationRepository
     public function findByBotId(string $botId, int $limit = 20): array
     {
         $conversationsCollection = $this->getBotConversationsCollection($botId);
-        $query = $conversationsCollection->orderBy('createdAt', Query::ORDER_DESCENDING)->limit($limit);
+        $query = $conversationsCollection->orderBy('createdAt', Query::DIR_DESCENDING)->limit($limit);
         $documents = $query->documents();
 
         $conversations = [];
@@ -109,20 +109,15 @@ class FirestoreConversationRepository implements ConversationRepository
         $conversationsCollection = $this->getBotConversationsCollection($botId);
         // Fetch the 'count' most recent documents to delete them
         // Order by 'createdAt' descending, as this is our primary timestamp.
-        $query = $conversationsCollection->orderBy('createdAt', Query::ORDER_DESCENDING)->limit($count);
+        $query = $conversationsCollection->orderBy('createdAt', Query::DIR_DESCENDING)->limit($count);
         $documents = $query->documents();
 
-        $batch = $this->db->batch();
         $deletedCount = 0;
         foreach ($documents as $document) {
             if ($document->exists()) {
-                $batch->delete($document->reference());
+                $document->reference()->delete();
                 $deletedCount++;
             }
-        }
-        
-        if ($deletedCount > 0) {
-            $batch->commit();
         }
     }
 }

@@ -5,6 +5,7 @@ namespace MyApp\Infrastructure\Persistence\Firestore;
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\DocumentReference;
 use Google\Cloud\Firestore\CollectionReference;
+use Google\Cloud\Firestore\DocumentSnapshot;
 use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;

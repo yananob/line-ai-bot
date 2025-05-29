@@ -15,6 +15,7 @@ use MyApp\WebSearchTool; // Assuming WebSearchTool is correctly located and used
 use Google_Client;       // Keep if WebSearchTool or Gpt uses it
 use Google\Service\CustomSearchAPI; // Keep if WebSearchTool uses it
 use Exception;           // For general error handling
+use MyApp\Domain\Bot\Trigger\Trigger;
 
 // TODO: extends GptBot (This comment can be reviewed based on future plans)
 class ChatApplicationService
@@ -27,7 +28,7 @@ class ChatApplicationService
     private ?string $googleApiKey = null; // Retained for WebSearchTool initialization
     private ?string $googleCxId = null;   // Retained for WebSearchTool usage
     private ?WebSearchTool $webSearchTool = null;
-    private bool $isTest;
+    // private bool $isTest;
 
     const RECENT_CONVERSATIONS_COUNT_FOR_GPT = 10; // As per instructions
 
@@ -64,10 +65,10 @@ EOM;
         string $targetId,
         BotRepository $botRepository,
         ConversationRepository $conversationRepository,
-        bool $isTest = true
+        // bool $isTest = true
     ) {
         $this->targetId = $targetId;
-        $this->isTest = $isTest;
+        // $this->isTest = $isTest;
         $this->botRepository = $botRepository;
         $this->conversationRepository = $conversationRepository;
 
@@ -277,7 +278,7 @@ EOM;
     }
 
     /**
-     * @return MyApp\Domain\Bot\Trigger\Trigger[]
+     * @return Trigger[]
      */
     public function getTriggers(): array
     {
