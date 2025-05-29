@@ -85,7 +85,7 @@ EOM;
             // Assuming Command::from() is a method that can handle string values.
             // If Command is an enum, this might need adjustment based on PHP version.
             // For PHP 8.1+ enums with string backing: Command::tryFrom($result) ?? Command::Other
-            $commandValue = is_numeric($result) ? (int)$result : $result;
+            $commandValue = $result;
             $command = Command::from($commandValue);
         } catch (\ValueError $e) {
             $command = Command::Other; // Default to 'Other' if parsing fails
