@@ -10,7 +10,7 @@
         "yananob/my-tools": "dev-main",
         "yananob/my-gcp-tools": "dev-main",
         "nesbot/carbon": "^3.8",
-        "openai-php/client": "^0.8"
+        "openai-php/client": "^0.13"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.3",

@@ -11,11 +11,10 @@ use Carbon\Carbon; // Keep if used by other parts or for formatting
 use yananob\MyGcpTools\CFUtils; // Keep for getLineTarget
 use yananob\MyTools\Utils;    // Keep for __convertConversationsToText (original) or other formatting
 use yananob\MyTools\Gpt;
-use MyApp\WebSearchTool; // Assuming WebSearchTool is correctly located and used
-use Google_Client;       // Keep if WebSearchTool or Gpt uses it
-use Google\Service\CustomSearchAPI; // Keep if WebSearchTool uses it
+use MyApp\WebSearchTool; 
+use OpenAI; // For OpenAI::client() factory
+use OpenAI\Client as OpenAiClient; // For type-hinting if needed, and WebSearchTool constructor
 use Exception;           // For general error handling
-use MyApp\Domain\Bot\Trigger\Trigger;
 
 // TODO: extends GptBot (This comment can be reviewed based on future plans)
 class ChatApplicationService
@@ -25,10 +24,10 @@ class ChatApplicationService
     private ConversationRepository $conversationRepository;
     private Bot $bot;
     private Gpt $gpt;
-    private ?string $googleApiKey = null; // Retained for WebSearchTool initialization
-    private ?string $googleCxId = null;   // Retained for WebSearchTool usage
+    private ?string $openaiApiKey = null;
+    private ?string $openaiSearchModel = null;
     private ?WebSearchTool $webSearchTool = null;
-    // private bool $isTest;
+    private bool $isTest;
 
     const RECENT_CONVERSATIONS_COUNT_FOR_GPT = 10; // As per instructions
 
@@ -65,39 +64,35 @@ EOM;
         string $targetId,
         BotRepository $botRepository,
         ConversationRepository $conversationRepository,
-        // bool $isTest = true
+        bool $isTest = true
     ) {
         $this->targetId = $targetId;
-        // $this->isTest = $isTest;
+        $this->isTest = $isTest;
         $this->botRepository = $botRepository;
         $this->conversationRepository = $conversationRepository;
 
-        $bot = $this->botRepository->findById($this->targetId);
-        if ($bot === null) {
-            // Attempt to load default if specific bot not found, or handle as error
-            // For now, strict: if specific bot ID is given and not found, it's an error.
+        $this->bot = $this->botRepository->findById($this->targetId);
+        if ($this->bot === null) {
             throw new \RuntimeException("Bot with ID '{$this->targetId}' not found.");
         }
-        $this->bot = $bot;
 
-        // Path to gpt.json needs to be relative to this file's new location
         $this->gpt = new Gpt(__DIR__ . "/../../configs/gpt.json");
 
         // Load Search API configuration (path adjusted)
         $searchApiConfigFile = __DIR__ . "/../../configs/search_api.json";
         if (file_exists($searchApiConfigFile)) {
             $searchApiConfig = json_decode(file_get_contents($searchApiConfigFile), true);
-            $this->googleApiKey = $searchApiConfig['google_custom_search_api_key'] ?? null;
-            $this->googleCxId = $searchApiConfig['google_custom_search_cx_id'] ?? null;
+            $this->openaiApiKey = $searchApiConfig['openai_api_key'] ?? null;
+            $this->openaiSearchModel = $searchApiConfig['openai_search_model'] ?? null;
         }
 
-        if (!empty($this->googleApiKey)) {
+        if (!empty($this->openaiApiKey) && !empty($this->openaiSearchModel)) {
             try {
-                $client = new Google_Client();
-                $client->setDeveloperKey($this->googleApiKey);
-                $customSearchService = new CustomSearchAPI($client);
-                $this->webSearchTool = new WebSearchTool($customSearchService);
+                $openaiClient = OpenAI::client($this->openaiApiKey); // Uses the factory method
+                $this->webSearchTool = new WebSearchTool($openaiClient, $this->openaiSearchModel);
             } catch (Exception $e) {
+                // Log error appropriately in a real application
+                error_log("Failed to initialize OpenAI client or WebSearchTool: " . $e->getMessage());
                 $this->webSearchTool = null;
             }
         }
@@ -113,18 +108,18 @@ EOM;
             );
         }
 
+        // TODO: Google APIを使っていたときのように、いちど検索語を作ってから検索しているので、最適な処理じゃゃなさそう
         $webSearchResults = null;
-        if ($this->webSearchTool instanceof WebSearchTool && !empty($this->googleCxId) && $this->__shouldPerformWebSearch($message)) {
+        if ($this->webSearchTool instanceof WebSearchTool && $this->__shouldPerformWebSearch($message)) {
             $searchQuery = $this->__generateSearchQuery($message);
             $webSearchResults = $this->webSearchTool->search(
                 $searchQuery,
-                $this->googleCxId,
                 5 // Number of results
             );
-        } elseif (empty($this->googleApiKey) && $this->__shouldPerformWebSearch($message)) {
-            $webSearchResults = "Error: Web search is not available due to missing API key configuration.";
-        } elseif ($this->webSearchTool instanceof WebSearchTool && empty($this->googleCxId) && $this->__shouldPerformWebSearch($message)) {
-            $webSearchResults = "Error: Web search is not available due to missing Custom Search Engine ID (CX) configuration.";
+        } elseif (empty($this->openaiApiKey) && $this->__shouldPerformWebSearch($message)) { // Check if API key is missing
+            $webSearchResults = "Error: Web search is not available due to missing OpenAI API key configuration.";
+        } elseif ($this->webSearchTool === null && $this->__shouldPerformWebSearch($message)) { // General check if tool failed to initialize
+             $webSearchResults = "Error: Web search tool is not configured properly or failed to initialize.";
         }
         
         // Use bot's config requests (personal and default)
@@ -149,20 +144,11 @@ EOM;
                 self::RECENT_CONVERSATIONS_COUNT_FOR_GPT
             );
         }
-
-        // Fetching requests from the bot. This part needs clarification on "TriggerRequests"
-        // For now, using bot's general config requests, similar to getAnswer.
-        // If TriggerRequests are distinct and needed, Bot entity might need a specific method.
         $requests = $this->bot->getConfigRequests(usePersonal: true, useDefault: true);
-        // The original code had:
-        // $requests = $this->botConfig->getTriggerRequests();
-        // array_push($requests, ...$this->botConfig->getConfigRequests(usePersonal: true, useDefault: false));
-        // This implies trigger-specific requests were separate. If that's still the case,
-        // that logic needs to be adapted to the Bot entity. For now, we use all config requests.
 
         return $this->gpt->getAnswer(
             context: $this->__getContext($recentConversations, $requests),
-            message: $requestMessage, // Original used $request, assume it's $requestMessage
+            message: $requestMessage,
         );
     }
 
@@ -177,7 +163,7 @@ EOM;
         $result = self::GPT_CONTEXT;
         $replaceSettings = [
             ["search" => "<bot/characteristics>", "replace" => $this->__formatArray($this->bot->getBotCharacteristics())],
-            ["search" => "<requests>", "replace" => $this->__formatArray($requests)], // $requests is now passed in
+            ["search" => "<requests>", "replace" => $this->__formatArray($requests)],
         ];
         foreach ($replaceSettings as $replaceSetting) {
             $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);
@@ -194,7 +180,6 @@ EOM;
             $result = $this->__removeFromContext(["<title/recentConversations>", "<recentConversations>"], $result);
         } else {
             $result = str_replace("<title/recentConversations>", "【最近の会話内容】", $result);
-            // $conversations is now an array of Conversation entities
             $result = str_replace("<recentConversations>", $this->__convertConversationsToText($conversations), $result);
         }
 
@@ -218,7 +203,6 @@ EOM;
     {
         foreach ($keywords as $keyword) {
             $source = str_replace($keyword . "\n", "", $source);
-            // Also remove the keyword itself if it's the last line or followed by nothing in the template section
             $source = str_replace($keyword, "", $source); 
         }
         return $source;
@@ -230,11 +214,11 @@ EOM;
     private function __convertConversationsToText(array $conversations): string
     {
         $result = "";
-        foreach ($conversations as $conversation) { // $conversation is now a Conversation entity
-            $result .= "・日時：" . $conversation->getCreatedAt()->format('Y-m-d H:i:s') . "\n"; // Use getter and format
+        foreach ($conversations as $conversation) { 
+            $result .= "・日時：" . $conversation->getCreatedAt()->format('Y-m-d H:i:s') . "\n"; 
             $speakerDisplay = ($conversation->getSpeaker() === "human") ? "話し相手" : "チャットボット（あなた）";
             $result .= "・発言者：" . $speakerDisplay . "\n";
-            $result .= "・内容：" . $conversation->getContent() . "\n"; // Use getter
+            $result .= "・内容：" . $conversation->getContent() . "\n"; 
             $result .= str_repeat("-", 80) . "\n";
         }
         return $result;
@@ -257,7 +241,6 @@ EOM;
 
     public function getLineTarget(): string
     {
-        // CFUtils might need to be checked if it's available globally or needs specific setup
         return CFUtils::isTestingEnv() ? "test" : $this->bot->getLineTarget();
     }
 
@@ -279,11 +262,11 @@ EOM;
     }
 
     /**
-     * @return Trigger[]
+     * @return MyApp\Domain\Bot\Trigger\Trigger[]
      */
     public function getTriggers(): array
     {
-        return $this->bot->getTriggers(); // Returns array of Trigger objects
+        return $this->bot->getTriggers(); 
     }
 
     /**
@@ -293,13 +276,13 @@ EOM;
     public function addTimerTrigger(TimerTrigger $trigger): string
     {
         $newTriggerId = $this->bot->addTrigger($trigger);
-        $this->botRepository->save($this->bot); // Persist Bot entity changes
+        $this->botRepository->save($this->bot); 
         return $newTriggerId;
     }
 
     public function deleteTrigger(string $id): void
     {
         $this->bot->deleteTriggerById($id);
-        $this->botRepository->save($this->bot); // Persist Bot entity changes
+        $this->botRepository->save($this->bot); 
     }
 }
