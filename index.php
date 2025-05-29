@@ -15,9 +15,11 @@ use yananob\MyGcpTools\CFUtils;
 use MyApp\Consts;
 use MyApp\Command;
 use MyApp\LineWebhookMessage;
-use MyApp\BotConfigsStore;
-use MyApp\PersonalBot;
-use MyApp\LogicBot;
+use MyApp\Application\ChatApplicationService;
+use MyApp\Domain\Bot\Service\CommandAndTriggerService;
+use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
+use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
+use MyApp\Domain\Bot\Trigger\TimerTrigger; // For type hinting if needed
 use MyApp\Messages;
 use MyApp\Tools;
 
@@ -40,49 +42,61 @@ function main(ServerRequestInterface $request): ResponseInterface
     $headers = ['Content-Type' => 'application/json'];
 
     $webhookMessage = new LineWebhookMessage($body);
-    $personalBot = new PersonalBot(
-        $webhookMessage->getTargetId(),
-        $isLocal
-    );
+
+    $botRepository = new FirestoreBotRepository($isLocal);
+    $conversationRepository = new FirestoreConversationRepository($isLocal);
+    $commandAndTriggerService = new CommandAndTriggerService(); // Assumes Gpt config path is correct in its constructor
+
+    try {
+        $chatService = new ChatApplicationService(
+            $webhookMessage->getTargetId(),
+            $botRepository,
+            $conversationRepository,
+            // $isLocal
+        );
+    } catch (\RuntimeException $e) {
+        $logger->log("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
+        return new Response(500, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Bot initialization failed."}');
+    }
+    
     $line = new Line(__DIR__ . "/configs/line.json");
     $line->showLoading(
-        bot: $personalBot->getLineTarget(),
+        bot: $chatService->getLineTarget(),
         targetId: $webhookMessage->getTargetId(),
     );
 
     $answer = "";
     $quickReply = null;
     if ($webhookMessage->getType() === LineWebhookMessage::TYPE_MESSAGE) {
-        $logicBot = new LogicBot();
-        $command = $logicBot->judgeCommand($webhookMessage->getMessage());
+        $command = $commandAndTriggerService->judgeCommand($webhookMessage->getMessage());
         switch ($command) {
             case Command::ShowHelp:
                 $answer = Messages::HELP;
                 break;
 
             case Command::AddOneTimeTrigger:
-                $trigger = $logicBot->generateOneTimeTrigger($webhookMessage->getMessage());
-                $personalBot->addTimerTrigger($trigger);
+                $trigger = $commandAndTriggerService->generateOneTimeTrigger($webhookMessage->getMessage());
+                $chatService->addTimerTrigger($trigger);
                 $answer = "タイマーを追加しました：" . $trigger;  // TODO: メッセージに
                 break;
 
             case Command::AddDaiyTrigger:
-                $trigger = $logicBot->generateDailyTrigger($webhookMessage->getMessage());
-                $personalBot->addTimerTrigger($trigger);
+                $trigger = $commandAndTriggerService->generateDailyTrigger($webhookMessage->getMessage());
+                $chatService->addTimerTrigger($trigger);
                 $answer = "タイマーを追加しました：" . $trigger;  // TODO: メッセージに
                 break;
 
             case Command::RemoveTrigger:
                 $answer = "どのタイマーを止めますか？";
-                $quickReply = Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $personalBot->getTriggers());
+                $quickReply = Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $chatService->getTriggers());
                 break;
 
             default:
-                $answer = $personalBot->getAnswer(
+                $answer = $chatService->getAnswer(
                     applyRecentConversations: true,
                     message: $webhookMessage->getMessage(),
                 );
-                $personalBot->storeConversations(
+                $chatService->storeConversations(
                     message: $webhookMessage->getMessage(),
                     answer: $answer,
                 );
@@ -92,19 +106,19 @@ function main(ServerRequestInterface $request): ResponseInterface
         parse_str($webhookMessage->getPostbackData(), $params);
         switch ($params["command"]) {
             case Consts::CMD_REMOVE_TRIGGER:
-                $personalBot->deleteTrigger($params["id"]);
+                $chatService->deleteTrigger($params["id"]);
                 $answer = "削除しました：" . $params["trigger"];  // TODO: メッセージに
                 break;
 
             default:
-                throw new Exception("Unsupported command: " . $params["command"]);
+                throw new \Exception("Unsupported command: " . $params["command"]);
         }
     } else {
-        throw new Exception("Unsupported message type: " . $webhookMessage->getType());
+        throw new \Exception("Unsupported message type: " . $webhookMessage->getType());
     }
 
     $line->sendReply(
-        bot: $personalBot->getLineTarget(),
+        bot: $chatService->getLineTarget(),
         message: $answer,
         replyToken: $webhookMessage->getReplyToken(),
         quickReply: $quickReply,
@@ -122,25 +136,45 @@ function trigger(CloudEventInterface $event): void
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
     $line = new Line(__DIR__ . "/configs/line.json");
-    $botConfigStore = new BotConfigsStore($isLocal);
-    foreach ($botConfigStore->getUsers() as $user) {
-        foreach ($user->getTriggers() as $trigger) {
-            $logger->log("user: {$user->getId()}, trigger: {$trigger}");
-            if ($trigger->getEvent() !== "timer") {
+    $botRepository = new FirestoreBotRepository($isLocal);
+    $conversationRepository = new FirestoreConversationRepository($isLocal); // Needed for ChatApplicationService constructor
+
+    foreach ($botRepository->getAllUserBots() as $botUser) {
+        foreach ($botUser->getTriggers() as $trigger) {
+            // Ensure $trigger is an instance of TimerTrigger or has shouldRunNow
+            if (!$trigger instanceof TimerTrigger) {
+                // Log or handle cases where trigger is not a TimerTrigger, if other types exist
+                $logger->log("Skipping trigger for user {$botUser->getId()} as it's not a TimerTrigger. Trigger: " . (string)$trigger);
+                continue;
+            }
+            
+            $logger->log("user: {$botUser->getId()}, trigger: {$trigger}");
+            if ($trigger->getEvent() !== "timer") { // This check might be redundant if only TimerTriggers are stored/expected
                 continue;
             }
             if (!$trigger->shouldRunNow(TIMER_TRIGGERED_BY_N_MINS)) {
                 continue;
             }
 
-            $personalBot = new PersonalBot($user->getId(), $isLocal);
-            $answer =  $personalBot->askRequest(
+            try {
+                $chatService = new ChatApplicationService(
+                    $botUser->getId(),
+                    $botRepository, // Pass the already instantiated repository
+                    $conversationRepository, // Pass the already instantiated repository
+                    // $isLocal
+                );
+            } catch (\RuntimeException $e) {
+                $logger->log("TRIGGER: Failed to initialize ChatApplicationService for user {$botUser->getId()}: " . $e->getMessage());
+                continue; // Skip to next botUser
+            }
+
+            $answer =  $chatService->askRequest(
                 applyRecentConversations: true,
-                request: $trigger->getRequest()
+                requestMessage: $trigger->getRequest()
             );
             $line->sendPush(
-                bot: $personalBot->getLineTarget(),
-                targetId: $user->getId(),
+                bot: $chatService->getLineTarget(),
+                targetId: $botUser->getId(),
                 message: $answer,
             );
         }
