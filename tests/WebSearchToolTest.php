@@ -10,55 +10,63 @@ use MyApp\WebSearchTool;
 
 // OpenAI specific classes
 use OpenAI\Client as OpenAiClient;
-use OpenAI\Resources\Chat;
-use OpenAI\Responses\Chat\CreateResponse;
-use OpenAI\Responses\Chat\CreateResponseChoice;
-use OpenAI\Responses\Chat\CreateResponseMessage;
+use OpenAI\Resources\Responses; // For mocking $client->responses()
+use OpenAI\Responses\Responses\CreateResponse as ResponsesCreateResponse; // For the actual response type
+// Note: No longer need OpenAI\Resources\Chat or OpenAI\Responses\Chat\*
+
 use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
 use OpenAI\Exceptions\TransporterException as OpenAITransporterException;
 
 class WebSearchToolTest extends TestCase
 {
     private MockObject $mockOpenAiClient;
-    private MockObject $mockChatResource; // Mock for OpenAI\Resources\Chat
+    private MockObject $mockResponsesResource; // Mock for OpenAI\Resources\Responses
     private WebSearchTool $webSearchTool;
-    private string $testOpenAiModel = 'gpt-3.5-turbo';
+    private string $testOpenAiModel = 'gpt-4o'; // Model that would support responses()->create()
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->mockOpenAiClient = $this->createMock(OpenAiClient::class);
-        $this->mockChatResource = $this->createMock(Chat::class);
+        $this->mockResponsesResource = $this->createMock(Responses::class);
 
-        // Configure the mock OpenAiClient to return the mock Chat resource
-        $this->mockOpenAiClient->method('chat')->willReturn($this->mockChatResource);
+        // Configure the mock OpenAiClient to return the mock Responses resource
+        $this->mockOpenAiClient->method('responses')->willReturn($this->mockResponsesResource);
 
         // Instantiate WebSearchTool with the mocked OpenAI client and a test model name
         $this->webSearchTool = new WebSearchTool($this->mockOpenAiClient, $this->testOpenAiModel);
     }
 
-    private function createMockApiResponse(string $content): CreateResponse
+    private function createMockApiResponse(array $outputContents): ResponsesCreateResponse
     {
-        $mockMessage = $this->createMock(CreateResponseMessage::class);
-        // The 'content' property is public in openai-php/client v0.8.x CreateResponseMessage
-        $mockMessage->content = $content;
+        $mockApiResponse = $this->createMock(ResponsesCreateResponse::class);
+        $outputItems = [];
+        foreach ($outputContents as $contentTexts) {
+            $contentObjects = [];
+            if (is_array($contentTexts)) { // Expecting an array of text strings for each output item
+                foreach ($contentTexts as $text) {
+                    $contentObjects[] = (object)['type' => 'output_text', 'text' => $text];
+                }
+            } elseif (is_string($contentTexts) && $contentTexts === 'MALFORMED_CONTENT_ITEM_TYPE') {
+                 $contentObjects[] = (object)['type' => 'other_type', 'text' => 'Not useful'];
+            } elseif (is_string($contentTexts) && $contentTexts === 'EMPTY_TEXT_CONTENT_ITEM') {
+                 $contentObjects[] = (object)['type' => 'output_text', 'text' => ''];
+            }
 
-        $mockChoice = $this->createMock(CreateResponseChoice::class);
-        // The 'message' property is public
-        $mockChoice->message = $mockMessage;
-        // The 'index' property is public
-        $mockChoice->index = 0;
-         // The 'finishReason' property is public
-        $mockChoice->finishReason = 'stop';
 
+            $outputItem = new \stdClass();
+            $outputItem->content = $contentObjects;
+            $outputItems[] = $outputItem;
+        }
+        
+        // The 'output' property is public in the actual response object, so we can set it directly on the mock.
+        // If it were a method, we'd do $mockApiResponse->method('output')->willReturn($outputItems);
+        $mockApiResponse->output = $outputItems;
 
-        $mockApiResponse = $this->createMock(CreateResponse::class);
-        // The 'choices' property is public
-        $mockApiResponse->choices = [$mockChoice];
-        // Other public properties if needed for full mock, e.g. id, object, created, model
-        $mockApiResponse->id = 'chatcmpl-test';
-        $mockApiResponse->object = 'chat.completion';
+        // Mock other necessary properties of ResponsesCreateResponse
+        $mockApiResponse->id = 'resp-test123';
+        $mockApiResponse->object = 'response'; // Or the actual object type string
         $mockApiResponse->created = time();
         $mockApiResponse->model = $this->testOpenAiModel;
 
@@ -70,34 +78,59 @@ class WebSearchToolTest extends TestCase
         $query = "test query";
         $numResults = 2;
 
-        $apiResponseContent = "Title: Title 1\nSnippet: Snippet for item 1.\n\nTitle: Title 2\nSnippet: Snippet for item 2";
-        $mockApiResponse = $this->createMockApiResponse($apiResponseContent);
+        // Each inner array represents an $outputItem's content, with strings being individual 'text' fields
+        $apiOutputContents = [
+            ["First search result snippet."], // Corresponds to $outputItem1->content
+            ["Second search result snippet."] // Corresponds to $outputItem2->content
+        ];
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
-        $this->mockChatResource->expects($this->once())
+        $this->mockResponsesResource->expects($this->once())
             ->method('create')
-            // We can use a callback to assert parameters if needed, e.g., model, messages
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Title: Title 1. Snippet: Snippet for item 1.\n- Title: Title 2. Snippet: Snippet for item 2.";
+        $expectedSummary = "\n- Snippet: First search result snippet.\n- Snippet: Second search result snippet.";
         
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
     
-    public function testSearchSuccessfulWithFewerResultsThanReturnedByApi(): void
+    public function testSearchSuccessfulHandlesMultipleTextsInOneOutputItem(): void
     {
-        $query = "less results query";
-        $numResults = 1; // Request 1, API returns 2
+        $query = "multi text query";
+        $numResults = 2;
 
-        $apiResponseContent = "Title: Title A\nSnippet: Snippet A.\n\nTitle: Title B\nSnippet: Snippet B.";
-        $mockApiResponse = $this->createMockApiResponse($apiResponseContent);
+        $apiOutputContents = [
+            ["First snippet.", "Second snippet from same output item."]
+        ];
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
-        $this->mockChatResource->expects($this->once())
+        $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        // parseAndFormatOpenAIResponse will only take up to $numResults
-        $expectedSummary = "\n- Title: Title A. Snippet: Snippet A.";
+        $expectedSummary = "\n- Snippet: First snippet.\n- Snippet: Second snippet from same output item.";
+        
+        $actualSummary = $this->webSearchTool->search($query, $numResults);
+        $this->assertSame($expectedSummary, $actualSummary);
+    }
+
+    public function testSearchSuccessfulWithFewerResultsThanReturnedByApi(): void
+    {
+        $query = "less results query";
+        $numResults = 1; // Request 1
+
+        $apiOutputContents = [
+            ["First snippet."],
+            ["Second snippet."] // API returns 2 snippets
+        ];
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
+
+        $this->mockResponsesResource->expects($this->once())
+            ->method('create')
+            ->willReturn($mockApiResponse);
+
+        $expectedSummary = "\n- Snippet: First snippet."; // Should only take numResults
 
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
@@ -108,63 +141,92 @@ class WebSearchToolTest extends TestCase
         $query = "even less results query";
         $numResults = 3; // Request 3
 
-        $apiResponseContent = "Title: Title Only One\nSnippet: Snippet for Only One."; // API returns only 1
-        $mockApiResponse = $this->createMockApiResponse($apiResponseContent);
+        $apiOutputContents = [
+            ["The only snippet."] // API returns only 1
+        ];
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
         
-        $this->mockChatResource->expects($this->once())
+        $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Title: Title Only One. Snippet: Snippet for Only One.";
+        $expectedSummary = "\n- Snippet: The only snippet.";
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
 
-
-    public function testSearchReturnsNoResultsFoundWhenApiReturnsEmptyContent(): void
+    public function testSearchReturnsNoResultsFoundWhenApiReturnsEmptyOutputArray(): void
     {
-        $query = "no results query";
+        $query = "no results query empty output";
         
-        // Simulate OpenAI returning no choices or empty content
-        $mockApiResponse = $this->createMock(CreateResponse::class);
-        $mockApiResponse->choices = []; // No choices
-        $mockApiResponse->id = 'chatcmpl-empty';
-        $mockApiResponse->object = 'chat.completion';
-        $mockApiResponse->created = time();
-        $mockApiResponse->model = $this->testOpenAiModel;
+        $mockApiResponse = $this->createMockApiResponse([]); // Empty output array
 
-
-        $this->mockChatResource->expects($this->once())
+        $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedMessage = "No web search results found or unexpected response from AI for: " . htmlspecialchars($query);
+        $expectedMessage = "No web search results found or unexpected response structure for: " . htmlspecialchars($query);
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
     
-    public function testSearchReturnsCouldNotExtractUsefulInfoFromMalformedContent(): void
+    public function testSearchReturnsNoResultsFoundWhenApiReturnsEmptyContentArrayInOutputItem(): void
     {
-        $query = "malformed results query";
+        $query = "no results query empty content";
         
-        $apiResponseContent = "This is not the format you are looking for.";
-        $mockApiResponse = $this->createMockApiResponse($apiResponseContent);
+        $mockApiResponse = $this->createMockApiResponse([[]]); // Output item with empty content array
 
-        $this->mockChatResource->expects($this->once())
+        $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
-        
-        $expectedMessage = "Could not extract useful information from AI response for: " . htmlspecialchars($query) . ". The AI might not have found relevant information or the format was unexpected.";
+
+        // This will actually lead to "Could not extract useful information..." because output is not empty, but content parsing fails
+        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable text content.";
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
 
+
+    public function testSearchReturnsCouldNotExtractUsefulInfoFromMalformedContentType(): void
+    {
+        $query = "malformed content type query";
+        
+        // Pass a special string to trigger malformed content item type in createMockApiResponse
+        $apiOutputContents = [ ['MALFORMED_CONTENT_ITEM_TYPE'] ];
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
+
+        $this->mockResponsesResource->expects($this->once())
+            ->method('create')
+            ->willReturn($mockApiResponse);
+        
+        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable text content.";
+        $actualMessage = $this->webSearchTool->search($query);
+        $this->assertSame($expectedMessage, $actualMessage);
+    }
+    
+    public function testSearchReturnsCouldNotExtractUsefulInfoFromEmptyTextInContentItem(): void
+    {
+        $query = "empty text content query";
+        
+        $apiOutputContents = [ ['EMPTY_TEXT_CONTENT_ITEM'] ]; // Special string for empty text
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
+
+        $this->mockResponsesResource->expects($this->once())
+            ->method('create')
+            ->willReturn($mockApiResponse);
+        
+        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable text content.";
+        $actualMessage = $this->webSearchTool->search($query);
+        $this->assertSame($expectedMessage, $actualMessage);
+    }
+
+
     public function testSearchHandlesOpenAiApiException(): void
     {
         $query = "openai api exception query";
-        $exceptionMessage = "OpenAI API error occurred";
+        $exceptionMessage = "OpenAI API error occurred (responses)";
 
-        $this->mockChatResource->expects($this->once())
+        $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willThrowException(new OpenAIErrorException(['message' => $exceptionMessage, 'type' => 'api_error']));
 
@@ -176,9 +238,9 @@ class WebSearchToolTest extends TestCase
     public function testSearchHandlesOpenAiTransporterException(): void
     {
         $query = "openai transporter exception query";
-        $exceptionMessage = "Network issue with OpenAI";
+        $exceptionMessage = "Network issue with OpenAI (responses)";
 
-        $this->mockChatResource->expects($this->once())
+        $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willThrowException(new OpenAITransporterException($exceptionMessage));
 
