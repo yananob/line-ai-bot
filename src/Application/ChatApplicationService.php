@@ -108,6 +108,7 @@ EOM;
             );
         }
 
+        // TODO: Google APIを使っていたときのように、いちど検索語を作ってから検索しているので、最適な処理じゃゃなさそう
         $webSearchResults = null;
         if ($this->webSearchTool instanceof WebSearchTool && $this->__shouldPerformWebSearch($message)) {
             $searchQuery = $this->__generateSearchQuery($message);
