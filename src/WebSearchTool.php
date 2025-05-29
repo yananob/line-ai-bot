@@ -73,6 +73,17 @@ Separate each finding with exactly two newline characters. Do not include any ot
         // User prompt with the actual query
         $userPrompt = "Search the web for: " . htmlspecialchars($query);
 
+        // System prompt to guide the AI's response format
+        $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
+For each finding, strictly format it as:
+Title: [The title of the finding]
+Snippet: [A brief snippet of the finding]
+
+Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
+
+        // User prompt with the actual query
+        $userPrompt = "Search the web for: " . htmlspecialchars($query);
+
         try {
             // Note: The actual method might be slightly different based on client version for experimental features
             // Assuming $this->openaiClient->responses()->create(...) is the correct path.
