@@ -72,12 +72,13 @@ EOM;
         $this->botRepository = $botRepository;
         $this->conversationRepository = $conversationRepository;
 
-        $this->bot = $this->botRepository->findById($this->targetId);
-        if ($this->bot === null) {
+        $bot = $this->botRepository->findById($this->targetId);
+        if ($bot === null) {
             // Attempt to load default if specific bot not found, or handle as error
             // For now, strict: if specific bot ID is given and not found, it's an error.
             throw new \RuntimeException("Bot with ID '{$this->targetId}' not found.");
         }
+        $this->bot = $bot;
 
         // Path to gpt.json needs to be relative to this file's new location
         $this->gpt = new Gpt(__DIR__ . "/../../configs/gpt.json");

@@ -82,7 +82,7 @@ final class FirestoreConversationRepositoryTest extends PHPUnit\Framework\TestCa
         // $this->conversationsDocRefMock->method('collection')->with($botId)->willReturn($this->botConversationsCollRefMock);
 
         $this->botConversationsCollRefMock->expects($this->once())
-            ->method('orderBy')->with('createdAt', Query::ORDER_DESCENDING)->willReturnSelf();
+            ->method('orderBy')->with('createdAt', Query::DIR_DESCENDING)->willReturnSelf();
         $this->botConversationsCollRefMock->expects($this->once())
             ->method('limit')->with($limit)->willReturnSelf();
         $this->botConversationsCollRefMock->expects($this->once())
@@ -108,7 +108,7 @@ final class FirestoreConversationRepositoryTest extends PHPUnit\Framework\TestCa
 
         $this->botConversationsCollRefMock->expects($this->once())
             ->method('add')
-            ->with($this->callback(function ($data) use ($botId) {
+            ->with($this->callback(function ($data) use ($botId, $conversation) {
                 $this->assertEquals($botId, $data['botId']);
                 $this->assertEquals("human", $data['speaker']);
                 $this->assertEquals("New message", $data['content']);
@@ -218,7 +218,7 @@ final class FirestoreConversationRepositoryTest extends PHPUnit\Framework\TestCa
         $docSnapshotMock2->method('reference')->willReturn($docRefMock2);
 
         $this->botConversationsCollRefMock->expects($this->once())
-            ->method('orderBy')->with('createdAt', Query::ORDER_DESCENDING)->willReturnSelf();
+            ->method('orderBy')->with('createdAt', Query::DIR_DESCENDING)->willReturnSelf();
         $this->botConversationsCollRefMock->expects($this->once())
             ->method('limit')->with($count)->willReturnSelf();
         $this->botConversationsCollRefMock->expects($this->once())
