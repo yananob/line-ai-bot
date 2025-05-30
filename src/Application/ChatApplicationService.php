@@ -54,12 +54,6 @@ EOM;
 Web検索が必要な場合は「はい」、そうでない場合は「いいえ」とだけ答えてください。
 EOM;
 
-    const PROMPT_GENERATE_SEARCH_QUERY = <<<EOM
-ユーザーのメッセージ内容から、Web検索エンジンで検索するための最も効果的な検索クエリを生成してください。
-検索クエリは簡潔で、主要なキーワードを含むべきです。元のメッセージの意図を保持するようにしてください。
-生成された検索クエリのみを返してください。
-EOM;
-
     public function __construct(
         string $targetId,
         BotRepository $botRepository,
@@ -111,9 +105,9 @@ EOM;
         // TODO: Google APIを使っていたときのように、いちど検索語を作ってから検索しているので、最適な処理じゃゃなさそう
         $webSearchResults = null;
         if ($this->webSearchTool instanceof WebSearchTool && $this->__shouldPerformWebSearch($message)) {
-            $searchQuery = $this->__generateSearchQuery($message);
+            // Directly use the original message for the web search
             $webSearchResults = $this->webSearchTool->search(
-                $searchQuery,
+                $message, // Use original user message
                 5 // Number of results
             );
         } elseif (empty($this->openaiApiKey) && $this->__shouldPerformWebSearch($message)) { // Check if API key is missing
@@ -228,15 +222,6 @@ EOM;
     {
         $response = trim($this->gpt->getAnswer(context: self::PROMPT_JUDGE_WEB_SEARCH, message: $message));
         return $response === "はい";
-    }
-
-    private function __generateSearchQuery(string $message): string
-    {
-        $searchQuery = trim($this->gpt->getAnswer(context: self::PROMPT_GENERATE_SEARCH_QUERY, message: $message));
-        if (empty($searchQuery) || mb_strlen($searchQuery) < 3) {
-            return $message;
-        }
-        return $searchQuery;
     }
 
     public function getLineTarget(): string

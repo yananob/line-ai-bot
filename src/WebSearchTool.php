@@ -15,6 +15,16 @@ class WebSearchTool
     private Client $openaiClient;
     private string $openaiModel;
 
+    // Define prompts as class constants to avoid duplication
+    private const SYSTEM_PROMPT_TEMPLATE = "You are a simulated web search engine. For the user's query, provide %d relevant findings.
+For each finding, strictly format it as:
+Title: [The title of the finding]
+Snippet: [A brief snippet of the finding]
+
+Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
+
+    private const USER_PROMPT_PREFIX = "Search the web for: ";
+
     /**
      * Constructor.
      *
@@ -43,77 +53,46 @@ class WebSearchTool
             return "Error: Number of results must be positive.";
         }
 
+        // The 'input' for responses()->create should be the user query.
+        // The system prompt is not directly used here if web_search_preview provides structured output.
+        // If web_search_preview itself needs prompting for format, the approach would differ.
+        // For now, we assume web_search_preview returns structured data and the system_prompt below is for LLM text generation, not this tool.
+
         $params = [
-            'model' => $this->openaiModel,
-            'input' => $query,
+            'model' => $this->openaiModel, // Model used by the main LLM, not necessarily by web_search_preview
+            'input' => self::USER_PROMPT_PREFIX . htmlspecialchars($query), // User's query
             'tools' => [['type' => 'web_search_preview']],
-            'max_output_tokens' => 200 * $numResults, // Estimate, actual output structure will dictate usefulness
-            'temperature' => 0.7,
+            // 'max_output_tokens' might not be directly applicable if 'web_search_preview' dictates output structure.
+            // 'temperature' is also more for generative tasks.
+            // We are relying on the structure of web_search_preview's output.
         ];
 
-        // System prompt to guide the AI's response format
-        $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
-For each finding, strictly format it as:
-Title: [The title of the finding]
-Snippet: [A brief snippet of the finding]
-
-Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
-
-        // User prompt with the actual query
-        $userPrompt = "Search the web for: " . htmlspecialchars($query);
-
-        // System prompt to guide the AI's response format
-        $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
-For each finding, strictly format it as:
-Title: [The title of the finding]
-Snippet: [A brief snippet of the finding]
-
-Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
-
-        // User prompt with the actual query
-        $userPrompt = "Search the web for: " . htmlspecialchars($query);
-
-        // System prompt to guide the AI's response format
-        $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
-For each finding, strictly format it as:
-Title: [The title of the finding]
-Snippet: [A brief snippet of the finding]
-
-Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
-
-        // User prompt with the actual query
-        $userPrompt = "Search the web for: " . htmlspecialchars($query);
+        // The system prompt (like self::SYSTEM_PROMPT_TEMPLATE) would typically be used if we were asking the LLM
+        // to generate and format text based on search results, rather than getting structured data from a tool.
+        // If `web_search_preview` itself doesn't return structured title/snippet, we might need a different strategy,
+        // possibly involving a subsequent LLM call to format raw text from `web_search_preview`.
+        // For now, we proceed assuming `web_search_preview` gives structured output.
 
         try {
-            // Note: The actual method might be slightly different based on client version for experimental features
-            // Assuming $this->openaiClient->responses()->create(...) is the correct path.
             $response = $this->openaiClient->responses()->create($params);
-
-            // The response structure for web_search_preview needs to be handled by parseAndFormatOpenAIResponse
             return $this->parseAndFormatOpenAIResponse($response, $query, $numResults);
 
         } catch (OpenAITransporterException $e) {
-            error_log("OpenAI API Transporter error in WebSearchTool (responses): " . $e->getMessage());
+            error_log("OpenAI API Transporter error in WebSearchTool: " . $e->getMessage());
             return "Error performing web search: Could not connect to the AI service. " . $e->getMessage();
         } catch (OpenAIErrorException $e) {
-            error_log("OpenAI API error in WebSearchTool (responses): " . $e->getMessage());
+            error_log("OpenAI API error in WebSearchTool: " . $e->getMessage());
             return "Error performing web search: AI service returned an error. " . $e->getMessage();
         } catch (Exception $e) {
-            error_log("Generic error in WebSearchTool (responses): " . $e->getMessage());
+            error_log("Generic error in WebSearchTool: " . $e->getMessage());
             return "Error performing web search. An unexpected error occurred. " . $e->getMessage();
         }
-
-        if (empty($findings)) {
-            // Log $rawContent here for debugging if needed
-            // error_log("Could not parse any findings from OpenAI response for query '{$query}'. Raw: " . $rawContent);
-            return "Could not extract useful information from AI response for: " . htmlspecialchars($query) . ". The AI might not have found relevant information or the format was unexpected.";
-        }
-
-        return "\n- " . implode("\n- ", $findings);
     }
 
     /**
      * Parses the response from OpenAI's responses()->create() with web_search_preview and formats it.
+     * Assumes web_search_preview tool's output is structured within $response->output.
+     * Each item in $response->output is expected to be an object or array containing search result details.
      *
      * @param ResponsesCreateResponse $response The response object from OpenAI.
      * @param string $query The original search query (for error messages).
@@ -124,31 +103,74 @@ Separate each finding with exactly two newline characters. Do not include any ot
     {
         $findings = [];
 
-        if (empty($response->output)) {
+        // Check if $response->output exists and is an array
+        if (!isset($response->output) || !is_array($response->output)) {
+            // Log the actual response structure for debugging
+            // error_log("WebSearchTool: Unexpected response structure for query '{$query}'. Response: " . print_r($response, true));
             return "No web search results found or unexpected response structure for: " . htmlspecialchars($query);
         }
 
-        foreach ($response->output as $outputItem) {
+        // Iterate through the output items, assuming they are the search results
+        foreach ($response->output as $resultItem) {
             if (count($findings) >= $numResults) {
                 break;
             }
-            if (isset($outputItem->content) && is_array($outputItem->content)) {
-                foreach ($outputItem->content as $contentItem) {
-                    if (count($findings) >= $numResults) {
-                        break 2; // Break outer loop as well
-                    }
-                    // Assuming $contentItem is an object with 'type' and 'text' properties
-                    if (isset($contentItem->type) && $contentItem->type === 'output_text' && !empty($contentItem->text)) {
-                        $findings[] = "Snippet: " . rtrim(trim($contentItem->text), '.') . ".";
-                    }
+
+            // Assuming each $resultItem is an object with 'title' and 'snippet' properties.
+            // This is an educated guess on the structure of web_search_preview's output.
+            // The actual properties might be different (e.g., 'name', 'description', 'url', 'content').
+            // If $resultItem is an array, access would be $resultItem['title'], $resultItem['snippet'].
+            
+            $title = null;
+            $snippet = null;
+
+            // Attempt to extract title and snippet
+            // This part is speculative and depends on the actual structure of $resultItem
+            if (is_object($resultItem)) {
+                // Option 1: Direct properties (common for search results)
+                if (isset($resultItem->title) && is_string($resultItem->title)) {
+                    $title = trim($resultItem->title);
+                }
+                if (isset($resultItem->snippet) && is_string($resultItem->snippet)) {
+                    $snippet = trim($resultItem->snippet);
+                } elseif (isset($resultItem->description) && is_string($resultItem->description)) { // Fallback for snippet
+                    $snippet = trim($resultItem->description);
+                } elseif (isset($resultItem->text) && is_string($resultItem->text)) { // Fallback for snippet
+                    $snippet = trim($resultItem->text);
+                }
+
+                // Option 2: Nested under a 'content' or 'data' property (less likely for direct tool output but possible)
+                // else if (isset($resultItem->content) && is_object($resultItem->content)) { ... }
+
+            } elseif (is_array($resultItem)) {
+                // Similar checks if $resultItem is an associative array
+                if (isset($resultItem['title']) && is_string($resultItem['title'])) {
+                    $title = trim($resultItem['title']);
+                }
+                if (isset($resultItem['snippet']) && is_string($resultItem['snippet'])) {
+                    $snippet = trim($resultItem['snippet']);
+                } elseif (isset($resultItem['description']) && is_string($resultItem['description'])) {
+                    $snippet = trim($resultItem['description']);
+                } elseif (isset($resultItem['text']) && is_string($resultItem['text'])) {
+                    $snippet = trim($resultItem['text']);
                 }
             }
+
+
+            if ($title && $snippet) {
+                $findings[] = "Title: " . $title . "\nSnippet: " . rtrim($snippet, '.') . ".";
+            } elseif ($snippet) { // If only snippet is found (fallback)
+                $findings[] = "Snippet: " . rtrim($snippet, '.') . ".";
+            }
+            // If only title is found, we might choose to discard it or format differently.
+            // For now, we require at least a snippet.
         }
 
         if (empty($findings)) {
-            return "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable text content.";
+             // error_log("WebSearchTool: Could not extract title/snippet from response for query '{$query}'. Response output: " . print_r($response->output, true));
+            return "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable structured content.";
         }
 
-        return "\n- " . implode("\n- ", $findings);
+        return "\n- " . implode("\n\n- ", $findings); // Separate findings with double newlines
     }
 }

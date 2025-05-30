@@ -305,43 +305,46 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
     public function testGetAnswerFlowWhenShouldPerformWebSearchReturnsTrue(): void
     {
         $userMessage = 'some message requiring search';
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key'); // Enable search logic path
-        $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');   // Enable search logic path
+        // Simulate that WebSearchTool is configured by ensuring openaiApiKey and model are set
+        // and webSearchTool mock is injected.
+        // The actual ChatApplicationService constructor handles WebSearchTool instantiation.
+        // We are overriding it with a mock for testing.
+        $this->setPrivateProperty($this->chatService, 'openaiApiKey', 'dummy_key');
+        $this->setPrivateProperty($this->chatService, 'openaiSearchModel', 'dummy_model');
         $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
 
 
-        // Mocking GPT for __shouldPerformWebSearch internal call
-        // This specific call is deep inside. We'll mock the GPT calls getAnswer makes.
+        // Mocking GPT for __shouldPerformWebSearch internal call and final response
         // 1. For judging web search
-        // 2. For generating query (if search is needed)
-        // 3. For final response
-        $this->gptMock->expects($this->exactly(3)) // Adjusted based on the flow
+        // 2. For final response (no query generation call anymore)
+        $this->gptMock->expects($this->exactly(2)) // Judge search, Final answer
             ->method('getAnswer')
             ->willReturnMap([
                 [ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH, $userMessage, 'はい'], // Yes, search
-                [ChatApplicationService::PROMPT_GENERATE_SEARCH_QUERY, $userMessage, 'search query'], // Generated query
                 [$this->isType('string'), $userMessage, 'Final answer with search results'], // Context, message
             ]);
         
-        $this->webSearchToolMock->method('search')->willReturn('Mocked search results');
+        // WebSearchTool->search should be called with the original userMessage and number of results (e.g., 5)
+        $this->webSearchToolMock->expects($this->once())
+            ->method('search')
+            ->with($userMessage, 5) // Original message, numResults
+            ->willReturn('Mocked search results');
 
         $this->chatService->getAnswer(true, $userMessage);
-        // Assertions are on the mocks (e.g., webSearchToolMock->expects($this->once())->method('search'))
-        // Or, more robustly, check the context passed to the final GPT call as in other tests.
     }
 
 
     public function testGetAnswerFlowWhenShouldPerformWebSearchReturnsFalse(): void
     {
         $userMessage = 'another message not needing search';
-        // Ensure search tool is not called, GPT for query generation is not called.
         $this->setPrivateProperty($this->chatService, 'gpt', $this->gptMock); // Ensure our mock is used
+        $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
+
 
         $this->gptMock->expects($this->exactly(2)) // Judge, Final Answer
             ->method('getAnswer')
             ->willReturnMap([
                 [ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH, $userMessage, 'いいえ'], // No search
-                // No call for PROMPT_GENERATE_SEARCH_QUERY
                 [$this->isType('string'), $userMessage, 'Final answer, no search'], // Context, message
             ]);
 
@@ -356,34 +359,34 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
     {
         $userMessage = "search this";
         $searchResults = "Found web information: A, B, C.";
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key');
-        $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');
+        $this->setPrivateProperty($this->chatService, 'openaiApiKey', 'dummy_key');
+        $this->setPrivateProperty($this->chatService, 'openaiSearchModel', 'dummy_model');
         $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
 
         $this->gptMock->method('getAnswer')
             ->will($this->onConsecutiveCalls(
                 'はい', // Judge web search
-                'search query for this', // Generate query
+                // No call for query generation
                 'Final Answer' // Generate final answer
             ));
         
-        $this->webSearchToolMock->method('search')->willReturn($searchResults);
+        $this->webSearchToolMock->expects($this->once())
+            ->method('search')
+            ->with($userMessage, 5) // Expect original message
+            ->willReturn($searchResults);
 
-        // Override the last gptMock expectation to inspect context
-        $this->gptMock->expects($this->atLeastOnce()) // Or $this->exactly(3) if precise
+        // Override the gptMock expectation for the final call to inspect context
+        $this->gptMock->expects($this->atLeastOnce()) // Or $this->exactly(2) if precise
             ->method('getAnswer')
             ->with(
                 $this->callback(function ($contextArg) use ($searchResults) {
-                    // This callback will be invoked for all calls to gpt->getAnswer.
-                    // We are interested in the one that contains the search results.
                     if (str_contains($contextArg, "【Web検索結果】")) {
                         $this->assertStringContainsString($searchResults, $contextArg);
                     }
-                    return true; // Allow the test to proceed
+                    return true; 
                 }),
                 $this->anything()
             );
-
 
         $this->chatService->getAnswer(true, $userMessage);
     }
@@ -391,25 +394,23 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
     public function testContextExcludesWebSearchResultsWhenNullViaGetAnswer(): void
     {
         $userMessage = "no search this";
-         // Ensure API keys are null or webSearchTool is null, or GPT says "いいえ"
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', null); // Simulate no config for search
-
+        $this->setPrivateProperty($this->chatService, 'openaiApiKey', null); // Simulate no config for search
+        $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock); // Though it's mocked, the service logic checks API key
 
         $this->gptMock->method('getAnswer')
             ->will($this->onConsecutiveCalls(
-                'いいえ', // Judge web search -> No
+                'いいえ', // Judge web search -> No. Or could be 'はい' but API key is null.
                 'Final Answer' // Final answer generation
             ));
-        // webSearchToolMock->search should not be called.
-        // PROMPT_GENERATE_SEARCH_QUERY should not be called.
+        
+        $this->webSearchToolMock->expects($this->never())->method('search');
 
-        $this->gptMock->expects($this->atLeastOnce())
+        $this->gptMock->expects($this->atLeastOnce()) // For PROMPT_JUDGE_WEB_SEARCH and the final answer
             ->method('getAnswer')
             ->with(
                 $this->callback(function ($contextArg) {
-                    if (!str_contains($contextArg, ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH) &&
-                        !str_contains($contextArg, ChatApplicationService::PROMPT_GENERATE_SEARCH_QUERY)
-                    ) { // Only inspect the final context
+                    // Check the context for the final answer generation
+                    if (!str_contains($contextArg, ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH)) {
                         $this->assertStringNotContainsString("【Web検索結果】", $contextArg);
                         $this->assertStringNotContainsString("<web_search_results>", $contextArg);
                     }
@@ -425,20 +426,21 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
     public function testGetAnswerUsesWebSearchToolInstanceWhenConfigured(): void
     {
         $userMessage = "Tell me about cats.";
-        $dummySearchQuery = "cats information";
+        // $dummySearchQuery is no longer used.
         $mockedSearchResults = "Web Search Results:\n- Title: Cats are great. Snippet: Yes they are.";
         $expectedFinalAnswer = "Based on my research, cats are indeed great.";
 
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', "DUMMY_API_KEY");
-        $this->setPrivateProperty($this->chatService, 'googleCxId', "DUMMY_CX_ID");
+        // Simulate WebSearchTool is configured and available
+        $this->setPrivateProperty($this->chatService, 'openaiApiKey', "DUMMY_API_KEY");
+        $this->setPrivateProperty($this->chatService, 'openaiSearchModel', "DUMMY_MODEL");
         $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
 
-        $this->gptMock->expects($this->exactly(3))
+        $this->gptMock->expects($this->exactly(2)) // Judge search, Final answer
             ->method('getAnswer')
             ->willReturnMap([
-                [ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH, $userMessage, 'はい'],
-                [ChatApplicationService::PROMPT_GENERATE_SEARCH_QUERY, $userMessage, $dummySearchQuery],
-                [$this->callback(function ($context) use ($mockedSearchResults) {
+                [ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH, $userMessage, 'はい'], // Yes, search
+                // No query generation call
+                [$this->callback(function ($context) use ($mockedSearchResults) { // Context for final answer
                     $this->assertStringContainsString("【Web検索結果】", $context);
                     $this->assertStringContainsString($mockedSearchResults, $context);
                     return true;
@@ -447,81 +449,10 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
 
         $this->webSearchToolMock->expects($this->once())
             ->method('search')
-            ->with($dummySearchQuery, "DUMMY_CX_ID") 
+            ->with($userMessage, 5) // Expect original user message and numResults
             ->willReturn($mockedSearchResults);
         
         $actualAnswer = $this->chatService->getAnswer(true, $userMessage);
         $this->assertSame($expectedFinalAnswer, $actualAnswer);
-    }
-
-    // Tests for __generateSearchQuery (indirectly by testing getAnswer)
-    public function testGetAnswerCorrectlyUsesGeneratedSearchQuery(): void
-    {
-        $userMessage = "What is the weather like tomorrow in Tokyo?";
-        $expectedQuery = "weather tomorrow Tokyo";
-
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key');
-        $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');
-        $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
-
-        $this->gptMock->method('getAnswer')
-            ->will($this->onConsecutiveCalls(
-                'はい',           // Judge search: Yes
-                $expectedQuery,   // Generate query: "weather tomorrow Tokyo"
-                'Final answer based on Tokyo weather' // Final response
-            ));
-        
-        $this->webSearchToolMock->expects($this->once())
-                                ->method('search')
-                                ->with($expectedQuery, $this->anything()) // Assert this is called with the generated query
-                                ->willReturn('Tokyo weather data');
-
-        $this->chatService->getAnswer(true, $userMessage);
-    }
-    
-    public function testGetAnswerFallbackToOriginalMessageForSearchIfGptQueryIsEmpty(): void
-    {
-        $userMessage = "A complex question with no easy keywords.";
-        
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key');
-        $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');
-        $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
-
-        $this->gptMock->method('getAnswer')
-            ->will($this->onConsecutiveCalls(
-                'はい', // Judge search: Yes
-                '',     // Generate query: Empty response
-                'Final answer based on complex question'
-            ));
-
-        $this->webSearchToolMock->expects($this->once())
-                                ->method('search')
-                                ->with($userMessage, $this->anything()) // Should fallback to original message
-                                ->willReturn('Results for complex question');
-        
-        $this->chatService->getAnswer(true, $userMessage);
-    }
-
-    public function testGetAnswerFallbackToOriginalMessageForSearchIfGptQueryIsTooShort(): void
-    {
-        $userMessage = "Another question.";
-
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key');
-        $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');
-        $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
-        
-        $this->gptMock->method('getAnswer')
-            ->will($this->onConsecutiveCalls(
-                'はい', // Judge search: Yes
-                'a',    // Generate query: Too short
-                'Final answer for another question'
-            ));
-
-        $this->webSearchToolMock->expects($this->once())
-                                ->method('search')
-                                ->with($userMessage, $this->anything()) // Should fallback to original message
-                                ->willReturn('Results for another question');
-
-        $this->chatService->getAnswer(true, $userMessage);
     }
 }
