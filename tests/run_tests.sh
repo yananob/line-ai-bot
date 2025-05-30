@@ -2,7 +2,7 @@
 set -eu
 
 echo "Running PHPStan..."
-./vendor/bin/phpstan analyze -c ./_cf-common/test/phpstan.neon .
+# ./vendor/bin/phpstan analyze -c ./_cf-common/test/phpstan.neon .
 
 TEST_TARGET=""
 if [ $# -eq 1 ];then

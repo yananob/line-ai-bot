@@ -49,9 +49,11 @@ final class BotTest extends TestCase
         // if (empty($this->botCharacteristics) && $this->configDefault) {
         //     return $this->configDefault->getBotCharacteristics();
         // }
-        $mockDefaultConfig = $this->createMock(\MyApp\BotConfig::class); // This will mock the old BotConfig
-        $mockDefaultConfig->method('getBotCharacteristics')->willReturn(['Default Char']);
-        $botWithDefault = new Bot("botWithDef", $mockDefaultConfig);
+        $mockDefaultBot = $this->createMock(Bot::class); // Mock Bot itself
+        $mockDefaultBot->method('getBotCharacteristics')->willReturn(['Default Char']);
+
+        // Pass the mocked Bot object as the defaultBot
+        $botWithDefault = new Bot("botWithDef", $mockDefaultBot);
         $this->assertEquals(['Default Char'], $botWithDefault->getBotCharacteristics());
     }
     
