@@ -327,16 +327,16 @@
         },
         {
             "name": "google/apiclient-services",
-            "version": "v0.396.0",
+            "version": "v0.397.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/googleapis/google-api-php-client-services.git",
-                "reference": "ceb2e432e4326c6775d24f62d554395a1a9ad3dd"
+                "reference": "a69d060a405f347e1c25f1a7c3528d8d2a29132c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/googleapis/google-api-php-client-services/zipball/ceb2e432e4326c6775d24f62d554395a1a9ad3dd",
-                "reference": "ceb2e432e4326c6775d24f62d554395a1a9ad3dd",
+                "url": "https://api.github.com/repos/googleapis/google-api-php-client-services/zipball/a69d060a405f347e1c25f1a7c3528d8d2a29132c",
+                "reference": "a69d060a405f347e1c25f1a7c3528d8d2a29132c",
                 "shasum": ""
             },
             "require": {
@@ -365,9 +365,9 @@
             ],
             "support": {
                 "issues": "https://github.com/googleapis/google-api-php-client-services/issues",
-                "source": "https://github.com/googleapis/google-api-php-client-services/tree/v0.396.0"
+                "source": "https://github.com/googleapis/google-api-php-client-services/tree/v0.397.0"
             },
-            "time": "2025-02-24T01:10:27+00:00"
+            "time": "2025-05-30T02:03:56+00:00"
         },
         {
             "name": "google/auth",
@@ -2465,7 +2465,7 @@
         },
         {
             "name": "symfony/clock",
-            "version": "v7.2.0",
+            "version": "v7.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/clock.git",
@@ -2519,7 +2519,7 @@
                 "time"
             ],
             "support": {
-                "source": "https://github.com/symfony/clock/tree/v7.2.0"
+                "source": "https://github.com/symfony/clock/tree/v7.3.0"
             },
             "funding": [
                 {
@@ -2843,16 +2843,16 @@
         },
         {
             "name": "symfony/translation",
-            "version": "v7.2.6",
+            "version": "v7.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/translation.git",
-                "reference": "e7fd8e2a4239b79a0fd9fb1fef3e0e7f969c6dc6"
+                "reference": "4aba29076a29a3aa667e09b791e5f868973a8667"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/translation/zipball/e7fd8e2a4239b79a0fd9fb1fef3e0e7f969c6dc6",
-                "reference": "e7fd8e2a4239b79a0fd9fb1fef3e0e7f969c6dc6",
+                "url": "https://api.github.com/repos/symfony/translation/zipball/4aba29076a29a3aa667e09b791e5f868973a8667",
+                "reference": "4aba29076a29a3aa667e09b791e5f868973a8667",
                 "shasum": ""
             },
             "require": {
@@ -2862,6 +2862,7 @@
                 "symfony/translation-contracts": "^2.5|^3.0"
             },
             "conflict": {
+                "nikic/php-parser": "<5.0",
                 "symfony/config": "<6.4",
                 "symfony/console": "<6.4",
                 "symfony/dependency-injection": "<6.4",
@@ -2875,7 +2876,7 @@
                 "symfony/translation-implementation": "2.3|3.0"
             },
             "require-dev": {
-                "nikic/php-parser": "^4.18|^5.0",
+                "nikic/php-parser": "^5.0",
                 "psr/log": "^1|^2|^3",
                 "symfony/config": "^6.4|^7.0",
                 "symfony/console": "^6.4|^7.0",
@@ -2918,7 +2919,7 @@
             "description": "Provides tools to internationalize your application",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/translation/tree/v7.2.6"
+                "source": "https://github.com/symfony/translation/tree/v7.3.0"
             },
             "funding": [
                 {
@@ -2934,7 +2935,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-04-07T19:09:28+00:00"
+            "time": "2025-05-29T07:19:49+00:00"
         },
         {
             "name": "symfony/translation-contracts",
@@ -3055,12 +3056,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/yananob/my-tools.git",
-                "reference": "71eb5653cc3cfb8af779d407772df49ebc27fc12"
+                "reference": "420dbaa53e3c56504829b19da89d3a58c7f8bb23"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yananob/my-tools/zipball/71eb5653cc3cfb8af779d407772df49ebc27fc12",
-                "reference": "71eb5653cc3cfb8af779d407772df49ebc27fc12",
+                "url": "https://api.github.com/repos/yananob/my-tools/zipball/420dbaa53e3c56504829b19da89d3a58c7f8bb23",
+                "reference": "420dbaa53e3c56504829b19da89d3a58c7f8bb23",
                 "shasum": ""
             },
             "require": {
@@ -3085,7 +3086,7 @@
                 "source": "https://github.com/yananob/my-tools/tree/main",
                 "issues": "https://github.com/yananob/my-tools/issues"
             },
-            "time": "2025-05-29T00:29:20+00:00"
+            "time": "2025-05-30T14:03:46+00:00"
         }
     ],
     "packages-dev": [

@@ -2,19 +2,17 @@
 
 namespace MyApp\Application;
 
+use Exception;           // For general error handling
+use OpenAI; // For OpenAI::client() factory
+use OpenAI\Client as OpenAiClient; // For type-hinting if needed, and WebSearchTool constructor
 use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Conversation\Conversation;
 use MyApp\Domain\Conversation\ConversationRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
-use Carbon\Carbon; // Keep if used by other parts or for formatting
+use MyApp\WebSearchTool;
 use yananob\MyGcpTools\CFUtils; // Keep for getLineTarget
-use yananob\MyTools\Utils;    // Keep for __convertConversationsToText (original) or other formatting
 use yananob\MyTools\Gpt;
-use MyApp\WebSearchTool; 
-use OpenAI; // For OpenAI::client() factory
-use OpenAI\Client as OpenAiClient; // For type-hinting if needed, and WebSearchTool constructor
-use Exception;           // For general error handling
 
 // TODO: extends GptBot (This comment can be reviewed based on future plans)
 class ChatApplicationService
@@ -76,7 +74,7 @@ EOM;
             throw new \RuntimeException("Bot with ID '{$this->targetId}' not found.");
         }
 
-        $this->gpt = new Gpt(__DIR__ . "/../../configs/gpt.json");
+        $this->gpt = new Gpt("gpt-4.1");
 
         // Load Search API configuration (path adjusted)
         $searchApiConfigFile = __DIR__ . "/../../configs/search_api.json";
