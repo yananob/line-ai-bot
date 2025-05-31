@@ -43,4 +43,4 @@ jobs:
           # event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished # Pub/Subトリガーの場合
           # event_trigger_resource: projects/${{ env.PROJECT_ID }}/topics/my-pubsub-topic # Pub/Subトリガーの場合
           # gen2: true # これが第2世代であることを明示的に示す重要なオプション
-          service_account_email: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com' # 関数が実行時に利用するサービスアカウント
+          service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com' # 関数が実行時に利用するサービスアカウント
