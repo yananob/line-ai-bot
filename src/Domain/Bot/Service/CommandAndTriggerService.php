@@ -72,10 +72,7 @@ EOM;
 
     public function __construct()
     {
-        // Path is relative to this file: src/Domain/Bot/Service/
-        // Up to src/ -> ../../../
-        // Then into configs/ -> ../../../../configs/gpt.json
-        $this->gpt = new Gpt("gpt-4.1");
+        $this->gpt = new Gpt(getenv("OPENAI-API-KEY_LINE-AI-BOT"), "gpt-4.1");
     }
 
     public function judgeCommand(string $message): Command

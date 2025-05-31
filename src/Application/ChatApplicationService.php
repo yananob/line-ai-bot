@@ -25,7 +25,6 @@ class ChatApplicationService
     private ?string $openaiApiKey = null;
     private ?string $openaiSearchModel = null;
     private ?WebSearchTool $webSearchTool = null;
-    private bool $isTest;
 
     const RECENT_CONVERSATIONS_COUNT_FOR_GPT = 10; // As per instructions
 
@@ -61,11 +60,9 @@ EOM;
     public function __construct(
         string $targetId,
         BotRepository $botRepository,
-        ConversationRepository $conversationRepository,
-        bool $isTest = true
+        ConversationRepository $conversationRepository
     ) {
         $this->targetId = $targetId;
-        $this->isTest = $isTest;
         $this->botRepository = $botRepository;
         $this->conversationRepository = $conversationRepository;
 
@@ -74,7 +71,7 @@ EOM;
             throw new \RuntimeException("Bot with ID '{$this->targetId}' not found.");
         }
 
-        $this->gpt = new Gpt("gpt-4.1");
+        $this->gpt = new Gpt(getenv("OPENAI-API-KEY_LINE-AI-BOT"), "gpt-4.1");
 
         // Load Search API configuration (path adjusted)
         $searchApiConfigFile = __DIR__ . "/../../configs/search_api.json";

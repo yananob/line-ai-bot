@@ -58,8 +58,8 @@ function main(ServerRequestInterface $request): ResponseInterface
         $logger->log("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
         return new Response(500, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Bot initialization failed."}');
     }
-    
-    $line = new Line(__DIR__ . "/configs/line.json");
+
+    $line = __getLineInstance();
     $line->showLoading(
         bot: $chatService->getLineTarget(),
         targetId: $webhookMessage->getTargetId(),
@@ -135,7 +135,7 @@ function trigger(CloudEventInterface $event): void
     $isLocal = CFUtils::isLocalEvent($event);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
-    $line = new Line(__DIR__ . "/configs/line.json");
+    $line = __getLineInstance();
     $botRepository = new FirestoreBotRepository($isLocal);
     $conversationRepository = new FirestoreConversationRepository($isLocal); // Needed for ChatApplicationService constructor
 
@@ -181,4 +181,10 @@ function trigger(CloudEventInterface $event): void
     }
 
     $logger->log("Finished.");
+}
+
+function __getLineInstance()
+{
+    $lineConfig = getenv("LINE_TOKENS_N_TARGETS");
+    return new Line($lineConfig["tokens"], $lineConfig["target_ids"]);
 }
