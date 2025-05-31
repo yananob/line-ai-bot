@@ -3,7 +3,7 @@ on:
   # push:
   #   branches:
   #     - main # main ブランチへの push でトリガー
-  # pull_request:
+  pull_request:
     # branches:
     #   - main # main ブランチへのプルリクエスト作成・更新でトリガー
   workflow_dispatch: # 手動実行を許可
