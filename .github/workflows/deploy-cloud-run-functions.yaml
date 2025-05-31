@@ -30,14 +30,14 @@ jobs:
           service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
 
       - name: Deploy Cloud Function (2nd Gen)
-        uses: 'google-github-actions/deploy-cloud-functions@v1'
+        uses: 'google-github-actions/deploy-cloud-functions@v2'
         with:
           name: ${{ env.FUNCTION_NAME }}
           runtime: php82 # 例: nodejs20, python311, go121 など、関数のランタイム
           entry_point: main # 関数のエントリポイント (例: `helloHttp`, `myHandler` など)
           source_dir: ./ # 関数コードがあるディレクトリ
           region: ${{ env.REGION }}
-          trigger_http: true # HTTPトリガーの場合
+          event_trigger_type: http # HTTPトリガーの場合
           # trigger_topic: my-pubsub-topic # Pub/Subトリガーの場合
           # event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished # Pub/Subトリガーの場合
           # event_trigger_resource: projects/${{ env.PROJECT_ID }}/topics/my-pubsub-topic # Pub/Subトリガーの場合
