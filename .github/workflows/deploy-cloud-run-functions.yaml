@@ -2,8 +2,9 @@ name: Deploy Cloud Functions (2nd Gen)
 
 on:
   push:
-    branches:
-      - main
+    # branches:
+      # - main
+  workflow_dispatch: # 手動実行を許可
 
 env:
   PROJECT_ID: nobu5-393106 # Google Cloud プロジェクト ID
