@@ -1,8 +1,26 @@
-- name: Deploy to Cloud Functions
-  uses: google-github-actions/deploy-cloud-functions@v2
-  with:
-    name: 'line-ai-bot-test'
-    region: 'us-west1'
-    runtime: 'php82' # 例: ランタイム
-    entry_point: 'main'
-    source: '.'
+name: Deploy to Cloud Run
+on:
+  # push:
+  #   branches:
+  #     - main # main ブランチへの push でトリガー
+  # pull_request:
+    # branches:
+    #   - main # main ブランチへのプルリクエスト作成・更新でトリガー
+  workflow_dispatch: # 手動実行を許可
+
+jobs:
+  deploy:
+    permissions:
+      contents: 'read'
+      id-token: 'write' # OIDC トークンを取得するために必要
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Cloud Functions
+        uses: google-github-actions/deploy-cloud-functions@v2
+        with:
+          name: 'line-ai-bot-test'
+          region: 'us-west1'
+          runtime: 'php82' # 例: ランタイム
+          entry_point: 'main'
+          source: '.'
