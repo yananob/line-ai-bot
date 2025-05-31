@@ -29,7 +29,7 @@ jobs:
         id: get_token
         run: |
           # OIDC トークンを取得し、環境変数に保存
-          echo "OIDC_TOKEN=$(ACTIONS_RUNTIME_TOKEN=$ACTIONS_RUNTIME_TOKEN ACTIONS_ID_TOKEN_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL /usr/bin/node \
+          echo "OIDC_TOKEN=$(ACTIONS_RUNTIME_TOKEN=$ACTIONS_RUNTIME_TOKEN ACTIONS_ID_TOKEN_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL node \
           -e '
             const url = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
             const token = process.env.ACTIONS_RUNTIME_TOKEN;
