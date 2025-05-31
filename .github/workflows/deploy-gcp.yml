@@ -1,0 +1,109 @@
+name: Deploy to Google Cloud Functions
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: 'read'
+  id-token: 'write' # Required for Workload Identity Federation
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true' # Ensure _cf-common is checked out
+
+    - name: Set up PHP 8.2
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: "8.2"
+        extensions: grpc # As seen in run-test.yml
+
+    - name: Validate composer.json and composer.lock
+      run: composer validate
+
+    - name: Get current directory
+      id: current_dir
+      run: echo "CURRENT_DIR=$(pwd)" >> $GITHUB_OUTPUT
+
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.current_dir.outputs.CURRENT_DIR }}/vendor
+        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-dev # No dev dependencies for production
+
+    # Authenticate to Google Cloud
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: '${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}' # e.g. projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider
+        service_account: '${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}' # e.g. my-service-account@my-project.iam.gserviceaccount.com
+
+    # Setup gcloud CLI
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        project_id: '${{ secrets.GCP_PROJECT_ID }}'
+
+    # Create config files from secrets
+    - name: Create gpt.json config
+      env:
+        GPT_BASE64_CONTENT: '${{ secrets.GPT_BASE64 }}'
+      run: |
+        echo "$GPT_BASE64_CONTENT" | base64 --decode > ${{ github.workspace }}/configs/gpt.json
+        echo "Created configs/gpt.json"
+
+    - name: Create config.json (if needed and secret is present)
+      if: secrets.CONFIG_JSON_BASE64 != ''
+      env:
+        CONFIG_JSON_BASE64_CONTENT: '${{ secrets.CONFIG_JSON_BASE64 }}'
+      run: |
+        echo "$CONFIG_JSON_BASE64_CONTENT" | base64 --decode > ${{ github.workspace }}/configs/config.json
+        echo "Created configs/config.json"
+
+    # Put Firebase config (using the existing custom action)
+    - name: Put firebase config
+      uses: ./_cf-common/.github/actions/put_firebase_config
+      with:
+        COMMON_FIREBASE_BASE64: ${{ secrets.COMMON_FIREBASE_BASE64 }}
+
+    # Deploy HTTP function
+    - name: Deploy HTTP Function (line-ai-bot)
+      run: |
+        gcloud functions deploy line-ai-bot \
+          --gen2 \
+          --runtime=php82 \
+          --region=us-west1 \
+          --source=. \
+          --entry-point=main \
+          --trigger-http \
+          --allow-unauthenticated \
+          --max-instances=1 \
+          --project=${{ secrets.GCP_PROJECT_ID }}
+        echo "HTTP function deployment initiated."
+
+    # Deploy Event-triggered function
+    - name: Deploy Event Function (line-ai-bot-trigger)
+      run: |
+        gcloud functions deploy line-ai-bot-trigger \
+          --gen2 \
+          --runtime=php82 \
+          --region=us-west1 \
+          --source=. \
+          --entry-point=trigger \
+          --trigger-topic=line-ai-bot-trigger \
+          --project=${{ secrets.GCP_PROJECT_ID }}
+        echo "Event function deployment initiated."
