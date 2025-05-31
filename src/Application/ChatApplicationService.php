@@ -71,7 +71,7 @@ EOM;
             throw new \RuntimeException("Bot with ID '{$this->targetId}' not found.");
         }
 
-        $this->gpt = new Gpt(getenv("OPENAI-API-KEY_LINE-AI-BOT"), "gpt-4.1");
+        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-4.1");
 
         // Load Search API configuration (path adjusted)
         $searchApiConfigFile = __DIR__ . "/../../configs/search_api.json";

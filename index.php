@@ -185,6 +185,6 @@ function trigger(CloudEventInterface $event): void
 
 function __getLineInstance()
 {
-    $lineConfig = getenv("LINE_TOKENS_N_TARGETS");
+    $lineConfig = json_decode(getenv("LINE_TOKENS_N_TARGETS"), true);
     return new Line($lineConfig["tokens"], $lineConfig["target_ids"]);
 }
