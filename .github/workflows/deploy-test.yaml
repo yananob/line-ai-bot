@@ -1,4 +1,4 @@
-name: Deploy Cloud Functions (2nd Gen)
+name: Deploy Cloud Functions (test)
 on:
   push:
     # branches:
@@ -28,7 +28,7 @@ jobs:
           workload_identity_provider: 'projects/1035100650942/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
           service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
 
-      - name: Deploy Cloud Functions
+      - name: Deploy Cloud Functions (http)
         uses: 'google-github-actions/deploy-cloud-functions@v3'
         timeout-minutes: 5
         with:
@@ -39,6 +39,22 @@ jobs:
           service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
           source_dir: ./
           max_instance_count: 1
+          secrets: |-
+            OPENAI_KEY_LINE_AI_BOT=projects/nobu5-393106/secrets/OPENAI_KEY_LINE_AI_BOT/versions/latest
+            LINE_TOKENS_N_TARGETS=projects/nobu5-393106/secrets/LINE_TOKENS_N_TARGETS/versions/latest
+            FIREBASE_CONFIG=projects/nobu5-393106/secrets/FIREBASE_CONFIG/versions/latest
+
+      - name: Deploy Cloud Functions (event)
+        uses: 'google-github-actions/deploy-cloud-functions@v3'
+        timeout-minutes: 5
+        with:
+          name: ${{ env.FUNCTION_NAME }}-trigger
+          runtime: php82
+          entry_point: trigger
+          region: ${{ env.REGION }}
+          service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
+          source_dir: ./
+          event_trigger_pubsub_topic: ${{ env.FUNCTION_NAME }}-trigger
           secrets: |-
             OPENAI_KEY_LINE_AI_BOT=projects/nobu5-393106/secrets/OPENAI_KEY_LINE_AI_BOT/versions/latest
             LINE_TOKENS_N_TARGETS=projects/nobu5-393106/secrets/LINE_TOKENS_N_TARGETS/versions/latest
