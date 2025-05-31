@@ -37,9 +37,9 @@ jobs:
           entry_point: main # 関数のエントリポイント (例: `helloHttp`, `myHandler` など)
           source_dir: ./ # 関数コードがあるディレクトリ
           region: ${{ env.REGION }}
-          event_trigger_type: http # HTTPトリガーの場合
+          # event_trigger_type: http # HTTPトリガーの場合
           # trigger_topic: my-pubsub-topic # Pub/Subトリガーの場合
           # event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished # Pub/Subトリガーの場合
           # event_trigger_resource: projects/${{ env.PROJECT_ID }}/topics/my-pubsub-topic # Pub/Subトリガーの場合
-          gen2: true # これが第2世代であることを明示的に示す重要なオプション
+          # gen2: true # これが第2世代であることを明示的に示す重要なオプション
           # service_account_email: [FUNCTION_RUNTIME_SA_EMAIL] # 関数が実行時に利用するサービスアカウント
