@@ -1,19 +1,18 @@
 name: Deploy Cloud Functions (2nd Gen)
-
 on:
   push:
-    # branches:
-      # - main
-  workflow_dispatch: # 手動実行を許可
+    branches:
+      - main
+  workflow_dispatch:
 
 env:
-  PROJECT_ID: nobu5-393106 # Google Cloud プロジェクト ID
-  FUNCTION_NAME: line-ai-bot-test # デプロイするCloud Functions関数の名前
-  REGION: us-west1 # 関数をデプロイするリージョン (Cloud Runサービスが起動するリージョン)
+  PROJECT_ID: nobu5-393106
+  FUNCTION_NAME: line-ai-bot-test
+  REGION: us-west1
 
 permissions:
   contents: 'read'
-  id-token: 'write' # OIDC認証のために必要
+  id-token: 'write'
 
 jobs:
   deploy:
@@ -29,18 +28,14 @@ jobs:
           workload_identity_provider: 'projects/1035100650942/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
           service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
 
-      - name: Deploy Cloud Function (2nd Gen)
+      - name: Deploy Cloud Functions
         uses: 'google-github-actions/deploy-cloud-functions@v3'
         timeout-minutes: 5
         with:
           name: ${{ env.FUNCTION_NAME }}
-          runtime: php82 # 例: nodejs20, python311, go121 など、関数のランタイム
-          entry_point: main # 関数のエントリポイント (例: `helloHttp`, `myHandler` など)
+          runtime: php82
+          entry_point: main
           region: ${{ env.REGION }}
-          source_dir: ./ # 関数コードがあるディレクトリ
-          # event_trigger_type: http # HTTPトリガーの場合
-          # trigger_topic: my-pubsub-topic # Pub/Subトリガーの場合
-          # event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished # Pub/Subトリガーの場合
-          # event_trigger_resource: projects/${{ env.PROJECT_ID }}/topics/my-pubsub-topic # Pub/Subトリガーの場合
-          # gen2: true # これが第2世代であることを明示的に示す重要なオプション
-          service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com' # 関数が実行時に利用するサービスアカウント
+          service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
+          source_dir: ./
+          max_instance_count: 1
