@@ -1,26 +1,55 @@
 name: Deploy to Cloud Run
+
 on:
-  # push:
-  #   branches:
-  #     - main # main ブランチへの push でトリガー
-  pull_request:
+  push:
     # branches:
-    #   - main # main ブランチへのプルリクエスト作成・更新でトリガー
+    #   - main # デプロイをトリガーするブランチ
   workflow_dispatch: # 手動実行を許可
+
+env:
+  PROJECT_ID: nobu5-393106 # Google Cloud プロジェクト ID
+  SERVICE_NAME: line-ai-bot-test # Cloud Run サービス名
+  REGION: asia-northeast1 # Cloud Run をデプロイするリージョン
+  IMAGE_NAME: gcr.io/${{ env.PROJECT_ID }}/line-ai-bot/${{ env.SERVICE_NAME }}:${{ github.sha }} # イメージ名 (Artifact Registryのパス)
+
+permissions:
+  contents: 'read'
+  id-token: 'write' # OIDC認証のために必要
 
 jobs:
   deploy:
-    permissions:
-      contents: 'read'
-      id-token: 'write' # OIDC トークンを取得するために必要
     runs-on: ubuntu-latest
-
     steps:
-      - name: Deploy to Cloud Functions
-        uses: google-github-actions/deploy-cloud-functions@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Google Cloud認証
+        id: 'auth'
+        uses: 'google-github-actions/auth@v2'
         with:
-          name: 'line-ai-bot-test'
-          region: 'us-west1'
-          runtime: 'php82' # 例: ランタイム
-          entry_point: 'main'
-          source: '.'
+          workload_identity_provider: 'projects/1035100650942/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider' # Google Cloudで設定したWorkload Identity Providerの完全なリソース名
+          service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com' # Google Cloudで作成したサービスアカウントのメールアドレス
+
+      - name: DockerイメージをビルドしてArtifact RegistryにPush
+        run: |
+          docker build -t "${{ env.IMAGE_NAME }}" .
+          docker push "${{ env.IMAGE_NAME }}"
+
+      - name: Cloud Runにデプロイ
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE_NAME }}
+          # 以下は必要に応じて設定
+          # no_allow_unauthenticated: true # 認証なしのアクセスを許可しない場合
+          # concurrency: 80 # 同時実行数
+          # min_instances: 0 # 最小インスタンス数
+          # max_instances: 1 # 最大インスタンス数
+          # env_vars: | # 環境変数
+          #   KEY1=VALUE1
+          #   KEY2=VALUE2
+          # service_account: [CLOUD_RUN_SERVICE_ACCOUNT_EMAIL] # Cloud Runサービスが利用するサービスアカウント
