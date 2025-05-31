@@ -74,12 +74,8 @@ EOM;
         $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-4.1");
 
         // Load Search API configuration (path adjusted)
-        $searchApiConfigFile = __DIR__ . "/../../configs/search_api.json";
-        if (file_exists($searchApiConfigFile)) {
-            $searchApiConfig = json_decode(file_get_contents($searchApiConfigFile), true);
-            $this->openaiApiKey = $searchApiConfig['openai_api_key'] ?? null;
-            $this->openaiSearchModel = $searchApiConfig['openai_search_model'] ?? null;
-        }
+        $this->openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT");
+        $this->openaiSearchModel = "gpt-4o-mini";
 
         if (!empty($this->openaiApiKey) && !empty($this->openaiSearchModel)) {
             try {
