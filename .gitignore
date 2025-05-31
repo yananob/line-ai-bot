@@ -9,3 +9,5 @@ cache/
 templates_c/
 vendor/
 configs/search_api.json
+
+cred.tmp
