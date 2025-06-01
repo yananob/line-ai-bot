@@ -4,6 +4,7 @@ namespace MyApp\Domain\Bot\Trigger;
 
 use Carbon\Carbon;
 use MyApp\Consts;
+use yananob\MyTools\Logger;
 
 class TimerTrigger implements Trigger
 {
@@ -15,6 +16,9 @@ class TimerTrigger implements Trigger
 
     public function __construct(string $date, string $time, string $request)
     {
+        $logger = new Logger("TimerTrigger::__construct");
+        $logger->log("Entry. Input date: '{$date}', Input time: '{$time}', Request: '{$request}'");
+
         $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
 
         $this->date = $date;
@@ -50,6 +54,7 @@ class TimerTrigger implements Trigger
                 // No need to update $this->date here as it's already specific
                 break;
         }
+        $logger->log("Finalized. actualDate: '{$this->actualDate}', time: '{$this->time}'");
     }
 
     public function getId(): ?string
@@ -100,16 +105,20 @@ class TimerTrigger implements Trigger
 
     public function shouldRunNow(int $timerTriggeredByNMins): bool
     {
+        $logger = new Logger("TimerTrigger::shouldRunNow");
+        $logger->log("Entry. timerTriggeredByNMins: {$timerTriggeredByNMins}, this->actualDate: '{$this->actualDate}', this->time: '{$this->time}'");
+
         $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        $logger->log("Current time (\$carbonNow): " . $carbonNow->toDateTimeString() . " (Timezone: " . $carbonNow->getTimezone()->getName() . ")");
 
         try {
             list($hour, $minute) = sscanf($this->time, "%d:%d");
             if (is_null($hour) || is_null($minute)) {
-                // Invalid time format
+                $logger->log("Invalid time format in this->time: '{$this->time}'. Exiting.");
                 return false;
             }
         } catch (\Exception $e) {
-            // Parsing failed
+            $logger->log("Exception during sscanf parsing of this->time: '{$this->time}'. Message: " . $e->getMessage() . ". Exiting.");
             return false;
         }
 
@@ -122,29 +131,31 @@ class TimerTrigger implements Trigger
                 $triggerDateCarbon = Carbon::parse($this->actualDate, new \DateTimeZone(Consts::TIMEZONE));
             }
         } catch (\Exception $e) {
-            // Invalid date format in actualDate
+            $logger->log("Exception during Carbon::parse or Carbon::today for actualDate: '{$this->actualDate}'. Message: " . $e->getMessage() . ". Exiting.");
             return false;
         }
         
         if (!$triggerDateCarbon) {
-             // Should not happen if logic above is correct
+             // Should not happen if logic above is correct, but good to log
+            $logger->log("triggerDateCarbon is null after attempting to parse actualDate: '{$this->actualDate}'. Exiting.");
             return false;
         }
 
         $triggerDateTimeCarbon = $triggerDateCarbon->hour($hour)->minute($minute)->second(0);
+        $logger->log("Trigger target time (\$triggerDateTimeCarbon): " . $triggerDateTimeCarbon->toDateTimeString() . " (Timezone: " . $triggerDateTimeCarbon->getTimezone()->getName() . ")");
 
         // Calculate the difference in minutes.
-        // A positive value means $triggerDateTimeCarbon is in the future or same minute.
-        // A negative value means $triggerDateTimeCarbon is in the past.
+        // $carbonNow->diffInMinutes($triggerDateTimeCarbon, false)
+        // If $triggerDateTimeCarbon is in the future, $diffMinutes will be negative.
+        // If $triggerDateTimeCarbon is in the past, $diffMinutes will be positive.
         $diffMinutes = $carbonNow->diffInMinutes($triggerDateTimeCarbon, false);
+        $logger->log("Calculated \$diffMinutes: {$diffMinutes}");
 
-        // Trigger if the event is scheduled for the current minute or any minute within the $timerTriggeredByNMins window in the future.
-        // For example, if $timerTriggeredByNMins is 5:
-        // diffMinutes = 0 (current minute) -> true
-        // diffMinutes = 4 (4 minutes in future) -> true
-        // diffMinutes = 5 (5 minutes in future) -> false (because it's < $timerTriggeredByNMins)
-        // diffMinutes = -1 (1 minute in past) -> false
-        return $diffMinutes >= 0 && $diffMinutes < $timerTriggeredByNMins;
+        // Original logic: run if $triggerDateTimeCarbon is in the past (positive $diffMinutes)
+        // or current minute (0 $diffMinutes), and not too far in the past.
+        $result = ($diffMinutes >= 0 && $diffMinutes < $timerTriggeredByNMins);
+        $logger->log("Result: " . ($result ? 'true' : 'false'));
+        return $result;
     }
 
     public function __toString(): string

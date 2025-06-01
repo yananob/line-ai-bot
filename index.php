@@ -134,28 +134,40 @@ function trigger(CloudEventInterface $event): void
     $logger->logSplitter();
     $isLocal = CFUtils::isLocalEvent($event);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
+    $logger->log("BEGIN execution of 'trigger' CloudEvent function.");
 
     $line = __getLineInstance();
     $botRepository = new FirestoreBotRepository($isLocal);
     $conversationRepository = new FirestoreConversationRepository($isLocal); // Needed for ChatApplicationService constructor
 
-    foreach ($botRepository->getAllUserBots() as $botUser) {
-        foreach ($botUser->getTriggers() as $trigger) {
+    $allUserBots = $botRepository->getAllUserBots();
+    $logger->log("Processing " . count($allUserBots) . " user bots.");
+    foreach ($allUserBots as $botUser) {
+        $logger->log("Bot User ID: {$botUser->getId()} - Iterating triggers.");
+        $botTriggers = $botUser->getTriggers();
+        $logger->log("Bot User ID: {$botUser->getId()} - Found " . count($botTriggers) . " triggers.");
+        foreach ($botTriggers as $trigger) {
             // Ensure $trigger is an instance of TimerTrigger or has shouldRunNow
             if (!$trigger instanceof TimerTrigger) {
                 // Log or handle cases where trigger is not a TimerTrigger, if other types exist
-                $logger->log("Skipping trigger for user {$botUser->getId()} as it's not a TimerTrigger. Trigger: " . (string)$trigger);
+                $logger->log("Bot User ID: {$botUser->getId()} - Skipping trigger ID: {$trigger->getId()} as it's not a TimerTrigger. Trigger: " . (string)$trigger);
                 continue;
             }
             
-            $logger->log("user: {$botUser->getId()}, trigger: {$trigger}");
+            $logger->log("user: {$botUser->getId()}, trigger: {$trigger}"); // Existing good log
             if ($trigger->getEvent() !== "timer") { // This check might be redundant if only TimerTriggers are stored/expected
-                continue;
-            }
-            if (!$trigger->shouldRunNow(TIMER_TRIGGERED_BY_N_MINS)) {
+                $logger->log("Bot User ID: {$botUser->getId()} - Trigger ID: {$trigger->getId()} - Skipping as event is not 'timer'. Event: {$trigger->getEvent()}");
                 continue;
             }
 
+            $logger->log("Bot User ID: {$botUser->getId()} - Checking trigger ID: {$trigger->getId()} - shouldRunNow() will be called.");
+            $shouldRun = $trigger->shouldRunNow(TIMER_TRIGGERED_BY_N_MINS);
+            $logger->log("Bot User ID: {$botUser->getId()} - Trigger ID: {$trigger->getId()} - shouldRunNow() returned: " . ($shouldRun ? 'true' : 'false'));
+            if (!$shouldRun) {
+                continue;
+            }
+
+            $logger->log("Bot User ID: {$botUser->getId()} - Trigger ID: {$trigger->getId()} - EXECUTING trigger action.");
             try {
                 $chatService = new ChatApplicationService(
                     $botUser->getId(),
@@ -180,7 +192,7 @@ function trigger(CloudEventInterface $event): void
         }
     }
 
-    $logger->log("Finished.");
+    $logger->log("END execution of 'trigger' CloudEvent function.");
 }
 
 function __getLineInstance()

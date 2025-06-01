@@ -10,6 +10,7 @@ use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use MyApp\Domain\Bot\Trigger\Trigger;
+use yananob\MyTools\Logger;
 
 class FirestoreBotRepository implements BotRepository
 {
@@ -34,7 +35,11 @@ class FirestoreBotRepository implements BotRepository
 
     private function loadBotFromSnapshot(string $botId, DocumentSnapshot $configSnapshot, ?Bot $defaultBotConfig): ?Bot
     {
+        $logger = new Logger("FirestoreBotRepository::loadBotFromSnapshot");
+        $logger->log("Entry. Bot ID: {$botId}");
+
         if (!$configSnapshot->exists()) {
+            $logger->log("Config snapshot does not exist for Bot ID: {$botId}. Exiting.");
             return null;
         }
 
@@ -53,15 +58,14 @@ class FirestoreBotRepository implements BotRepository
         foreach ($triggerDocuments as $triggerDoc) {
             if (!$triggerDoc->exists()) continue;
             $tData = $triggerDoc->data();
+            $logger->log("Processing trigger doc ID: {$triggerDoc->id()}. Raw data: " . json_encode($tData));
             // Assuming TimerTrigger for now, this would need to be more flexible
             if (isset($tData['event']) && $tData['event'] === 'timer') {
-                // Added logging for date, time, and Consts::TIMEZONE
-                $dateForTrigger = $tData['date'] ?? null; // Use null coalescing for safety
-                $timeForTrigger = $tData['time'] ?? null; // Use null coalescing for safety
+                $dateForTrigger = $tData['date'] ?? null;
+                $timeForTrigger = $tData['time'] ?? null;
 
-                error_log("DEBUG TimerTrigger Instantiation: Input Date='{$dateForTrigger}', Input Time='{$timeForTrigger}'");
-                // Using fully qualified namespace for Consts to be safe.
-                error_log("DEBUG TimerTrigger Instantiation: Runtime Consts::TIMEZONE = " . \MyApp\Consts::TIMEZONE);
+                $logger->log("DEBUG TimerTrigger Instantiation: Input Date='{$dateForTrigger}', Input Time='{$timeForTrigger}'");
+                $logger->log("DEBUG TimerTrigger Instantiation: Runtime Consts::TIMEZONE = " . \MyApp\Consts::TIMEZONE);
 
                 $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $tData['request']);
                 $trigger->setId($triggerDoc->id()); // Use Firestore document ID as trigger ID
@@ -70,12 +74,17 @@ class FirestoreBotRepository implements BotRepository
         }
         $bot->setTriggers($triggers);
 
+        $logger->log("Exit. Bot ID: {$botId}");
         return $bot;
     }
 
     public function findById(string $id): ?Bot
     {
+        $logger = new Logger("FirestoreBotRepository::findById");
+        $logger->log("Entry. ID: {$id}");
+
         if ($id === 'default') { // Default bot should be fetched by findDefault
+            $logger->log("ID is 'default', forwarding to findDefault(). ID: {$id}");
             return $this->findDefault();
         }
 
@@ -83,32 +92,44 @@ class FirestoreBotRepository implements BotRepository
         $configSnapshot = $botCollection->document('config')->snapshot();
 
         if (!$configSnapshot->exists()) {
+            $logger->log("Config snapshot not found for ID: {$id}. Exiting.");
             return null;
         }
         
         // All bots (except default itself) need the default config for fallback
-        $defaultBotConfig = $this->findDefault();
+        $defaultBotConfig = $this->findDefault(); // This will have its own logging
 
-        return $this->loadBotFromSnapshot($id, $configSnapshot, $defaultBotConfig);
+        $resultBot = $this->loadBotFromSnapshot($id, $configSnapshot, $defaultBotConfig);
+        $logger->log("Exit. ID: {$id}");
+        return $resultBot;
     }
 
     public function findDefault(): ?Bot
     {
+        $logger = new Logger("FirestoreBotRepository::findDefault");
+        $logger->log("Entry.");
+
         $defaultBotCollection = $this->getBotCollection('default');
         $configSnapshot = $defaultBotCollection->document('config')->snapshot();
 
         if (!$configSnapshot->exists()) {
             // This case should ideally not happen in a well-configured system
             // or means the default bot config is missing.
+            $logger->log("Default config snapshot not found. Exiting.");
             return null;
         }
 
         // The default bot does not have a further default config, so pass null.
-        return $this->loadBotFromSnapshot('default', $configSnapshot, null);
+        $resultBot = $this->loadBotFromSnapshot('default', $configSnapshot, null);
+        $logger->log("Exit.");
+        return $resultBot;
     }
 
     public function save(Bot $bot): void
     {
+        $logger = new Logger("FirestoreBotRepository::save");
+        $logger->log("Entry. Bot ID: {$bot->getId()}");
+
         $botCollection = $this->getBotCollection($bot->getId());
 
         // Save main config
@@ -144,10 +165,14 @@ class FirestoreBotRepository implements BotRepository
                 $trigger->setId($newDocRef->id());
             }
         }
+        $logger->log("Exit. Bot ID: {$bot->getId()}");
     }
 
     public function getAllUserBots(): array
     {
+        $logger = new Logger("FirestoreBotRepository::getAllUserBots");
+        $logger->log("Entry.");
+
         $userBots = [];
         // List collections within the 'configs' document. Each subcollection ID is a bot ID.
         $botIdCollections = $this->documentRoot->collections();
@@ -156,12 +181,14 @@ class FirestoreBotRepository implements BotRepository
             $botId = $botCollection->id();
             if ($botId !== 'default') {
                 // findById will fetch the bot, including its default config.
-                $bot = $this->findById($botId);
+                $bot = $this->findById($botId); // This will have its own logging
                 if ($bot) {
+                    $logger->log("Found user bot: {$botId}");
                     $userBots[] = $bot;
                 }
             }
         }
+        $logger->log("Exit. Found " . count($userBots) . " user bots.");
         return $userBots;
     }
 }
