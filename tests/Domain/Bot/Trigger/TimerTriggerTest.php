@@ -7,6 +7,7 @@ namespace MyApp\Tests\Domain\Bot\Trigger; // Adjusted namespace for PSR-4
 use PHPUnit\Framework\TestCase;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use Carbon\Carbon;
+use MyApp\Consts;
 
 final class TimerTriggerTest extends TestCase
 {
@@ -106,10 +107,71 @@ final class TimerTriggerTest extends TestCase
         $this->assertFalse($trigger->shouldRunNow(10));
     }
 
-    public function testShouldRunNowReturnsFalseForNowPlusXMinsTimeFormat(): void
+    public function testShouldRunNowHandlesNowPlusXMinsCorrectlyAfterConstructorProcessing(): void
     {
-        $trigger = new TimerTrigger("today", "now +30 mins", "Test");
-        Carbon::setTestNow(Carbon::parse("2023-01-01 10:00:00"));
-        $this->assertFalse($trigger->shouldRunNow(10));
+        // It's good practice to ensure Consts::TIMEZONE is available for Carbon parsing in tests
+        // if the main code relies on it, to maintain consistency.
+        $timezone = new \DateTimeZone(Consts::TIMEZONE);
+
+        // Set the "current time" for the constructor phase
+        Carbon::setTestNow(Carbon::create(2023, 1, 1, 10, 0, 0, $timezone));
+
+        // This should result in $trigger->time being "10:30" and
+        // $trigger->actualDate being today's date (2023/01/01)
+        // as 'today' is resolved by the constructor using the $carbonNow (set to 10:00:00).
+        $trigger = new TimerTrigger("today", "now +30 mins", "Test 'now +30 mins'");
+
+        // Assert internal state (optional, but good for sanity check)
+        // The constructor converts "now +30 mins" (from 10:00:00) to "10:30"
+        $this->assertEquals('10:30', $trigger->getTime(), "Time should be calculated to 10:30");
+        // The constructor sets actualDate to "2023/01/01" because date was "today" and testNow was Jan 1st
+        $this->assertEquals(Carbon::create(2023, 1, 1, 0, 0, 0, $timezone)->format('Y/m/d'), $trigger->getActualDate(), "ActualDate should be 2023/01/01");
+
+        // Now test shouldRunNow. The trigger time is effectively 10:30 on 2023/01/01.
+        $duration = 5; // 5 minutes duration
+
+        // Test 1: Current time is 10:30:00 (exactly when timer should start)
+        Carbon::setTestNow(Carbon::create(2023, 1, 1, 10, 30, 0, $timezone));
+        $this->assertTrue($trigger->shouldRunNow($duration), "Should run at the calculated time (10:30)");
+
+        // Test 2: Current time is 10:32:00 (within 5 min window)
+        Carbon::setTestNow(Carbon::create(2023, 1, 1, 10, 32, 0, $timezone));
+        $this->assertTrue($trigger->shouldRunNow($duration), "Should run within interval of calculated time (10:32)");
+
+        // Test 3: Current time is 10:34:59 (at edge of 5 min window)
+        Carbon::setTestNow(Carbon::create(2023, 1, 1, 10, 34, 59, $timezone));
+        $this->assertTrue($trigger->shouldRunNow($duration), "Should run at end of interval of calculated time (10:34:59)");
+
+        // Test 4: Current time is 10:35:00 (just outside 5 min window)
+        Carbon::setTestNow(Carbon::create(2023, 1, 1, 10, 35, 0, $timezone));
+        $this->assertFalse($trigger->shouldRunNow($duration), "Should not run outside interval of calculated time (10:35)");
+
+        // Test 5: Current time is 10:00:00 (original time used in constructor, before +30 mins was applied)
+        Carbon::setTestNow(Carbon::create(2023, 1, 1, 10, 0, 0, $timezone));
+        $this->assertFalse($trigger->shouldRunNow($duration), "Should not run at original 'now' time (10:00), as target is 10:30");
+
+        // Test 6: Current time is much later, e.g. 11:00:00
+        Carbon::setTestNow(Carbon::create(2023, 1, 1, 11, 0, 0, $timezone));
+        $this->assertFalse($trigger->shouldRunNow($duration), "Should not run if 'now' is significantly past the window (11:00)");
+
+        // Test 7: Date is 'everyday', time 'now +10 mins'
+        Carbon::setTestNow(Carbon::create(2024, 5, 10, 15, 0, 0, $timezone));
+        $everydayTrigger = new TimerTrigger("everyday", "now +10 mins", "Test everyday now +10");
+        $this->assertEquals("15:10", $everydayTrigger->getTime());
+        // $this->assertEquals("everyday", $everydayTrigger->getActualDate()); // actualDate remains 'everyday'
+
+        Carbon::setTestNow(Carbon::create(2024, 5, 10, 15, 10, 0, $timezone)); // Check on the same day
+        $this->assertTrue($everydayTrigger->shouldRunNow($duration));
+
+        Carbon::setTestNow(Carbon::create(2024, 5, 11, 15, 10, 0, $timezone)); // Check on the next day
+        $this->assertTrue($everydayTrigger->shouldRunNow($duration), "Everyday trigger should run on subsequent days at the calculated time");
+
+        Carbon::setTestNow(Carbon::create(2024, 5, 10, 15, 0, 0, $timezone)); // Check before time on same day
+        $this->assertFalse($everydayTrigger->shouldRunNow($duration));
+
+        Carbon::setTestNow(Carbon::create(2024, 5, 10, 15, 15, 0, $timezone)); // Check after window on same day
+        $this->assertFalse($everydayTrigger->shouldRunNow($duration));
+
+        Carbon::setTestNow(); // Reset to real time
     }
 }
