@@ -4,6 +4,7 @@ namespace MyApp\Domain\Bot\Trigger;
 
 use Carbon\Carbon;
 use MyApp\Consts;
+use yananob\MyTools\Logger;
 
 class TimerTrigger implements Trigger
 {
@@ -12,10 +13,14 @@ class TimerTrigger implements Trigger
     private string $time;
     private string $request;
     private string $actualDate;
+    private ?Logger $logger = null;
 
     public function __construct(string $date, string $time, string $request)
     {
+        $this->logger = new Logger('TimerTrigger');
+        $this->logger->log("TimerTrigger constructor called with date: '{$date}', time: '{$time}', request: '{$request}'");
         $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        $this->logger->log("TimerTrigger constructor: carbonNow is " . $carbonNow->toString() . " with timezone " . $carbonNow->getTimezone()->getName());
 
         $this->date = $date;
         $this->request = $request;
@@ -50,6 +55,7 @@ class TimerTrigger implements Trigger
                 // No need to update $this->date here as it's already specific
                 break;
         }
+        $this->logger->log("TimerTrigger constructor: final this->time is '{$this->time}', final this->actualDate is '{$this->actualDate}'");
     }
 
     public function getId(): ?string
@@ -100,7 +106,9 @@ class TimerTrigger implements Trigger
 
     public function shouldRunNow(int $timerTriggeredByNMins): bool
     {
+        $this->logger->log("shouldRunNow: Checking trigger: ID {$this->id}, Date '{$this->date}', Time '{$this->time}', ActualDate '{$this->actualDate}'");
         $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        $this->logger->log("shouldRunNow: carbonNow is " . $carbonNow->toString() . " with timezone " . $carbonNow->getTimezone()->getName());
 
         try {
             list($hour, $minute) = sscanf($this->time, "%d:%d");
@@ -128,15 +136,22 @@ class TimerTrigger implements Trigger
         
         if (!$triggerDateCarbon) {
              // Should not happen if logic above is correct
+            $this->logger->log("shouldRunNow: triggerDateCarbon is null, returning false.");
             return false;
         }
 
         $triggerDateTimeCarbon = $triggerDateCarbon->hour($hour)->minute($minute)->second(0);
+        if ($triggerDateTimeCarbon) {
+            $this->logger->log("shouldRunNow: triggerDateTimeCarbon is " . $triggerDateTimeCarbon->toString() . " with timezone " . $triggerDateTimeCarbon->getTimezone()->getName());
+        } else {
+            $this->logger->log("shouldRunNow: triggerDateTimeCarbon could not be determined.");
+        }
 
         // Calculate the difference in minutes.
         // A positive value means $triggerDateTimeCarbon is in the future or same minute.
         // A negative value means $triggerDateTimeCarbon is in the past.
         $diffMinutes = $carbonNow->diffInMinutes($triggerDateTimeCarbon, false);
+        $this->logger->log("shouldRunNow: diffMinutes is {$diffMinutes}");
 
         // Trigger if the event is scheduled for the current minute or any minute within the $timerTriggeredByNMins window in the future.
         // For example, if $timerTriggeredByNMins is 5:
@@ -144,7 +159,9 @@ class TimerTrigger implements Trigger
         // diffMinutes = 4 (4 minutes in future) -> true
         // diffMinutes = 5 (5 minutes in future) -> false (because it's < $timerTriggeredByNMins)
         // diffMinutes = -1 (1 minute in past) -> false
-        return $diffMinutes >= 0 && $diffMinutes < $timerTriggeredByNMins;
+        $result = $diffMinutes >= 0 && $diffMinutes < $timerTriggeredByNMins;
+        $this->logger->log("shouldRunNow: result is " . ($result ? 'true' : 'false'));
+        return $result;
     }
 
     public function __toString(): string
