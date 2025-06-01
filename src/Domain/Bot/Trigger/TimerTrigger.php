@@ -15,13 +15,9 @@ class TimerTrigger implements Trigger
     private string $actualDate;
     private ?Logger $logger = null;
 
-    public function __construct(string $date, string $time, string $request, ?Logger $logger = null)
+    public function __construct(string $date, string $time, string $request)
     {
-        if ($logger) {
-            $this->logger = $logger;
-        } else {
-            $this->logger = new Logger('TimerTrigger');
-        }
+        $this->logger = new Logger('TimerTrigger');
         $this->logger->log("TimerTrigger constructor called with date: '{$date}', time: '{$time}', request: '{$request}'");
         $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
         $this->logger->log("TimerTrigger constructor: carbonNow is " . $carbonNow->toString() . " with timezone " . $carbonNow->getTimezone()->getName());

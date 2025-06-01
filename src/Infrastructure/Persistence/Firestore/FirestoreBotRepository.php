@@ -10,20 +10,17 @@ use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use MyApp\Domain\Bot\Trigger\Trigger;
-use yananob\MyTools\Logger;
 
 class FirestoreBotRepository implements BotRepository
 {
     private FirestoreClient $db;
     private string $collectionName;
     private DocumentReference $documentRoot; // e.g., /ai-bots/{bot_id}/configs/
-    private Logger $logger;
 
-    public function __construct(bool $isTest = true, Logger $logger)
+    public function __construct(bool $isTest = true)
     {
         $this->collectionName = $isTest ? "ai-bot-test" : "ai-bot";
         $this->db = new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_CONFIG"), true)]);
-        $this->logger = $logger;
         // This documentRoot points to the 'configs' document within the main collection.
         // e.g. /ai-bot/configs or /ai-bot-test/configs
         // Individual bot data will be subcollections under this.
@@ -66,7 +63,7 @@ class FirestoreBotRepository implements BotRepository
                 // Using fully qualified namespace for Consts to be safe.
                 error_log("DEBUG TimerTrigger Instantiation: Runtime Consts::TIMEZONE = " . \MyApp\Consts::TIMEZONE);
 
-                $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $tData['request'], $this->logger);
+                $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $tData['request']);
                 $trigger->setId($triggerDoc->id()); // Use Firestore document ID as trigger ID
                 $triggers[$trigger->getId()] = $trigger;
             }

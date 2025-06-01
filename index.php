@@ -43,7 +43,7 @@ function main(ServerRequestInterface $request): ResponseInterface
 
     $webhookMessage = new LineWebhookMessage($body);
 
-    $botRepository = new FirestoreBotRepository($isLocal, $logger);
+    $botRepository = new FirestoreBotRepository($isLocal);
     $conversationRepository = new FirestoreConversationRepository($isLocal);
     $commandAndTriggerService = new CommandAndTriggerService(); // Assumes Gpt config path is correct in its constructor
 
@@ -136,7 +136,7 @@ function trigger(CloudEventInterface $event): void
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
     $line = __getLineInstance();
-    $botRepository = new FirestoreBotRepository($isLocal, $logger);
+    $botRepository = new FirestoreBotRepository($isLocal);
     $conversationRepository = new FirestoreConversationRepository($isLocal); // Needed for ChatApplicationService constructor
 
     foreach ($botRepository->getAllUserBots() as $botUser) {
