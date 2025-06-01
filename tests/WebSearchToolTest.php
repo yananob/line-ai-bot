@@ -38,50 +38,64 @@ class WebSearchToolTest extends TestCase
         $this->webSearchTool = new WebSearchTool($this->mockOpenAiClient, $this->testOpenAiModel);
     }
 
-    private function createMockApiResponse(array $outputContents): ResponsesCreateResponse
+    // mockSearchResults is an array of associative arrays, e.g., [['title' => 'T1', 'snippet' => 'S1'], ...]
+    // or special strings like 'MALFORMED_ITEM' or 'ITEM_WITHOUT_TITLE_SNIPPET'
+    private function createMockApiResponse(array $mockSearchResults): ResponsesCreateResponse
     {
         $mockApiResponse = $this->createMock(ResponsesCreateResponse::class);
         $outputItems = [];
-        foreach ($outputContents as $contentTexts) {
-            $contentObjects = [];
-            if (is_array($contentTexts)) { // Expecting an array of text strings for each output item
-                foreach ($contentTexts as $text) {
-                    $contentObjects[] = (object)['type' => 'output_text', 'text' => $text];
+
+        foreach ($mockSearchResults as $result) {
+            if (is_array($result)) {
+                $item = new \stdClass();
+                if (isset($result['title'])) {
+                    $item->title = $result['title'];
                 }
-            } elseif (is_string($contentTexts) && $contentTexts === 'MALFORMED_CONTENT_ITEM_TYPE') {
-                 $contentObjects[] = (object)['type' => 'other_type', 'text' => 'Not useful'];
-            } elseif (is_string($contentTexts) && $contentTexts === 'EMPTY_TEXT_CONTENT_ITEM') {
-                 $contentObjects[] = (object)['type' => 'output_text', 'text' => ''];
+                if (isset($result['snippet'])) {
+                    $item->snippet = $result['snippet'];
+                }
+                // For testing fallbacks, e.g., if snippet is missing, description might be used
+                if (isset($result['description']) && !isset($item->snippet)) {
+                    $item->description = $result['description'];
+                }
+                if (isset($result['text']) && !isset($item->snippet) && !isset($item->description)) {
+                    $item->text = $result['text'];
+                }
+                $outputItems[] = $item;
+            } elseif ($result === 'MALFORMED_ITEM_NOT_OBJECT_OR_ARRAY') {
+                $outputItems[] = "just a string"; // Simulate an item that's not an object/array
+            } elseif ($result === 'ITEM_WITH_NULL_VALUES') {
+                 $item = new \stdClass();
+                 $item->title = null;
+                 $item->snippet = null;
+                 $outputItems[] = $item;
+            } elseif ($result === 'ITEM_WITH_EMPTY_STRINGS') {
+                 $item = new \stdClass();
+                 $item->title = "";
+                 $item->snippet = "";
+                 $outputItems[] = $item;
             }
-
-
-            $outputItem = new \stdClass();
-            $outputItem->content = $contentObjects;
-            $outputItems[] = $outputItem;
         }
         
-        // The 'output' property is public in the actual response object, so we can set it directly on the mock.
-        // If it were a method, we'd do $mockApiResponse->method('output')->willReturn($outputItems);
         $mockApiResponse->output = $outputItems;
 
         // Mock other necessary properties of ResponsesCreateResponse
         $mockApiResponse->id = 'resp-test123';
-        $mockApiResponse->object = 'response'; // Or the actual object type string
+        $mockApiResponse->object = 'response'; 
         $mockApiResponse->created = time();
         $mockApiResponse->model = $this->testOpenAiModel;
 
         return $mockApiResponse;
     }
 
-    public function testSearchSuccessful(): void
+    public function testSearchSuccessfulMultipleResults(): void
     {
         $query = "test query";
         $numResults = 2;
 
-        // Each inner array represents an $outputItem's content, with strings being individual 'text' fields
         $apiOutputContents = [
-            ["First search result snippet."], // Corresponds to $outputItem1->content
-            ["Second search result snippet."] // Corresponds to $outputItem2->content
+            ['title' => 'Title 1', 'snippet' => 'Snippet 1.'],
+            ['title' => 'Title 2', 'snippet' => 'Snippet 2.'],
         ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
@@ -89,30 +103,54 @@ class WebSearchToolTest extends TestCase
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Snippet: First search result snippet.\n- Snippet: Second search result snippet.";
+        $expectedSummary = "\n- Title: Title 1\nSnippet: Snippet 1.\n\n- Title: Title 2\nSnippet: Snippet 2.";
+        
+        $actualSummary = $this->webSearchTool->search($query, $numResults);
+        $this->assertSame($expectedSummary, $actualSummary);
+    }
+
+    public function testSearchSuccessfulSingleResult(): void
+    {
+        $query = "single result query";
+        $numResults = 1;
+
+        $apiOutputContents = [
+            ['title' => 'Solo Title', 'snippet' => 'Solo Snippet.'],
+        ];
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
+
+        $this->mockResponsesResource->expects($this->once())
+            ->method('create')
+            ->willReturn($mockApiResponse);
+
+        $expectedSummary = "\n- Title: Solo Title\nSnippet: Solo Snippet.";
         
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
     
-    public function testSearchSuccessfulHandlesMultipleTextsInOneOutputItem(): void
+    public function testSearchSuccessfulUsesDescriptionAsFallbackForSnippet(): void
     {
-        $query = "multi text query";
-        $numResults = 2;
-
+        $query = "description fallback";
         $apiOutputContents = [
-            ["First snippet.", "Second snippet from same output item."]
+            ['title' => 'Title D', 'description' => 'Description as snippet.'],
         ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
+        $this->mockResponsesResource->method('create')->willReturn($mockApiResponse);
+        $expected = "\n- Title: Title D\nSnippet: Description as snippet.";
+        $this->assertSame($expected, $this->webSearchTool->search($query, 1));
+    }
 
-        $this->mockResponsesResource->expects($this->once())
-            ->method('create')
-            ->willReturn($mockApiResponse);
-
-        $expectedSummary = "\n- Snippet: First snippet.\n- Snippet: Second snippet from same output item.";
-        
-        $actualSummary = $this->webSearchTool->search($query, $numResults);
-        $this->assertSame($expectedSummary, $actualSummary);
+    public function testSearchSuccessfulUsesTextAsFallbackForSnippet(): void
+    {
+        $query = "text fallback";
+        $apiOutputContents = [
+            ['title' => 'Title T', 'text' => 'Text as snippet.'],
+        ];
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
+        $this->mockResponsesResource->method('create')->willReturn($mockApiResponse);
+        $expected = "\n- Title: Title T\nSnippet: Text as snippet.";
+        $this->assertSame($expected, $this->webSearchTool->search($query, 1));
     }
 
     public function testSearchSuccessfulWithFewerResultsThanReturnedByApi(): void
@@ -121,8 +159,8 @@ class WebSearchToolTest extends TestCase
         $numResults = 1; // Request 1
 
         $apiOutputContents = [
-            ["First snippet."],
-            ["Second snippet."] // API returns 2 snippets
+            ['title' => 'Title A', 'snippet' => 'Snippet A.'],
+            ['title' => 'Title B', 'snippet' => 'Snippet B.'], // API returns 2
         ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
@@ -130,7 +168,7 @@ class WebSearchToolTest extends TestCase
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Snippet: First snippet."; // Should only take numResults
+        $expectedSummary = "\n- Title: Title A\nSnippet: Snippet A."; // Should only take numResults
 
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
@@ -142,7 +180,7 @@ class WebSearchToolTest extends TestCase
         $numResults = 3; // Request 3
 
         $apiOutputContents = [
-            ["The only snippet."] // API returns only 1
+            ['title' => 'Only Title', 'snippet' => 'The only snippet.'], // API returns only 1
         ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
         
@@ -150,11 +188,11 @@ class WebSearchToolTest extends TestCase
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Snippet: The only snippet.";
+        $expectedSummary = "\n- Title: Only Title\nSnippet: The only snippet.";
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
-
+    
     public function testSearchReturnsNoResultsFoundWhenApiReturnsEmptyOutputArray(): void
     {
         $query = "no results query empty output";
@@ -165,59 +203,72 @@ class WebSearchToolTest extends TestCase
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedMessage = "No web search results found or unexpected response structure for: " . htmlspecialchars($query);
-        $actualMessage = $this->webSearchTool->search($query);
-        $this->assertSame($expectedMessage, $actualMessage);
-    }
-    
-    public function testSearchReturnsNoResultsFoundWhenApiReturnsEmptyContentArrayInOutputItem(): void
-    {
-        $query = "no results query empty content";
-        
-        $mockApiResponse = $this->createMockApiResponse([[]]); // Output item with empty content array
-
-        $this->mockResponsesResource->expects($this->once())
-            ->method('create')
-            ->willReturn($mockApiResponse);
-
-        // This will actually lead to "Could not extract useful information..." because output is not empty, but content parsing fails
-        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable text content.";
+        // This now correctly points to the "Could not extract..." because the parsing logic for structured content fails on empty.
+        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable structured content.";
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
 
-
-    public function testSearchReturnsCouldNotExtractUsefulInfoFromMalformedContentType(): void
+    public function testSearchReturnsCouldNotExtractIfResultItemIsNotObjectOrArray(): void
     {
-        $query = "malformed content type query";
+        $query = "malformed item query";
         
-        // Pass a special string to trigger malformed content item type in createMockApiResponse
-        $apiOutputContents = [ ['MALFORMED_CONTENT_ITEM_TYPE'] ];
+        $apiOutputContents = ['MALFORMED_ITEM_NOT_OBJECT_OR_ARRAY']; // Special string for createMockApiResponse
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
         
-        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable text content.";
+        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable structured content.";
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
-    
-    public function testSearchReturnsCouldNotExtractUsefulInfoFromEmptyTextInContentItem(): void
+
+    public function testSearchReturnsCouldNotExtractIfResultItemHasNullTitleAndSnippet(): void
     {
-        $query = "empty text content query";
+        $query = "null title snippet query";
         
-        $apiOutputContents = [ ['EMPTY_TEXT_CONTENT_ITEM'] ]; // Special string for empty text
+        $apiOutputContents = ['ITEM_WITH_NULL_VALUES']; // Special string for createMockApiResponse
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
         
-        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable text content.";
+        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable structured content.";
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
+    }
+
+    public function testSearchReturnsCouldNotExtractIfResultItemHasEmptyStringTitleAndSnippet(): void
+    {
+        $query = "empty string title snippet query";
+        
+        $apiOutputContents = ['ITEM_WITH_EMPTY_STRINGS']; // Special string for createMockApiResponse
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
+
+        $this->mockResponsesResource->expects($this->once())
+            ->method('create')
+            ->willReturn($mockApiResponse);
+        
+        // Even if title/snippet are empty strings, the parser might still pick them up if not explicitly checking for empty.
+        // The WebSearchTool's parser currently does `if ($title && $snippet)`. Empty strings are falsy.
+        $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable structured content.";
+        $actualMessage = $this->webSearchTool->search($query);
+        $this->assertSame($expectedMessage, $actualMessage);
+    }
+    
+    public function testSearchOnlyIncludesSnippetIfTitleMissing(): void
+    {
+        $query = "missing title query";
+        $apiOutputContents = [
+            ['snippet' => 'Only snippet here.'],
+        ];
+        $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
+        $this->mockResponsesResource->method('create')->willReturn($mockApiResponse);
+        $expected = "\n- Snippet: Only snippet here.";
+        $this->assertSame($expected, $this->webSearchTool->search($query, 1));
     }
 
 
