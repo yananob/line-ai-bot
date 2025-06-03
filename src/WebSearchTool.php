@@ -75,6 +75,12 @@ Separate each finding with exactly two newline characters. Do not include any ot
 
         try {
             $response = $this->openaiClient->responses()->create($params);
+            // Log the raw output part of the OpenAI response for debugging web_search_preview structure
+            if (isset($response->output)) {
+                error_log("WebSearchTool raw OpenAI response output: " . print_r($response->output, true));
+            } else {
+                error_log("WebSearchTool raw OpenAI response (full, as output property is missing): " . print_r($response, true));
+            }
             return $this->parseAndFormatOpenAIResponse($response, $query, $numResults);
 
         } catch (OpenAITransporterException $e) {
@@ -120,7 +126,7 @@ Separate each finding with exactly two newline characters. Do not include any ot
             // This is an educated guess on the structure of web_search_preview's output.
             // The actual properties might be different (e.g., 'name', 'description', 'url', 'content').
             // If $resultItem is an array, access would be $resultItem['title'], $resultItem['snippet'].
-            
+
             $title = null;
             $snippet = null;
 

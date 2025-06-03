@@ -2,17 +2,19 @@
 
 namespace MyApp\Application;
 
-use Exception;           // For general error handling
-use OpenAI; // For OpenAI::client() factory
-use OpenAI\Client as OpenAiClient; // For type-hinting if needed, and WebSearchTool constructor
 use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Conversation\Conversation;
 use MyApp\Domain\Conversation\ConversationRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
-use MyApp\WebSearchTool;
+use Carbon\Carbon; // Keep if used by other parts or for formatting
 use yananob\MyGcpTools\CFUtils; // Keep for getLineTarget
+use yananob\MyTools\Utils;    // Keep for __convertConversationsToText (original) or other formatting
 use yananob\MyTools\Gpt;
+use MyApp\WebSearchTool;
+use OpenAI; // For OpenAI::client() factory
+use OpenAI\Client as OpenAiClient; // For type-hinting if needed, and WebSearchTool constructor
+use Exception;           // For general error handling
 
 // TODO: extends GptBot (This comment can be reviewed based on future plans)
 class ChatApplicationService
@@ -25,6 +27,7 @@ class ChatApplicationService
     private ?string $openaiApiKey = null;
     private ?string $openaiSearchModel = null;
     private ?WebSearchTool $webSearchTool = null;
+    private bool $isTest;
 
     const RECENT_CONVERSATIONS_COUNT_FOR_GPT = 10; // As per instructions
 
@@ -54,9 +57,11 @@ EOM;
     public function __construct(
         string $targetId,
         BotRepository $botRepository,
-        ConversationRepository $conversationRepository
+        ConversationRepository $conversationRepository,
+        bool $isTest = true
     ) {
         $this->targetId = $targetId;
+        $this->isTest = $isTest;
         $this->botRepository = $botRepository;
         $this->conversationRepository = $conversationRepository;
 
@@ -65,11 +70,15 @@ EOM;
             throw new \RuntimeException("Bot with ID '{$this->targetId}' not found.");
         }
 
-        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-4.1");
+        $this->gpt = new Gpt(__DIR__ . "/../../configs/gpt.json");
 
         // Load Search API configuration (path adjusted)
-        $this->openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT");
-        $this->openaiSearchModel = "gpt-4o-mini";
+        $searchApiConfigFile = __DIR__ . "/../../configs/search_api.json";
+        if (file_exists($searchApiConfigFile)) {
+            $searchApiConfig = json_decode(file_get_contents($searchApiConfigFile), true);
+            $this->openaiApiKey = $searchApiConfig['openai_api_key'] ?? null;
+            $this->openaiSearchModel = $searchApiConfig['openai_search_model'] ?? null;
+        }
 
         if (!empty($this->openaiApiKey) && !empty($this->openaiSearchModel)) {
             try {

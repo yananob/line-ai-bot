@@ -3,7 +3,6 @@
 namespace MyApp\Domain\Bot\Trigger;
 
 use Carbon\Carbon;
-use MyApp\Consts;
 
 class TimerTrigger implements Trigger
 {
@@ -11,45 +10,12 @@ class TimerTrigger implements Trigger
     private string $date;
     private string $time;
     private string $request;
-    private string $actualDate;
 
     public function __construct(string $date, string $time, string $request)
     {
-        $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
-
         $this->date = $date;
+        $this->time = $time;
         $this->request = $request;
-
-        // Handle time
-        if (preg_match('/^now +(\d+) mins$/', $time, $matches)) {
-            $this->time = $carbonNow->copy()->addMinutes((int)$matches[1])->format('H:i');
-        } else {
-            $this->time = $time;
-        }
-
-        // Handle date
-        switch ($this->date) {
-            case 'everyday':
-                $this->actualDate = 'everyday'; // Special case, doesn't resolve to a specific date
-                break;
-            case 'today':
-                $this->actualDate = $carbonNow->copy()->format('Y/m/d');
-                $this->date = $this->actualDate;
-                break;
-            case 'tomorrow':
-                $this->actualDate = $carbonNow->copy()->addDay()->format('Y/m/d');
-                $this->date = $this->actualDate;
-                break;
-            case 'day after tomorrow':
-                $this->actualDate = $carbonNow->copy()->addDays(2)->format('Y/m/d');
-                $this->date = $this->actualDate;
-                break;
-            default:
-                // Assumes a specific date string like YYYY/MM/DD or YYYY-MM-DD
-                $this->actualDate = Carbon::parse($this->date, new \DateTimeZone(Consts::TIMEZONE))->format('Y/m/d');
-                // No need to update $this->date here as it's already specific
-                break;
-        }
     }
 
     public function getId(): ?string
@@ -93,14 +59,12 @@ class TimerTrigger implements Trigger
         return $this->time;
     }
 
-    public function getActualDate(): string
-    {
-        return $this->actualDate;
-    }
-
     public function shouldRunNow(int $timerTriggeredByNMins): bool
     {
-        $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        // If time is relative like "now +X mins", it's not suitable for periodic checks.
+        if (str_contains($this->time, 'now +')) {
+            return false;
+        }
 
         try {
             list($hour, $minute) = sscanf($this->time, "%d:%d");
@@ -113,38 +77,39 @@ class TimerTrigger implements Trigger
             return false;
         }
 
-        $triggerDateCarbon = null;
-        try {
-            if ($this->actualDate === 'everyday') {
-                $triggerDateCarbon = Carbon::today(new \DateTimeZone(Consts::TIMEZONE));
-            } else {
-                // $this->actualDate is expected to be in 'Y/m/d' format
-                $triggerDateCarbon = Carbon::parse($this->actualDate, new \DateTimeZone(Consts::TIMEZONE));
+        $now = Carbon::now();
+        $targetDate = null;
+
+        if ($this->date === 'everyday') {
+            $targetDate = Carbon::today()->hour($hour)->minute($minute);
+        } elseif ($this->date === 'today') {
+            $targetDate = Carbon::today()->hour($hour)->minute($minute);
+        } elseif ($this->date === 'tomorrow') {
+            // This will be "tomorrow" relative to when this code runs.
+            // If the cron runs daily, a trigger for "tomorrow" will become "today" the next day.
+            // This logic means it should trigger if checked on the day *before* the intended "tomorrow".
+            $targetDate = Carbon::tomorrow()->hour($hour)->minute($minute);
+        } else {
+            // Specific date 'YYYY-MM-DD'
+            try {
+                $targetDate = Carbon::parse($this->date)->hour($hour)->minute($minute);
+            } catch (\Exception $e) {
+                // Invalid date format
+                return false;
             }
-        } catch (\Exception $e) {
-            // Invalid date format in actualDate
-            return false;
         }
         
-        if (!$triggerDateCarbon) {
-             // Should not happen if logic above is correct
+        if (!$targetDate) {
             return false;
         }
 
-        $triggerDateTimeCarbon = $triggerDateCarbon->hour($hour)->minute($minute)->second(0);
-
-        // Calculate the difference in minutes.
-        // A positive value means $triggerDateTimeCarbon is in the future or same minute.
-        // A negative value means $triggerDateTimeCarbon is in the past.
-        $diffMinutes = $carbonNow->diffInMinutes($triggerDateTimeCarbon, false);
-
-        // Trigger if the event is scheduled for the current minute or any minute within the $timerTriggeredByNMins window in the future.
-        // For example, if $timerTriggeredByNMins is 5:
-        // diffMinutes = 0 (current minute) -> true
-        // diffMinutes = 4 (4 minutes in future) -> true
-        // diffMinutes = 5 (5 minutes in future) -> false (because it's < $timerTriggeredByNMins)
-        // diffMinutes = -1 (1 minute in past) -> false
-        return $diffMinutes >= 0 && $diffMinutes < $timerTriggeredByNMins;
+        // Check if current time is within the window [targetDate, targetDate + $timerTriggeredByNMins)
+        // $now >= $targetDate && $now < $targetDate->copy()->addMinutes($timerTriggeredByNMins)
+        return $now->isBetween($targetDate, $targetDate->copy()->addMinutes($timerTriggeredByNMins));
+        // Note: isBetween($a, $b, $equalA, $equalB)
+        // $equalA = true means comparison is >= $a
+        // $equalB = false means comparison is < $b
+        // So, $targetDate <= $now < $targetDate->copy()->addMinutes($timerTriggeredByNMins)
     }
 
     public function __toString(): string

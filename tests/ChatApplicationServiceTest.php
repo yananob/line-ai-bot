@@ -383,7 +383,7 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
                     if (str_contains($contextArg, "【Web検索結果】")) {
                         $this->assertStringContainsString($searchResults, $contextArg);
                     }
-                    return true; 
+                    return true;
                 }),
                 $this->anything()
             );
@@ -402,7 +402,7 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
                 'いいえ', // Judge web search -> No. Or could be 'はい' but API key is null.
                 'Final Answer' // Final answer generation
             ));
-        
+
         $this->webSearchToolMock->expects($this->never())->method('search');
 
         $this->gptMock->expects($this->atLeastOnce()) // For PROMPT_JUDGE_WEB_SEARCH and the final answer

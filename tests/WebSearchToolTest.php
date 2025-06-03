@@ -81,7 +81,7 @@ class WebSearchToolTest extends TestCase
 
         // Mock other necessary properties of ResponsesCreateResponse
         $mockApiResponse->id = 'resp-test123';
-        $mockApiResponse->object = 'response'; 
+        $mockApiResponse->object = 'response';
         $mockApiResponse->created = time();
         $mockApiResponse->model = $this->testOpenAiModel;
 
@@ -128,7 +128,7 @@ class WebSearchToolTest extends TestCase
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
-    
+
     public function testSearchSuccessfulUsesDescriptionAsFallbackForSnippet(): void
     {
         $query = "description fallback";
@@ -192,7 +192,7 @@ class WebSearchToolTest extends TestCase
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
-    
+
     public function testSearchReturnsNoResultsFoundWhenApiReturnsEmptyOutputArray(): void
     {
         $query = "no results query empty output";
@@ -219,7 +219,7 @@ class WebSearchToolTest extends TestCase
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
-        
+
         $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query) . ". The response might not contain suitable structured content.";
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
@@ -258,7 +258,7 @@ class WebSearchToolTest extends TestCase
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
-    
+
     public function testSearchOnlyIncludesSnippetIfTitleMissing(): void
     {
         $query = "missing title query";
