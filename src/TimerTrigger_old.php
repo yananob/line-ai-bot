@@ -95,11 +95,27 @@ class TimerTrigger extends Trigger
     public function shouldRunNow(int $triggerDurationMins): bool
     {
         $triggerTime = new Carbon($this->actualDate . " " . $this->getTime() . ":00", new \DateTimeZone(Consts::TIMEZONE));
-        $diff = (new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE)))->diffInMinutes($triggerTime);
-        if (($diff >= $triggerDurationMins) || ($diff < 0)) {
+        $now = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+
+        // Timer should not run if it's before the scheduled time.
+        if ($now->lt($triggerTime)) {
             return false;
         }
 
-        return true;
+        // Timer should run if current time is past or at the scheduled time,
+        // but not later than triggerDurationMins after the scheduled time.
+        $diff = $now->diffInMinutes($triggerTime); // Difference between current time and scheduled time
+
+        // $diff will be negative if $now is past $triggerTime. We need absolute difference here.
+        // However, Carbon's diffInMinutes when the first date is later than the second
+        // already gives a positive value if the `abs` parameter is true (which is default).
+        // Let's be explicit for clarity.
+        $absoluteDiff = $triggerTime->diffInMinutes($now, true);
+
+        if ($absoluteDiff < $triggerDurationMins) {
+            return true;
+        }
+
+        return false;
     }
 }

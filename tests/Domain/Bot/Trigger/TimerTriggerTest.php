@@ -174,4 +174,203 @@ final class TimerTriggerTest extends TestCase
 
         Carbon::setTestNow(); // Reset to real time
     }
+
+    private const TEST_DATE = '2024/01/01';
+    private const TRIGGER_DURATION_MINS = 10;
+
+    public function testShouldRunNow_Current720_Scheduled730_ReturnsFalse()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30';
+        // Use 'today' for date so actualDate is set to TEST_DATE by constructor when 'now' is TEST_DATE
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone)); // Set base date for constructor
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:20:00', $timeZone);
+        Carbon::setTestNow($now);
+
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should NOT run when current time is 07:20:00.");
+    }
+
+    public function testShouldRunNow_Current730_Scheduled730_ReturnsTrue()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30';
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:30:00', $timeZone);
+        Carbon::setTestNow($now);
+
+        $this->assertTrue($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should run when current time is 07:30:00.");
+    }
+
+    // Scenario from issue has current time 7:35, scheduled 7:30, duration 10, expected true
+    // This corresponds to the original "Timer should run - within duration"
+    public function testShouldRunNow_Current735_Scheduled730_ReturnsTrue()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30';
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:35:00', $timeZone);
+        Carbon::setTestNow($now);
+
+        $this->assertTrue($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should run when current time is 07:35:00.");
+    }
+
+    // This test is based on the new list: Current Time: "07:29:00", Scheduled Time: "07:30", expected true.
+    // This tests the edge case just before the scheduled time, but within the logic of the corrected shouldRunNow,
+    // it should be false if $now->lt($triggerTime). If the implementation considers $now->diffInMinutes($triggerTime) < $duration
+    // and $now is slightly before $triggerTime making diff positive but small, it might pass.
+    // The corrected logic is: if ($now->lt($triggerTime)) return false; ... $absoluteDiff = $triggerTime->diffInMinutes($now, true); if ($absoluteDiff < $triggerDurationMins) return true;
+    // For 7:29 vs 7:30, $now->lt($triggerTime) is true, so it should be false.
+    public function testShouldRunNow_Current729_Scheduled730_ReturnsFalse_AsCurrentIsBeforeScheduled()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30';
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:29:59', $timeZone); // Using 07:29:59 for precision
+        Carbon::setTestNow($now);
+
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should NOT run when current time is 07:29:59 (before scheduled).");
+    }
+
+    // This test is based on the new list: Current Time: "07:30:00", Scheduled Time: "07:39" -> should be current time 07:39, scheduled 07:30
+    // Correcting to: Current Time: "07:39:00", Scheduled Time: "07:30" (within duration)
+    public function testShouldRunNow_Current739_Scheduled730_ReturnsTrue()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30';
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:39:00', $timeZone);
+        Carbon::setTestNow($now);
+
+        $this->assertTrue($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should run when current time is 07:39:00 (within 10 min duration).");
+    }
+
+    // Original scenario: Timer should not run - past duration
+    // Current time: 7:40, Scheduled time: 7:30, triggerDurationMins: 10. Expected: false
+    // This means current time 07:40, scheduled 07:30. $absoluteDiff = 10. $absoluteDiff < 10 is false.
+    public function testShouldRunNow_Current740_Scheduled730_ReturnsFalse()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30';
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:40:00', $timeZone);
+        Carbon::setTestNow($now);
+
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should NOT run when current time is 07:40:00 (at limit of 10 min duration).");
+    }
+
+    // Original scenario: Timer should not run - way before scheduled time
+    // Current time: 6:00, Scheduled time: 7:30, triggerDurationMins: 10. Expected: false
+    public function testShouldRunNow_Current600_Scheduled730_ReturnsFalse()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30';
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 06:00:00', $timeZone);
+        Carbon::setTestNow($now);
+
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should NOT run when current time is 06:00:00 (way before).");
+    }
+
+
+    // Test cases from the prompt's "Test Scenarios" section (some might overlap or be variations of above)
+    // Test 1: Current720_Scheduled730_ReturnsFalse -> Covered by testShouldRunNow_Current720_Scheduled730_ReturnsFalse
+
+    // Test 2: Current730_Scheduled730_ReturnsTrue -> Covered by testShouldRunNow_Current730_Scheduled730_ReturnsTrue
+
+    // Test 3: testShouldRunNow_Current725_Scheduled730_ReturnsTrue -> This implies current time is 07:25, scheduled 07:30.
+    // According to the corrected logic: if ($now->lt($triggerTime)) return false;
+    // So, 07:25 is less than 07:30, so it should be false.
+    public function testShouldRunNow_Current725_Scheduled730_ReturnsFalse_AsCurrentIsBeforeScheduled()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30';
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:25:00', $timeZone);
+        Carbon::setTestNow($now);
+
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer for {$scheduledTimeStr} at " . self::TEST_DATE . " should NOT run when current time is 07:25:00 (before scheduled).");
+    }
+
+    // Test 4: testShouldRunNow_Current729_Scheduled730_ReturnsTrue -> Covered by testShouldRunNow_Current729_Scheduled730_ReturnsFalse_AsCurrentIsBeforeScheduled, expected FALSE
+
+    // Test 5: testShouldRunNow_Current730_Scheduled739_ReturnsTrue -> This should be: Current Time: 07:39, Scheduled Time: 07:30.
+    // This is covered by testShouldRunNow_Current739_Scheduled730_ReturnsTrue
+
+    // Test 6: testShouldRunNow_Current730_Scheduled725_ReturnsFalse (Past timer)
+    // Current time 07:30, Scheduled 07:25. $absoluteDiff = 5. $absoluteDiff < 10 is true. This should be TRUE.
+    // This tests if a timer that was scheduled for 07:25, and current time is 07:30, is still within its 10-min window.
+    public function testShouldRunNow_Current730_Scheduled725_ReturnsTrue_AsItIsWithinWindow()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:25'; // Scheduled time is 07:25
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:30:00', $timeZone); // Current time is 07:30
+        Carbon::setTestNow($now);
+
+        // $triggerTime is 07:25. $now is 07:30.
+        // $now->lt($triggerTime) is false.
+        // $absoluteDiff = $triggerTime->diffInMinutes($now, true) = 5.
+        // $absoluteDiff (5) < TRIGGER_DURATION_MINS (10) is true.
+        $this->assertTrue($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should RUN when current time is 07:30:00 (5 mins past scheduled, within 10 min duration).");
+    }
+
+    // Test 7: testShouldRunNow_Current700_Scheduled700_ReturnsTrue
+    public function testShouldRunNow_Current700_Scheduled700_ReturnsTrue()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:00';
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:00:00', $timeZone);
+        Carbon::setTestNow($now);
+
+        $this->assertTrue($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer for {$scheduledTimeStr} at " . self::TEST_DATE . " should run when current time is 07:00:00.");
+    }
+
+    // Test 8: testShouldRunNow_Current700_Scheduled709_ReturnsTrue -> This means current time 07:09, scheduled 07:00
+    public function testShouldRunNow_Current709_Scheduled700_ReturnsTrue()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:00'; // Scheduled 07:00
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:09:00', $timeZone); // Current 07:09
+        Carbon::setTestNow($now);
+        // $absoluteDiff = 9. 9 < 10 is true.
+        $this->assertTrue($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer for {$scheduledTimeStr} at " . self::TEST_DATE . " should run when current time is 07:09:00 (9 mins past, within 10 min duration).");
+    }
+
+    // Test 9: testShouldRunNow_Current700_Scheduled710_ReturnsFalse -> This means current time 07:10, scheduled 07:00
+    public function testShouldRunNow_Current710_Scheduled700_ReturnsFalse()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:00'; // Scheduled 07:00
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone));
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        $now = Carbon::parse(self::TEST_DATE . ' 07:10:00', $timeZone); // Current 07:10
+        Carbon::setTestNow($now);
+        // $absoluteDiff = 10. 10 < 10 is false.
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer for {$scheduledTimeStr} at " . self::TEST_DATE . " should NOT run when current time is 07:10:00 (10 mins past, at limit of 10 min duration).");
+    }
 }
