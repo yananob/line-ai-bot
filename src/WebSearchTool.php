@@ -43,6 +43,9 @@ class WebSearchTool
             return "Error: Number of results must be positive.";
         }
 
+        // Modify the query to prefer recent information
+        $query .= " Prefer recent information from the last 12 months.";
+
         $params = [
             'model' => $this->openaiModel,
             'input' => $query,
@@ -50,28 +53,6 @@ class WebSearchTool
             'max_output_tokens' => 200 * $numResults, // Estimate, actual output structure will dictate usefulness
             'temperature' => 0.7,
         ];
-
-        // System prompt to guide the AI's response format
-        $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
-For each finding, strictly format it as:
-Title: [The title of the finding]
-Snippet: [A brief snippet of the finding]
-
-Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
-
-        // User prompt with the actual query
-        $userPrompt = "Search the web for: " . htmlspecialchars($query);
-
-        // System prompt to guide the AI's response format
-        $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
-For each finding, strictly format it as:
-Title: [The title of the finding]
-Snippet: [A brief snippet of the finding]
-
-Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
-
-        // User prompt with the actual query
-        $userPrompt = "Search the web for: " . htmlspecialchars($query);
 
         // System prompt to guide the AI's response format
         $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
