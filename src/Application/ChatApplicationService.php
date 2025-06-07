@@ -45,6 +45,12 @@ class ChatApplicationService
 <requests>
 EOM;
 
+    const PROMPT_JUDGE_WEB_SEARCH = <<<EOM
+あなたはユーザーからのメッセージを分析するアシスタントです。
+ユーザーのメッセージに答えるためにWeb検索が必要かどうかを判断してください。
+Web検索が必要な場合は「はい」、そうでない場合は「いいえ」とだけ答えてください。
+EOM;
+
     public function __construct(
         string $targetId,
         BotRepository $botRepository,
@@ -89,14 +95,14 @@ EOM;
 
         // TODO: Google APIを使っていたときのように、いちど検索語を作ってから検索しているので、最適な処理じゃゃなさそう
         $webSearchResults = null;
-        if ($this->webSearchTool instanceof WebSearchTool) {
+        if ($this->webSearchTool instanceof WebSearchTool && $this->__shouldPerformWebSearch($message)) {
             $webSearchResults = $this->webSearchTool->search(
                 $message, // Use raw message as search query
                 5 // Number of results
             );
-        } elseif (empty($this->openaiApiKey)) { // Check if API key is missing
+        } elseif (empty($this->openaiApiKey) && $this->__shouldPerformWebSearch($message)) { // Check if API key is missing
             $webSearchResults = "Error: Web search is not available due to missing OpenAI API key configuration.";
-        } elseif ($this->webSearchTool === null) { // General check if tool failed to initialize
+        } elseif ($this->webSearchTool === null && $this->__shouldPerformWebSearch($message)) { // General check if tool failed to initialize
              $webSearchResults = "Error: Web search tool is not configured properly or failed to initialize.";
         }
         
@@ -200,6 +206,12 @@ EOM;
             $result .= str_repeat("-", 80) . "\n";
         }
         return $result;
+    }
+
+    private function __shouldPerformWebSearch(string $message): bool
+    {
+        $response = trim($this->gpt->getAnswer(context: self::PROMPT_JUDGE_WEB_SEARCH, message: $message));
+        return $response === "はい";
     }
 
     public function getLineTarget(): string
