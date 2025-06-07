@@ -100,51 +100,75 @@ class TimerTrigger implements Trigger
 
     public function shouldRunNow(int $timerTriggeredByNMins): bool
     {
+        error_log("--- testShouldRunNowHandlesEverydayCorrectly DEBUG START ---");
+        error_log("Param \$timerTriggeredByNMins: " . $timerTriggeredByNMins);
+
         $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        error_log("Current Time (\$carbonNow): " . $carbonNow->toIso8601String());
+        error_log("Current Time Minute (\$carbonNow->minute): " . $carbonNow->minute);
 
         try {
             list($hour, $minute) = sscanf($this->time, "%d:%d");
             if (is_null($hour) || is_null($minute)) {
-                // Invalid time format
+                error_log("Error: Invalid time format for \$this->time: " . $this->time);
+                error_log("--- testShouldRunNowHandlesEverydayCorrectly DEBUG END (early return) ---");
                 return false;
             }
+            error_log("Parsed \$hour: " . $hour . ", \$minute: " . $minute . " from \$this->time: " . $this->time);
         } catch (\Exception $e) {
-            // Parsing failed
+            error_log("Exception during time parsing: " . $e->getMessage());
+            error_log("--- testShouldRunNowHandlesEverydayCorrectly DEBUG END (early return) ---");
             return false;
         }
 
         $triggerDateCarbon = null;
+        error_log("\$this->actualDate: " . $this->actualDate);
+
         try {
             if ($this->actualDate === 'everyday') {
-                $triggerDateCarbon = Carbon::today(new \DateTimeZone(Consts::TIMEZONE));
+                error_log("Condition: \$this->actualDate === 'everyday'");
+                $triggerDateCarbon = $carbonNow->copy()->startOfDay();
+                error_log("For 'everyday', \$triggerDateCarbon (from \$carbonNow->copy()->startOfDay()): " . $triggerDateCarbon->toIso8601String());
             } else {
-                // $this->actualDate is expected to be in 'Y/m/d' format
-                $triggerDateCarbon = Carbon::parse($this->actualDate, new \DateTimeZone(Consts::TIMEZONE));
+                error_log("Condition: \$this->actualDate !== 'everyday', value: " . $this->actualDate);
+                $triggerDateCarbon = Carbon::parse($this->actualDate, new \DateTimeZone(Consts::TIMEZONE))->startOfDay();
+                error_log("For specific date, \$triggerDateCarbon (from Carbon::parse(\$this->actualDate)->startOfDay()): " . $triggerDateCarbon->toIso8601String());
             }
         } catch (\Exception $e) {
-            // Invalid date format in actualDate
+            error_log("Exception during date parsing for \$this->actualDate: " . $this->actualDate . " - " . $e->getMessage());
+            error_log("--- testShouldRunNowHandlesEverydayCorrectly DEBUG END (early return) ---");
             return false;
         }
         
         if (!$triggerDateCarbon) {
-             // Should not happen if logic above is correct
+            error_log("Error: \$triggerDateCarbon is null after parsing.");
+            error_log("--- testShouldRunNowHandlesEverydayCorrectly DEBUG END (early return) ---");
             return false;
         }
 
         $triggerDateTimeCarbon = $triggerDateCarbon->hour($hour)->minute($minute)->second(0);
+        error_log("Scheduled DateTime (\$triggerDateTimeCarbon): " . $triggerDateTimeCarbon->toIso8601String());
 
-        // Calculate the difference in minutes.
-        // A positive value means $triggerDateTimeCarbon is in the future or same minute.
-        // A negative value means $triggerDateTimeCarbon is in the past.
-        $diffMinutes = $carbonNow->diffInMinutes($triggerDateTimeCarbon, false);
+        // Calculate current time slot
+        $slotMinuteValue = floor($carbonNow->minute / $timerTriggeredByNMins) * $timerTriggeredByNMins; // Renamed for clarity from $slotMinute
+        error_log("Calculated \$slotMinuteValue: " . $slotMinuteValue); // Log the float value
 
-        // Trigger if the event is scheduled for the current minute or any minute within the $timerTriggeredByNMins window in the future.
-        // For example, if $timerTriggeredByNMins is 5:
-        // diffMinutes = 0 (current minute) -> true
-        // diffMinutes = 4 (4 minutes in future) -> true
-        // diffMinutes = 5 (5 minutes in future) -> false (because it's < $timerTriggeredByNMins)
-        // diffMinutes = -1 (1 minute in past) -> false
-        $result = $diffMinutes >= 0 && $diffMinutes < $timerTriggeredByNMins;
+        $slotStartTime = $carbonNow->copy()->minute((int)$slotMinuteValue)->second(0)->microsecond(0); // Cast to int
+        error_log("Slot Start Time (\$slotStartTime): " . $slotStartTime->toIso8601String());
+
+        $slotEndTime = $slotStartTime->copy()->addMinutes($timerTriggeredByNMins);
+        error_log("Slot End Time (\$slotEndTime): " . $slotEndTime->toIso8601String());
+
+        // Timer should run if its scheduled time is within the current slot
+        $gteSlotStart = $triggerDateTimeCarbon->gte($slotStartTime);
+        $ltSlotEnd = $triggerDateTimeCarbon->lt($slotEndTime);
+        error_log("\$triggerDateTimeCarbon >= \$slotStartTime : " . ($gteSlotStart ? 'true' : 'false'));
+        error_log("\$triggerDateTimeCarbon < \$slotEndTime : " . ($ltSlotEnd ? 'true' : 'false'));
+
+        $result = $gteSlotStart && $ltSlotEnd;
+        error_log("Final \$result: " . ($result ? 'true' : 'false'));
+        error_log("--- testShouldRunNowHandlesEverydayCorrectly DEBUG END ---");
+
         return $result;
     }
 
