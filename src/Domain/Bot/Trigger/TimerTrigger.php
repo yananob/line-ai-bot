@@ -116,10 +116,10 @@ class TimerTrigger implements Trigger
         $triggerDateCarbon = null;
         try {
             if ($this->actualDate === 'everyday') {
-                $triggerDateCarbon = Carbon::today(new \DateTimeZone(Consts::TIMEZONE));
+                $triggerDateCarbon = $carbonNow->copy()->startOfDay();
             } else {
                 // $this->actualDate is expected to be in 'Y/m/d' format
-                $triggerDateCarbon = Carbon::parse($this->actualDate, new \DateTimeZone(Consts::TIMEZONE));
+                $triggerDateCarbon = Carbon::parse($this->actualDate, new \DateTimeZone(Consts::TIMEZONE))->startOfDay();
             }
         } catch (\Exception $e) {
             // Invalid date format in actualDate
