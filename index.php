@@ -142,6 +142,8 @@ function trigger(CloudEventInterface $event): void
     foreach ($botRepository->getAllUserBots() as $botUser) {
         foreach ($botUser->getTriggers() as $trigger) {
             // Ensure $trigger is an instance of TimerTrigger or has shouldRunNow
+            $logger->log("Processing trigger for user: {$botUser->getId()}. Trigger details: " . (string)$trigger); // Log basic trigger info
+
             if (!$trigger instanceof TimerTrigger) {
                 // Log or handle cases where trigger is not a TimerTrigger, if other types exist
                 $logger->log("Skipping trigger for user {$botUser->getId()} as it's not a TimerTrigger. Trigger: " . (string)$trigger);
@@ -152,6 +154,13 @@ function trigger(CloudEventInterface $event): void
             if ($trigger->getEvent() !== "timer") { // This check might be redundant if only TimerTriggers are stored/expected
                 continue;
             }
+
+            // Add these logs BEFORE the condition:
+            $currentTimeForCheck = new Carbon\Carbon(timezone: new \DateTimeZone(MyApp\Consts::TIMEZONE));
+            $logger->log("trigger_function: About to call shouldRunNow for trigger ID " . $trigger->getId() . " for user {$botUser->getId()}");
+            $logger->log("trigger_function: Current time is " . $currentTimeForCheck->toString() . " (TZ: " . $currentTimeForCheck->getTimezone()->getName() . ")");
+            $logger->log("trigger_function: Trigger details: Date='{$trigger->getDate()}', Time='{$trigger->getTime()}', ActualDate='{$trigger->getActualDate()}', Request='{$trigger->getRequest()}'");
+
             if (!$trigger->shouldRunNow(TIMER_TRIGGERED_BY_N_MINS)) {
                 continue;
             }

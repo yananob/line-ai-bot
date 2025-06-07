@@ -103,13 +103,21 @@ class TimerTrigger implements Trigger
             return false;
         }
 
-        // Check if current time is within the window [targetDate, targetDate + $timerTriggeredByNMins)
-        // $now >= $targetDate && $now < $targetDate->copy()->addMinutes($timerTriggeredByNMins)
-        return $now->isBetween($targetDate, $targetDate->copy()->addMinutes($timerTriggeredByNMins));
-        // Note: isBetween($a, $b, $equalA, $equalB)
-        // $equalA = true means comparison is >= $a
-        // $equalB = false means comparison is < $b
-        // So, $targetDate <= $now < $targetDate->copy()->addMinutes($timerTriggeredByNMins)
+        $triggerDateTimeCarbon = $triggerDateCarbon->hour($hour)->minute($minute)->second(0);
+
+        // Calculate the difference in minutes.
+        // A positive value means $triggerDateTimeCarbon is in the future or same minute.
+        // A negative value means $triggerDateTimeCarbon is in the past.
+        $diffMinutes = $carbonNow->diffInMinutes($triggerDateTimeCarbon, false);
+
+        // Trigger if the event is scheduled for the current minute or any minute within the $timerTriggeredByNMins window in the future.
+        // For example, if $timerTriggeredByNMins is 5:
+        // diffMinutes = 0 (current minute) -> true
+        // diffMinutes = 4 (4 minutes in future) -> true
+        // diffMinutes = 5 (5 minutes in future) -> false (because it's < $timerTriggeredByNMins)
+        // diffMinutes = -1 (1 minute in past) -> false
+        $result = $diffMinutes >= 0 && $diffMinutes < $timerTriggeredByNMins;
+        return $result;
     }
 
     public function __toString(): string

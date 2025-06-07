@@ -55,7 +55,9 @@ class FirestoreBotRepository implements BotRepository
             $tData = $triggerDoc->data();
             // Assuming TimerTrigger for now, this would need to be more flexible
             if (isset($tData['event']) && $tData['event'] === 'timer') {
-                $trigger = new TimerTrigger($tData['date'], $tData['time'], $tData['request']);
+                $dateForTrigger = $tData['date'] ?? null; // Use null coalescing for safety
+                $timeForTrigger = $tData['time'] ?? null; // Use null coalescing for safety
+                $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $tData['request']);
                 $trigger->setId($triggerDoc->id()); // Use Firestore document ID as trigger ID
                 $triggers[$trigger->getId()] = $trigger;
             }
