@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MyApp;
 
-use OpenAI\Client;
+use OpenAI\Contracts\ClientContract;
 use OpenAI\Responses\Responses\CreateResponse as ResponsesCreateResponse; // Updated use statement
 use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
 use OpenAI\Exceptions\TransporterException as OpenAITransporterException;
@@ -12,16 +12,16 @@ use Exception; // Keep for general exceptions
 
 class WebSearchTool
 {
-    private Client $openaiClient;
+    private ClientContract $openaiClient;
     private string $openaiModel;
 
     /**
      * Constructor.
      *
-     * @param Client $openaiClient An initialized OpenAI API client.
+     * @param ClientContract $openaiClient An initialized OpenAI API client.
      * @param string $openaiModel The OpenAI model to use for searches (e.g., 'gpt-4o' or similar that supports responses()->create).
      */
-    public function __construct(Client $openaiClient, string $openaiModel)
+    public function __construct(ClientContract $openaiClient, string $openaiModel)
     {
         $this->openaiClient = $openaiClient;
         $this->openaiModel = $openaiModel;
@@ -44,7 +44,7 @@ class WebSearchTool
         }
 
         // Modify the query to prefer recent information
-        $query .= " Prefer recent information from the last 12 months.";
+        $query .= " 検索結果はできるだけ新しいものを使うようにしてください。";
 
         $params = [
             'model' => $this->openaiModel,
