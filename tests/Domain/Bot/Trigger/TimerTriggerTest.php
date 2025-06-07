@@ -313,9 +313,10 @@ final class TimerTriggerTest extends TestCase
     // This is covered by testShouldRunNow_Current739_Scheduled730_ReturnsTrue
 
     // Test 6: testShouldRunNow_Current730_Scheduled725_ReturnsFalse (Past timer)
-    // Current time 07:30, Scheduled 07:25. $absoluteDiff = 5. $absoluteDiff < 10 is true. This should be TRUE.
-    // This tests if a timer that was scheduled for 07:25, and current time is 07:30, is still within its 10-min window.
-    public function testShouldRunNow_Current730_Scheduled725_ReturnsTrue_AsItIsWithinWindow()
+    // Current time 07:30, Scheduled 07:25.
+    // Slot for 07:30 is [07:30:00, 07:40:00).
+    // Scheduled time 07:25:00 is NOT in this slot. So, should be FALSE.
+    public function testShouldRunNow_Current730_Scheduled725_ReturnsFalse_AsScheduledTimeIsNotInCurrentSlot()
     {
         $timeZone = new \DateTimeZone(Consts::TIMEZONE);
         $scheduledTimeStr = '07:25'; // Scheduled time is 07:25
@@ -325,11 +326,9 @@ final class TimerTriggerTest extends TestCase
         $now = Carbon::parse(self::TEST_DATE . ' 07:30:00', $timeZone); // Current time is 07:30
         Carbon::setTestNow($now);
 
-        // $triggerTime is 07:25. $now is 07:30.
-        // $now->lt($triggerTime) is false.
-        // $absoluteDiff = $triggerTime->diffInMinutes($now, true) = 5.
-        // $absoluteDiff (5) < TRIGGER_DURATION_MINS (10) is true.
-        $this->assertTrue($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should RUN when current time is 07:30:00 (5 mins past scheduled, within 10 min duration).");
+        // Slot for current time 07:30:00 (duration 10) is [07:30:00, 07:40:00).
+        // Scheduled time 07:25:00 is not gte(07:30:00).
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should NOT RUN when current time is 07:30:00 because 07:25 is not in the [07:30,07:40) slot.");
     }
 
     // Test 7: testShouldRunNow_Current700_Scheduled700_ReturnsTrue
@@ -370,7 +369,28 @@ final class TimerTriggerTest extends TestCase
 
         $now = Carbon::parse(self::TEST_DATE . ' 07:10:00', $timeZone); // Current 07:10
         Carbon::setTestNow($now);
-        // $absoluteDiff = 10. 10 < 10 is false.
-        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer for {$scheduledTimeStr} at " . self::TEST_DATE . " should NOT run when current time is 07:10:00 (10 mins past, at limit of 10 min duration).");
+        // Slot for current time 07:10:00 is [07:10:00, 07:20:00).
+        // Scheduled time 07:00:00 is not gte(07:10:00).
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer for {$scheduledTimeStr} at " . self::TEST_DATE . " should NOT run when current time is 07:10:00 (scheduled 07:00 not in slot [07:10,07:20)).");
+    }
+
+    // New test case from user scenario
+    public function testShouldRunNow_Current072110_Scheduled073000_ReturnsFalse()
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        $scheduledTimeStr = '07:30:00'; // Scheduled time
+        Carbon::setTestNow(Carbon::parse(self::TEST_DATE . ' 00:00:00', $timeZone)); // Base for constructor
+        $trigger = new TimerTrigger('today', $scheduledTimeStr, 'test request for ' . $scheduledTimeStr);
+
+        // Set current time for shouldRunNow check
+        $now = Carbon::parse(self::TEST_DATE . ' 07:21:10', $timeZone); // Current time "07:21:10"
+        Carbon::setTestNow($now);
+
+        // Slot for current time 07:21:10 (duration 10 mins) is [07:20:00, 07:30:00).
+        // floor(21/10)*10 = 20. Slot starts at 07:20:00. Slot ends at 07:30:00.
+        // Scheduled time 07:30:00.
+        // Check: ("07:30:00")->gte("07:20:00") (true) && ("07:30:00")->lt("07:30:00") (false)
+        // Result is false.
+        $this->assertFalse($trigger->shouldRunNow(self::TRIGGER_DURATION_MINS), "Timer scheduled for {$scheduledTimeStr} on " . self::TEST_DATE . " should NOT run when current time is 07:21:10. Slot is [07:20:00, 07:30:00), scheduled time 07:30:00 is not strictly less than slot end.");
     }
 }

@@ -133,18 +133,15 @@ class TimerTrigger implements Trigger
 
         $triggerDateTimeCarbon = $triggerDateCarbon->hour($hour)->minute($minute)->second(0);
 
-        // Calculate the difference in minutes.
-        // A positive value means $triggerDateTimeCarbon is in the future or same minute.
-        // A negative value means $triggerDateTimeCarbon is in the past.
-        $diffMinutes = $carbonNow->diffInMinutes($triggerDateTimeCarbon, false);
+        // Calculate current time slot
+        $slotMinute = floor($carbonNow->minute / $timerTriggeredByNMins) * $timerTriggeredByNMins;
+        $slotStartTime = $carbonNow->copy()->minute($slotMinute)->second(0)->microsecond(0);
+        $slotEndTime = $slotStartTime->copy()->addMinutes($timerTriggeredByNMins);
 
-        // Trigger if the event is scheduled for the current minute or any minute within the $timerTriggeredByNMins window in the future.
-        // For example, if $timerTriggeredByNMins is 5:
-        // diffMinutes = 0 (current minute) -> true
-        // diffMinutes = 4 (4 minutes in future) -> true
-        // diffMinutes = 5 (5 minutes in future) -> false (because it's < $timerTriggeredByNMins)
-        // diffMinutes = -1 (1 minute in past) -> false
-        $result = $diffMinutes >= 0 && $diffMinutes < $timerTriggeredByNMins;
+        // Timer should run if its scheduled time is within the current slot
+        $result = $triggerDateTimeCarbon->gte($slotStartTime) &&
+                  $triggerDateTimeCarbon->lt($slotEndTime);
+
         return $result;
     }
 
