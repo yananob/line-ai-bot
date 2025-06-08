@@ -4,154 +4,82 @@ on:
   workflow_call:
     inputs:
       function_name:
-        description: 'The name of the Cloud Function'
+        description: 'Cloud Function の名前'
         required: true
         type: string
       project_id:
-        description: 'Google Cloud Project ID for deploying the function'
+        description: '関数をデプロイする Google Cloud プロジェクトID'
         required: true
         type: string
       region:
-        description: 'Google Cloud Region for the function'
+        description: '関数を配置する Google Cloud リージョン'
         required: true
         type: string
       service_account_name:
-        description: 'Name of the Service Account (e.g., my-sa-name)'
+        description: 'サービスアカウント名（例: my-sa-name）'
         required: true
         type: string
       gcp_project_number:
-        description: 'Google Cloud Project Number (used for Workload Identity)'
+        description: 'Google Cloud プロジェクト番号（Workload Identity 用）'
         required: true
         type: string
       wip_pool_name:
-        description: 'Workload Identity Pool name'
+        description: 'Workload Identity プール名'
         required: false
         type: string
         default: 'github-actions-pool'
       wip_provider_name:
-        description: 'Workload Identity Provider name'
+        description: 'Workload Identity プロバイダー名'
         required: false
         type: string
         default: 'github-provider'
       secrets_project_id:
-        description: 'Google Cloud Project ID where secrets are stored (defaults to function project_id if not set)'
+        description: 'シークレットが格納されている Google Cloud プロジェクトID（未指定時は function の project_id を使用）'
         required: false
         type: string
       secrets_config:
-        description: 'Multiline string of secret names (e.g., "SECRET_A\nSECRET_B")'
+        description: 'シークレット名の複数行文字列（例: "SECRET_A\nSECRET_B"）'
         required: true
         type: string
       runtime:
-        description: 'Cloud Function runtime (e.g., php82)'
+        description: 'Cloud Function のランタイム（例: php82）'
         required: false
         type: string
         default: 'php82'
       source_dir:
-        description: 'Source directory for the function code'
+        description: '関数コードのソースディレクトリ'
         required: false
         type: string
         default: './'
       max_instance_count:
-        description: 'Maximum number of instances for the function'
+        description: '関数の最大インスタンス数'
         required: false
         type: number
         default: 1
       deploy_http_trigger:
-        description: 'Whether to deploy the HTTP-triggered function'
+        description: 'HTTP トリガー関数をデプロイするかどうか'
         required: false
         type: boolean
         default: true
       http_entry_point:
-        description: 'Entry point for the HTTP-triggered function'
+        description: 'HTTP トリガー関数のエントリポイント'
         required: false
         type: string
         default: 'main'
       deploy_event_trigger:
-        description: 'Whether to deploy the event-triggered function'
+        description: 'イベントトリガー関数をデプロイするかどうか'
         required: false
         type: boolean
         default: true
       event_entry_point:
-        description: 'Entry point for the event-triggered function'
+        description: 'イベントトリガー関数のエントリポイント'
         required: false
         type: string
         default: 'trigger'
       event_trigger_pubsub_topic_suffix:
-        description: 'Suffix for the event trigger Pub/Sub topic (appended to function_name)'
+        description: 'イベントトリガー Pub/Sub トピックのサフィックス（function_name に付加されます）'
         required: false
         type: string
         default: '-trigger'
     secrets:
       pass: ""
-
-permissions:
-  contents: 'read'
-  id-token: 'write'
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    env:
-      # Determine the project ID for secrets. Use inputs.secrets_project_id if provided, otherwise default to inputs.project_id
-      SECRETS_PROJECT_FOR_CONSTRUCTION: ${{ inputs.secrets_project_id || inputs.project_id }}
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: 'true'
-
-      - name: Google Cloud認証
-        id: 'auth'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          workload_identity_provider: 'projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/${{ inputs.wip_pool_name }}/providers/${{ inputs.wip_provider_name }}'
-          service_account: '${{ inputs.service_account_name }}@${{ inputs.project_id }}.iam.gserviceaccount.com'
-
-      - name: Prepare Secrets Configuration
-        id: prep_secrets
-        shell: bash
-        run: |
-          secrets_output=""
-          echo "${{ inputs.secrets_config }}" | while IFS= read -r secret_name; do
-            if [ -n "$secret_name" ]; then
-              if [ -n "$secrets_output" ]; then
-                secrets_output="${secrets_output}"
-              fi
-              secrets_output="${secrets_output}${secret_name}=projects/${{ env.SECRETS_PROJECT_FOR_CONSTRUCTION }}/secrets/${secret_name}/versions/latest"
-            fi
-          done
-          echo "formatted_secrets<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$secrets_output" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Deploy Cloud Functions (http)
-        if: inputs.deploy_http_trigger
-        uses: 'google-github-actions/deploy-cloud-functions@v3'
-        timeout-minutes: 5
-        with:
-          name: ${{ inputs.function_name }}
-          project_id: ${{ inputs.project_id }}
-          region: ${{ inputs.region }}
-          runtime: ${{ inputs.runtime }}
-          entry_point: ${{ inputs.http_entry_point }}
-          service_account: '${{ inputs.service_account_name }}@${{ inputs.project_id }}.iam.gserviceaccount.com' # Reconstruct here too
-          source_dir: ${{ inputs.source_dir }}
-          max_instance_count: ${{ inputs.max_instance_count }}
-          secrets: ${{ steps.prep_secrets.outputs.formatted_secrets }}
-
-      - name: Deploy Cloud Functions (event)
-        if: inputs.deploy_event_trigger
-        uses: 'google-github-actions/deploy-cloud-functions@v3'
-        timeout-minutes: 5
-        with:
-          name: ${{ inputs.function_name }}${{ inputs.event_trigger_pubsub_topic_suffix }}
-          project_id: ${{ inputs.project_id }}
-          region: ${{ inputs.region }}
-          runtime: ${{ inputs.runtime }}
-          entry_point: ${{ inputs.event_entry_point }}
-          event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished
-          event_trigger_pubsub_topic: ${{ inputs.function_name }}${{ inputs.event_trigger_pubsub_topic_suffix }}
-          service_account: '${{ inputs.service_account_name }}@${{ inputs.project_id }}.iam.gserviceaccount.com' # Reconstruct here too
-          source_dir: ${{ inputs.source_dir }}
-          max_instance_count: ${{ inputs.max_instance_count }}
-          secrets: ${{ steps.prep_secrets.outputs.formatted_secrets }}
