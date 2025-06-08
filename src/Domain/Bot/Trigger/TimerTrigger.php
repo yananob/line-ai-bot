@@ -13,6 +13,12 @@ class TimerTrigger implements Trigger
     private string $request;
     private string $actualDate;
 
+    /**
+     * Notes: このメソッド内でnew Carbon()をしているので、Carbon::setTestNow()など日付を調整する場合は、コンストラクタ以前に実行すること
+     * @param string $date タイマー実行日（JST）
+     * @param string $time タイマー実行時間（JST）
+     * @param string $request タイマー実行時のリクエスト内容
+     */
     public function __construct(string $date, string $time, string $request)
     {
         $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
