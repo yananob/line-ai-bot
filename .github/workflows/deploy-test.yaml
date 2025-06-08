@@ -13,7 +13,7 @@ jobs:
   call-reusable-deploy:
     uses: ./.github/workflows/reusable-deploy-cloud-function.yaml
     with:
-      function_name: 'line-ai-bot-test' # Test-specific function name
+      function_name: 'line-ai-bot-test'
       project_id: 'nobu5-393106'
       region: 'us-west1'
       service_account_name: 'cloud-run-functions-deployer'
@@ -25,4 +25,5 @@ jobs:
         OPENAI_KEY_LINE_AI_BOT
         LINE_TOKENS_N_TARGETS
         FIREBASE_CONFIG
-      # Other inputs use defaults from callable workflow
+      deploy_http_trigger: true
+      deploy_event_trigger: true
