@@ -1,0 +1,125 @@
+name: Reusable Deploy Cloud Function
+
+on:
+  workflow_call:
+    inputs:
+      function_name:
+        description: 'The name of the Cloud Function'
+        required: true
+        type: string
+      service_account_email:
+        description: 'Service account email for GCP authentication'
+        required: true
+        type: string
+      workload_identity_provider:
+        description: 'Workload identity provider for GCP authentication'
+        required: true
+        type: string
+      project_id:
+        description: 'Google Cloud Project ID'
+        required: true
+        type: string
+      region:
+        description: 'Google Cloud Region for the function'
+        required: true
+        type: string
+      runtime:
+        description: 'Cloud Function runtime (e.g., php82)'
+        required: false
+        type: string
+        default: 'php82'
+      source_dir:
+        description: 'Source directory for the function code'
+        required: false
+        type: string
+        default: './'
+      max_instance_count:
+        description: 'Maximum number of instances for the function'
+        required: false
+        type: number
+        default: 1
+      deploy_http_trigger:
+        description: 'Whether to deploy the HTTP-triggered function'
+        required: false
+        type: boolean
+        default: true
+      http_entry_point:
+        description: 'Entry point for the HTTP-triggered function'
+        required: false
+        type: string
+        default: 'main'
+      deploy_event_trigger:
+        description: 'Whether to deploy the event-triggered function'
+        required: false
+        type: boolean
+        default: true
+      event_entry_point:
+        description: 'Entry point for the event-triggered function'
+        required: false
+        type: string
+        default: 'trigger'
+      event_trigger_pubsub_topic_suffix:
+        description: 'Suffix for the event trigger Pub/Sub topic (appended to function_name)'
+        required: false
+        type: string
+        default: '-trigger'
+      secrets_config:
+        description: 'Multiline string of secrets to be passed to the function'
+        required: true
+        type: string
+    secrets:
+      # Optional: Define secrets that this callable workflow itself needs, if any.
+      # For this refactoring, the secrets are passed via inputs.secrets_config from the caller.
+      pass: ""
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - name: Google Cloud認証
+        id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ inputs.workload_identity_provider }}
+          service_account: ${{ inputs.service_account_email }}
+
+      - name: Deploy Cloud Functions (http)
+        if: inputs.deploy_http_trigger
+        uses: 'google-github-actions/deploy-cloud-functions@v3'
+        timeout-minutes: 5
+        with:
+          name: ${{ inputs.function_name }}
+          project_id: ${{ inputs.project_id }}
+          region: ${{ inputs.region }}
+          runtime: ${{ inputs.runtime }}
+          entry_point: ${{ inputs.http_entry_point }}
+          service_account: ${{ inputs.service_account_email }}
+          source_dir: ${{ inputs.source_dir }}
+          max_instance_count: ${{ inputs.max_instance_count }}
+          secrets: ${{ inputs.secrets_config }}
+
+      - name: Deploy Cloud Functions (event)
+        if: inputs.deploy_event_trigger
+        uses: 'google-github-actions/deploy-cloud-functions@v3'
+        timeout-minutes: 5
+        with:
+          name: ${{ inputs.function_name }}${{ inputs.event_trigger_pubsub_topic_suffix }}
+          project_id: ${{ inputs.project_id }}
+          region: ${{ inputs.region }}
+          runtime: ${{ inputs.runtime }}
+          entry_point: ${{ inputs.event_entry_point }}
+          event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished # Defaulting to pubsub, can be parameterized if needed
+          event_trigger_pubsub_topic: ${{ inputs.function_name }}${{ inputs.event_trigger_pubsub_topic_suffix }}
+          service_account: ${{ inputs.service_account_email }}
+          source_dir: ${{ inputs.source_dir }}
+          max_instance_count: ${{ inputs.max_instance_count }}
+          secrets: ${{ inputs.secrets_config }}
