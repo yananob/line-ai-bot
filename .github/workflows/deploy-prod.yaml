@@ -1,14 +1,9 @@
 name: Deploy Cloud Functions (production)
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
-
-env:
-  PROJECT_ID: nobu5-393106
-  FUNCTION_NAME: line-ai-bot
-  REGION: us-west1
 
 permissions:
   contents: 'read'
@@ -16,49 +11,19 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: 'true'
-
-      - name: Google Cloud認証
-        id: 'auth'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          workload_identity_provider: 'projects/1035100650942/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
-          service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
-
-      - name: Deploy Cloud Functions (http)
-        uses: 'google-github-actions/deploy-cloud-functions@v3'
-        timeout-minutes: 5
-        with:
-          name: ${{ env.FUNCTION_NAME }}
-          runtime: php82
-          entry_point: main
-          region: ${{ env.REGION }}
-          service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
-          source_dir: ./
-          max_instance_count: 1
-          secrets: |-
-            OPENAI_KEY_LINE_AI_BOT=projects/nobu5-393106/secrets/OPENAI_KEY_LINE_AI_BOT/versions/latest
-            LINE_TOKENS_N_TARGETS=projects/nobu5-393106/secrets/LINE_TOKENS_N_TARGETS/versions/latest
-            FIREBASE_CONFIG=projects/nobu5-393106/secrets/FIREBASE_CONFIG/versions/latest
-
-      - name: Deploy Cloud Functions (event)
-        uses: 'google-github-actions/deploy-cloud-functions@v3'
-        timeout-minutes: 5
-        with:
-          name: ${{ env.FUNCTION_NAME }}-trigger
-          runtime: php82
-          entry_point: trigger
-          event_trigger_pubsub_topic: ${{ env.FUNCTION_NAME }}-trigger
-          region: ${{ env.REGION }}
-          service_account: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
-          source_dir: ./
-          max_instance_count: 1
-          secrets: |-
-            OPENAI_KEY_LINE_AI_BOT=projects/nobu5-393106/secrets/OPENAI_KEY_LINE_AI_BOT/versions/latest
-            LINE_TOKENS_N_TARGETS=projects/nobu5-393106/secrets/LINE_TOKENS_N_TARGETS/versions/latest
-            FIREBASE_CONFIG=projects/nobu5-393106/secrets/FIREBASE_CONFIG/versions/latest
+    uses: yananob/cloud-functions-common/.github/workflows/deploy-cloud-functions.yaml@main
+    with:
+      function_name: 'line-ai-bot'
+      project_id: 'nobu5-393106'
+      region: 'us-west1'
+      service_account_name: 'cloud-run-functions-deployer'
+      gcp_project_number: '1035100650942'
+      wip_pool_name: 'github-actions-pool'
+      wip_provider_name: 'github-provider'
+      secrets_project_id: 'nobu5-393106'
+      secrets_config: |-
+        OPENAI_KEY_LINE_AI_BOT
+        LINE_TOKENS_N_TARGETS
+        FIREBASE_CONFIG
+      deploy_http_trigger: true
+      deploy_event_trigger: true
