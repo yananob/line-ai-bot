@@ -25,8 +25,8 @@ use MyApp\Tools;
 
 const TIMER_TRIGGERED_BY_N_MINS = 10;
 
-FunctionsFramework::http('main', 'main');
-function main(ServerRequestInterface $request): ResponseInterface
+FunctionsFramework::http('main_http', 'main_http');
+function main_http(ServerRequestInterface $request): ResponseInterface
 {
     $logger = new Logger(CFUtils::getFunctionName());
     $logger->logSplitter();
@@ -127,8 +127,8 @@ function main(ServerRequestInterface $request): ResponseInterface
     return new Response(200, $headers, '{"result": "ok"}');
 }
 
-FunctionsFramework::cloudEvent('trigger', 'trigger');
-function trigger(CloudEventInterface $event): void
+FunctionsFramework::cloudEvent('main_event', 'main_event');
+function main_event(CloudEventInterface $event): void
 {
     $logger = new Logger(CFUtils::getFunctionName());
     $logger->logSplitter();
