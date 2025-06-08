@@ -10,7 +10,7 @@ permissions:
   id-token: 'write'
 
 jobs:
-  deploy:
+  checkout:
     runs-on: ubuntu-latest
 
     steps:
