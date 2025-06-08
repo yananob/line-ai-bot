@@ -81,8 +81,8 @@ on:
         required: false
         type: string
         default: '-trigger'
-    secrets:
-      pass: ''
+    # secrets:
+    #   pass: ''
 
 permissions:
   contents: 'read'
