@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   deploy-cloud-functions:
-    uses: ./deploy-cloud-functions.yaml
+    uses: ./cf-common/.github/workflows/deploy-cloud-functions.yaml
     with:
       function_name: 'line-ai-bot-test'
       project_id: 'nobu5-393106'
