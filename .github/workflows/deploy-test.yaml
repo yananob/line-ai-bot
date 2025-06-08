@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          submodules: 'true'
 
       - name: Google Cloud認証
         id: 'auth'
