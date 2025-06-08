@@ -10,20 +10,24 @@ permissions:
   id-token: 'write'
 
 jobs:
-  deploy-cloud-functions:
-    uses: ./cf-common/.github/workflows/deploy-cloud-functions.yaml
-    with:
-      function_name: 'line-ai-bot-test'
-      project_id: 'nobu5-393106'
-      region: 'us-west1'
-      service_account_name: 'cloud-run-functions-deployer'
-      gcp_project_number: '1035100650942'
-      wip_pool_name: 'github-actions-pool'
-      wip_provider_name: 'github-provider'
-      secrets_project_id: 'nobu5-393106'
-      secrets_config: |-
-        OPENAI_KEY_LINE_AI_BOT
-        LINE_TOKENS_N_TARGETS
-        FIREBASE_CONFIG
-      deploy_http_trigger: true
-      deploy_event_trigger: true
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy Cloud Functions
+        uses: ./cf-common/.github/workflows/deploy-cloud-functions.yaml
+        with:
+          function_name: 'line-ai-bot-test'
+          project_id: 'nobu5-393106'
+          region: 'us-west1'
+          service_account_name: 'cloud-run-functions-deployer'
+          gcp_project_number: '1035100650942'
+          wip_pool_name: 'github-actions-pool'
+          wip_provider_name: 'github-provider'
+          secrets_project_id: 'nobu5-393106'
+          secrets_config: |-
+            OPENAI_KEY_LINE_AI_BOT
+            LINE_TOKENS_N_TARGETS
+            FIREBASE_CONFIG
+          deploy_http_trigger: true
+          deploy_event_trigger: true
