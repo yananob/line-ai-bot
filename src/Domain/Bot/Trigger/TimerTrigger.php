@@ -21,7 +21,7 @@ class TimerTrigger implements Trigger
         $this->request = $request;
 
         // Handle time
-        if (preg_match('/^now +(\d+) mins$/', $time, $matches)) {
+        if (preg_match('/^now \+(\d+) mins$/', $time, $matches)) {
             $this->time = $carbonNow->copy()->addMinutes((int)$matches[1])->format('H:i');
         } else {
             $this->time = $time;

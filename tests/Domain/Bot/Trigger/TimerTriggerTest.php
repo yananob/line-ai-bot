@@ -94,9 +94,9 @@ final class TimerTriggerTest extends TestCase
      */
     public function testShouldRunNowForEverydayTrigger(string $currentTimeToMock, bool $expectedResult, string $message): void
     {
-        $trigger = new TimerTrigger("everyday", "10:00", "Test everyday 10:00"); // Scheduled time is 10:00
         $timeZone = new \DateTimeZone(Consts::TIMEZONE);
         Carbon::setTestNow(Carbon::parse($currentTimeToMock, $timeZone));
+        $trigger = new TimerTrigger("everyday", "10:00", "Test everyday 10:00"); // Scheduled time is 10:00
         // Note: The interval for these original tests was 10 minutes.
         $this->assertSame($expectedResult, $trigger->shouldRunNow(10), $message);
     }
@@ -123,10 +123,10 @@ final class TimerTriggerTest extends TestCase
     public function testShouldRunNowForSpecificDateTrigger(string $currentTimeToMock, bool $expectedResult, string $message): void
     {
         $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        Carbon::setTestNow(Carbon::parse($currentTimeToMock, $timeZone));
         // For specific date triggers, the constructor's Carbon::now() doesn't affect $this->actualDate if date is absolute.
         $trigger = new TimerTrigger("2023-06-15", "08:00", "Test Specific Date 08:00"); // Scheduled for 2023-06-15 08:00
 
-        Carbon::setTestNow(Carbon::parse($currentTimeToMock, $timeZone));
         // Note: The interval for these original tests was 15 minutes.
         $this->assertSame($expectedResult, $trigger->shouldRunNow(15), $message);
     }
@@ -154,11 +154,11 @@ final class TimerTriggerTest extends TestCase
 
     public function testShouldRunNowHandlesTomorrowCorrectly(): void
     {
-        $trigger = new TimerTrigger("tomorrow", "11:00", "Test");
         $timeZone = new \DateTimeZone(Consts::TIMEZONE);
 
         // Set current "day" to 2023-07-01. So "tomorrow" for the trigger logic will be 2023-07-02.
         Carbon::setTestNow(Carbon::parse("2023-07-01 10:00:00", $timeZone));
+        $trigger = new TimerTrigger("tomorrow", "11:00", "Test");
         
         // Test time on the actual "tomorrow" (2023-07-02)
         $testTimeOnActualTomorrow = Carbon::parse("2023-07-02 11:00:00", $timeZone);
