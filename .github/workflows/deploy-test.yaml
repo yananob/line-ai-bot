@@ -10,8 +10,8 @@ permissions:
   id-token: 'write'
 
 jobs:
-  call-reusable-deploy:
-    uses: ./.github/workflows/deploy-cloud-functions.yaml
+  deploy-cloud-functions:
+    uses: ./deploy-cloud-functions.yaml
     with:
       function_name: 'line-ai-bot-test'
       project_id: 'nobu5-393106'
