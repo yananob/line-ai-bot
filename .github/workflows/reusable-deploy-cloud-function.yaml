@@ -7,20 +7,38 @@ on:
         description: 'The name of the Cloud Function'
         required: true
         type: string
-      service_account_email:
-        description: 'Service account email for GCP authentication'
-        required: true
-        type: string
-      workload_identity_provider:
-        description: 'Workload identity provider for GCP authentication'
-        required: true
-        type: string
       project_id:
-        description: 'Google Cloud Project ID'
+        description: 'Google Cloud Project ID for deploying the function'
         required: true
         type: string
       region:
         description: 'Google Cloud Region for the function'
+        required: true
+        type: string
+      service_account_name:
+        description: 'Name of the Service Account (e.g., my-sa-name)'
+        required: true
+        type: string
+      gcp_project_number:
+        description: 'Google Cloud Project Number (used for Workload Identity)'
+        required: true
+        type: string
+      wip_pool_name:
+        description: 'Workload Identity Pool name'
+        required: false
+        type: string
+        default: 'github-actions-pool'
+      wip_provider_name:
+        description: 'Workload Identity Provider name'
+        required: false
+        type: string
+        default: 'github-provider'
+      secrets_project_id:
+        description: 'Google Cloud Project ID where secrets are stored (defaults to function project_id if not set)'
+        required: false
+        type: string
+      secrets_config:
+        description: 'Multiline string of secret names (e.g., "SECRET_A\nSECRET_B")'
         required: true
         type: string
       runtime:
@@ -63,13 +81,7 @@ on:
         required: false
         type: string
         default: '-trigger'
-      secrets_config:
-        description: 'Multiline string of secrets to be passed to the function'
-        required: true
-        type: string
     secrets:
-      # Optional: Define secrets that this callable workflow itself needs, if any.
-      # For this refactoring, the secrets are passed via inputs.secrets_config from the caller.
       pass: ""
 
 permissions:
@@ -79,6 +91,9 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      # Determine the project ID for secrets. Use inputs.secrets_project_id if provided, otherwise default to inputs.project_id
+      SECRETS_PROJECT_FOR_CONSTRUCTION: ${{ inputs.secrets_project_id || inputs.project_id }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -89,8 +104,25 @@ jobs:
         id: 'auth'
         uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: ${{ inputs.workload_identity_provider }}
-          service_account: ${{ inputs.service_account_email }}
+          workload_identity_provider: 'projects/${{ inputs.gcp_project_number }}/locations/global/workloadIdentityPools/${{ inputs.wip_pool_name }}/providers/${{ inputs.wip_provider_name }}'
+          service_account: '${{ inputs.service_account_name }}@${{ inputs.project_id }}.iam.gserviceaccount.com'
+
+      - name: Prepare Secrets Configuration
+        id: prep_secrets
+        shell: bash
+        run: |
+          secrets_output=""
+          echo "${{ inputs.secrets_config }}" | while IFS= read -r secret_name; do
+            if [ -n "$secret_name" ]; then
+              if [ -n "$secrets_output" ]; then
+                secrets_output="${secrets_output}"
+              fi
+              secrets_output="${secrets_output}${secret_name}=projects/${{ env.SECRETS_PROJECT_FOR_CONSTRUCTION }}/secrets/${secret_name}/versions/latest"
+            fi
+          done
+          echo "formatted_secrets<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$secrets_output" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Deploy Cloud Functions (http)
         if: inputs.deploy_http_trigger
@@ -102,10 +134,10 @@ jobs:
           region: ${{ inputs.region }}
           runtime: ${{ inputs.runtime }}
           entry_point: ${{ inputs.http_entry_point }}
-          service_account: ${{ inputs.service_account_email }}
+          service_account: '${{ inputs.service_account_name }}@${{ inputs.project_id }}.iam.gserviceaccount.com' # Reconstruct here too
           source_dir: ${{ inputs.source_dir }}
           max_instance_count: ${{ inputs.max_instance_count }}
-          secrets: ${{ inputs.secrets_config }}
+          secrets: ${{ steps.prep_secrets.outputs.formatted_secrets }}
 
       - name: Deploy Cloud Functions (event)
         if: inputs.deploy_event_trigger
@@ -117,9 +149,9 @@ jobs:
           region: ${{ inputs.region }}
           runtime: ${{ inputs.runtime }}
           entry_point: ${{ inputs.event_entry_point }}
-          event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished # Defaulting to pubsub, can be parameterized if needed
+          event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished
           event_trigger_pubsub_topic: ${{ inputs.function_name }}${{ inputs.event_trigger_pubsub_topic_suffix }}
-          service_account: ${{ inputs.service_account_email }}
+          service_account: '${{ inputs.service_account_name }}@${{ inputs.project_id }}.iam.gserviceaccount.com' # Reconstruct here too
           source_dir: ${{ inputs.source_dir }}
           max_instance_count: ${{ inputs.max_instance_count }}
-          secrets: ${{ inputs.secrets_config }}
+          secrets: ${{ steps.prep_secrets.outputs.formatted_secrets }}

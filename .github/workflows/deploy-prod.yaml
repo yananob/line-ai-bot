@@ -1,8 +1,8 @@
 name: Deploy Cloud Functions (production)
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -10,14 +10,17 @@ jobs:
     uses: ./.github/workflows/reusable-deploy-cloud-function.yaml
     with:
       function_name: 'line-ai-bot'
-      project_id: 'nobu5-393106'
+      project_id: 'nobu5-393106' # Used for function deployment and SA email construction
       region: 'us-west1'
-      service_account_email: 'cloud-run-functions-deployer@nobu5-393106.iam.gserviceaccount.com'
-      workload_identity_provider: 'projects/1035100650942/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
-      deploy_http_trigger: true
-      deploy_event_trigger: true
+      service_account_name: 'cloud-run-functions-deployer'
+      gcp_project_number: '1035100650942'
+      wip_pool_name: 'github-actions-pool' # Default, but explicit for clarity
+      wip_provider_name: 'github-provider' # Default, but explicit for clarity
+      secrets_project_id: 'nobu5-393106' # Project where secrets are stored
       secrets_config: |-
-        OPENAI_KEY_LINE_AI_BOT=projects/nobu5-393106/secrets/OPENAI_KEY_LINE_AI_BOT/versions/latest
-        LINE_TOKENS_N_TARGETS=projects/nobu5-393106/secrets/LINE_TOKENS_N_TARGETS/versions/latest
-        FIREBASE_CONFIG=projects/nobu5-393106/secrets/FIREBASE_CONFIG/versions/latest
-    # Secrets are passed via inputs.secrets_config, so no top-level 'secrets:' block needed here for the call.
+        OPENAI_KEY_LINE_AI_BOT
+        LINE_TOKENS_N_TARGETS
+        FIREBASE_CONFIG
+      # deploy_http_trigger: true # Using default
+      # deploy_event_trigger: true # Using default
+      # runtime, source_dir, max_instance_count, entry_points, topic_suffix also use defaults
