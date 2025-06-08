@@ -148,7 +148,7 @@ jobs:
           runtime: ${{ inputs.runtime }}
           entry_point: ${{ inputs.event_entry_point }}
           event_trigger_type: google.cloud.pubsub.topic.v1.messagePublished
-          event_trigger_pubsub_topic: ${{ inputs.function_name }}${{ inputs.event_trigger_pubsub_topic_suffix }}
+          event_trigger_pubsub_topic: projects/${{ inputs.project_id }}/topics/${{ inputs.function_name }}${{ inputs.event_trigger_pubsub_topic_suffix }}
           service_account: '${{ inputs.service_account_name }}@${{ inputs.project_id }}.iam.gserviceaccount.com' # Reconstruct here too
           source_dir: ${{ inputs.source_dir }}
           max_instance_count: ${{ inputs.max_instance_count }}
