@@ -10,21 +10,20 @@ permissions:
   id-token: 'write'
 
 jobs:
-  call-reusable-deploy:
-    uses: ./.github/workflows/reusable-deploy-cloud-function.yaml
+  deploy:
+    uses: yananob/cloud-functions-common/.github/workflows/deploy-cloud-functions.yaml@main
     with:
       function_name: 'line-ai-bot'
-      project_id: 'nobu5-393106' # Used for function deployment and SA email construction
+      project_id: 'nobu5-393106'
       region: 'us-west1'
       service_account_name: 'cloud-run-functions-deployer'
       gcp_project_number: '1035100650942'
-      wip_pool_name: 'github-actions-pool' # Default, but explicit for clarity
-      wip_provider_name: 'github-provider' # Default, but explicit for clarity
-      secrets_project_id: 'nobu5-393106' # Project where secrets are stored
+      wip_pool_name: 'github-actions-pool'
+      wip_provider_name: 'github-provider'
+      secrets_project_id: 'nobu5-393106'
       secrets_config: |-
         OPENAI_KEY_LINE_AI_BOT
         LINE_TOKENS_N_TARGETS
         FIREBASE_CONFIG
-      # deploy_http_trigger: true # Using default
-      # deploy_event_trigger: true # Using default
-      # runtime, source_dir, max_instance_count, entry_points, topic_suffix also use defaults
+      deploy_http_trigger: true
+      deploy_event_trigger: true
