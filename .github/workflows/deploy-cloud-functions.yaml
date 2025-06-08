@@ -1,4 +1,4 @@
-name: Reusable Deploy Cloud Function
+name: Deploy Cloud Functions
 
 on:
   workflow_call:

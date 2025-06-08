@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   call-reusable-deploy:
-    uses: ./.github/workflows/reusable-deploy-cloud-function.yaml
+    uses: ./.github/workflows/deploy-cloud-functions.yaml
     with:
       function_name: 'line-ai-bot-test'
       project_id: 'nobu5-393106'
