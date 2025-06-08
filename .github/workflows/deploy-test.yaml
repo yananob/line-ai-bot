@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Deploy Cloud Functions
-        uses: ./cf-common/.github/workflows/deploy-cloud-functions.yaml
+        uses: ./cf-common/.github/actions/deploy-cloud-functions
         with:
           function_name: 'line-ai-bot-test'
           project_id: 'nobu5-393106'
