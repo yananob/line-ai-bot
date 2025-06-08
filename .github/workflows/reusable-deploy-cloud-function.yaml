@@ -82,7 +82,7 @@ on:
         type: string
         default: '-trigger'
     secrets:
-      pass: ""
+      pass: ''
 
 permissions:
   contents: 'read'
