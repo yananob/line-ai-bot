@@ -2,7 +2,7 @@ name: Deploy Cloud Functions (test)
 on:
   push:
     branches:
-      - main
+      - test
   workflow_dispatch:
 
 jobs:

@@ -115,8 +115,7 @@ jobs:
           echo "${{ inputs.secrets_config }}" | while IFS= read -r secret_name; do
             if [ -n "$secret_name" ]; then
               if [ -n "$secrets_output" ]; then
-                secrets_output="${secrets_output}
-"
+                secrets_output="${secrets_output}"
               fi
               secrets_output="${secrets_output}${secret_name}=projects/${{ env.SECRETS_PROJECT_FOR_CONSTRUCTION }}/secrets/${secret_name}/versions/latest"
             fi
