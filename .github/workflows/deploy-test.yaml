@@ -5,6 +5,10 @@ on:
       - test
   workflow_dispatch:
 
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
 jobs:
   call-reusable-deploy:
     uses: ./.github/workflows/reusable-deploy-cloud-function.yaml
