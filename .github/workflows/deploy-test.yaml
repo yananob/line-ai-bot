@@ -10,29 +10,20 @@ permissions:
   id-token: 'write'
 
 jobs:
-  checkout:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: 'true'
-
-      - name: Deploy Cloud Functions
-        uses: ./_cf-common/.github/workflows/deploy-cloud-functions.yaml
-        with:
-          function_name: 'line-ai-bot-test'
-          project_id: 'nobu5-393106'
-          region: 'us-west1'
-          service_account_name: 'cloud-run-functions-deployer'
-          gcp_project_number: '1035100650942'
-          wip_pool_name: 'github-actions-pool'
-          wip_provider_name: 'github-provider'
-          secrets_project_id: 'nobu5-393106'
-          secrets_config: |-
-            OPENAI_KEY_LINE_AI_BOT
-            LINE_TOKENS_N_TARGETS
-            FIREBASE_CONFIG
-          deploy_http_trigger: true
-          deploy_event_trigger: true
+  deploy:
+    uses: yananob/cloud-functions-common/.github/workflows/deploy-cloud-functions.yaml@main
+    with:
+      function_name: 'line-ai-bot-test'
+      project_id: 'nobu5-393106'
+      region: 'us-west1'
+      service_account_name: 'cloud-run-functions-deployer'
+      gcp_project_number: '1035100650942'
+      wip_pool_name: 'github-actions-pool'
+      wip_provider_name: 'github-provider'
+      secrets_project_id: 'nobu5-393106'
+      secrets_config: |-
+        OPENAI_KEY_LINE_AI_BOT
+        LINE_TOKENS_N_TARGETS
+        FIREBASE_CONFIG
+      deploy_http_trigger: true
+      deploy_event_trigger: true
