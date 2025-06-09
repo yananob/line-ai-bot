@@ -1,4 +1,4 @@
 #!/bin/bash
 set -eu
 
-gcloud pubsub topics publish line-ai-bot-trigger-test --message="test!"
+gcloud pubsub topics publish line-ai-bot-test-event --message="test!"

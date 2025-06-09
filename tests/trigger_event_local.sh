@@ -3,7 +3,7 @@ set -eu
 
 curl localhost:8081 \
     -H "ce-id: 9999999999" \
-    -H "ce-source: //pubsub.googleapis.com/projects/test-pj/topics/line-ai-bot-trigger-test" \
+    -H "ce-source: //pubsub.googleapis.com/projects/test-pj/topics/line-ai-bot-test-event" \
     -H "ce-specversion: 1.0" \
     -H "ce-type: com.google.cloud.pubsub.topic.publish" \
     -d '{
@@ -13,5 +13,5 @@ curl localhost:8081 \
              "attr1":"attr1-value"
           }
         },
-        "subscription": "projects/test-pj/subscriptions/line-ai-bot-trigger-test"
+        "subscription": "projects/test-pj/subscriptions/line-ai-bot-test-event"
       }'
