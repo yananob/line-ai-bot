@@ -2,27 +2,29 @@
 
 declare(strict_types=1);
 
-// namespace MyApp\Tests; // Assuming this is commented out in the original as well
+namespace MyApp\Tests; // 名前空間を追加
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use MyApp\WebSearchTool;
 
-// OpenAI specific classes
+// OpenAI 関連クラス
 use OpenAI\Contracts\ClientContract as OpenAiClientContract;
 use OpenAI\Contracts\Resources\ResponsesContract;
-use OpenAI\Responses\Responses\CreateResponse as ResponsesCreateResponse; // For the actual response type
-// Note: No longer need OpenAI\Resources\Chat or OpenAI\Responses\Chat\*
+use OpenAI\Responses\Responses\CreateResponse as ResponsesCreateResponse; // 実際のレスポンスタイプ用
+// 注意: OpenAI\Resources\Chat や OpenAI\Responses\Chat\* は不要になりました
 
 use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
 use OpenAI\Exceptions\TransporterException as OpenAITransporterException;
+// PHPUnitのTestCaseをuseする (既に追加済みだが、明示的に)
+// use PHPUnit\Framework\TestCase; // WebSearchToolTest extends TestCase のため
 
-class WebSearchToolTest extends TestCase
+final class WebSearchToolTest extends TestCase // TestCaseの完全修飾名を使用 (useしたのでこれでOK)
 {
-    private MockObject $mockOpenAiClient;
-    private MockObject $mockResponsesResource; // Mock for OpenAI\Resources\Responses
-    private WebSearchTool $webSearchTool;
-    private string $testOpenAiModel = 'gpt-4o'; // Model that would support responses()->create()
+    private MockObject $mockOpenAiClient; // OpenAIクライアントのモック
+    private MockObject $mockResponsesResource; // OpenAI\Resources\Responses のモック
+    private WebSearchTool $webSearchTool; // テスト対象のWebSearchToolインスタンス
+    private string $testOpenAiModel = 'gpt-4o'; // responses()->create() をサポートするモデル
 
     protected function setUp(): void
     {
@@ -31,13 +33,14 @@ class WebSearchToolTest extends TestCase
         $this->mockOpenAiClient = $this->createMock(\OpenAI\Contracts\ClientContract::class);
         $this->mockResponsesResource = $this->createMock(\OpenAI\Contracts\Resources\ResponsesContract::class);
 
-        // Configure the mock OpenAiClient to return the mock Responses resource
+        // モックOpenAiClientがモックResponsesリソースを返すように設定
         $this->mockOpenAiClient->method('responses')->willReturn($this->mockResponsesResource);
 
-        // Instantiate WebSearchTool with the mocked OpenAI client and a test model name
+        // WebSearchToolをモックOpenAIクライアントとテストモデル名でインスタンス化
         $this->webSearchTool = new WebSearchTool($this->mockOpenAiClient, $this->testOpenAiModel);
     }
 
+    // APIレスポンスのモックを作成するプライベートヘルパーメソッド
     private function createMockApiResponse(array $outputContents): \OpenAI\Responses\Responses\CreateResponse
     {
         $outputMessages = [];
@@ -48,23 +51,23 @@ class WebSearchToolTest extends TestCase
             if (is_array($contentItemSnippets)) {
                 foreach ($contentItemSnippets as $snippetText) {
                     if ($snippetText === 'MALFORMED_CONTENT_ITEM_TYPE') {
-                        // This type will be handled by OutputMessage::from but ignored by WebSearchTool's parsing logic
-                        $outputTextElements[] = ['type' => 'refusal', 'refusal' => 'Simulated refusal, should be ignored', 'annotations' => []];
+                        // このタイプは OutputMessage::from で処理されるが、WebSearchToolの解析ロジックでは無視される
+                        $outputTextElements[] = ['type' => 'refusal', 'refusal' => 'シミュレートされた拒否、無視されるべき', 'annotations' => []];
                     } elseif ($snippetText === 'EMPTY_TEXT_CONTENT_ITEM') {
                         $outputTextElements[] = ['type' => 'output_text', 'text' => '', 'annotations' => []];
                     } else {
                         $outputTextElements[] = ['type' => 'output_text', 'text' => $snippetText, 'annotations' => []];
                     }
                 }
-            } elseif ($contentItemSnippets === 'EMPTY_OUTPUT_ITEM') { // Special case for an output item with no content
+            } elseif ($contentItemSnippets === 'EMPTY_OUTPUT_ITEM') { // コンテンツがないoutputアイテムの特殊ケース
                  $outputMessages[] = [
                     'type' => 'message',
                     'id' => 'msg_' . (++$messageIdCounter),
                     'role' => 'assistant',
                     'status' => 'completed',
-                    'content' => [], // Empty content array
+                    'content' => [], // 空のコンテンツ配列
                  ];
-                 continue; // Move to next outputContent
+                 continue; // 次のoutputContentへ
             }
 
             $outputMessages[] = [
@@ -75,7 +78,7 @@ class WebSearchToolTest extends TestCase
                 'content' => $outputTextElements,
             ];
         }
-        
+
         $attributes = [
             'id' => 'resp-test123',
             'object' => 'response',
@@ -92,7 +95,7 @@ class WebSearchToolTest extends TestCase
             'reasoning' => null,
             'store' => false,
             'temperature' => null,
-            'text' => ['format' => ['type' => 'text', 'text' => ($outputMessages ? 'Formatted text if applicable' : '')]],
+            'text' => ['format' => ['type' => 'text', 'text' => ($outputMessages ? '該当する場合のフォーマット済みテキスト' : '')]],
             'tool_choice' => 'none',
             'tools' => [],
             'top_p' => null,
@@ -102,21 +105,21 @@ class WebSearchToolTest extends TestCase
             'metadata' => [],
         ];
 
-        // Create a dummy MetaInformation object
+        // ダミーのMetaInformationオブジェクトを作成
         $meta = \OpenAI\Responses\Meta\MetaInformation::from([]);
 
         return \OpenAI\Responses\Responses\CreateResponse::from($attributes, $meta);
     }
 
-    public function testSearchSuccessful(): void
+    public function test_検索が成功する(): void
     {
-        $query = "test query";
+        $query = "テストクエリ";
         $numResults = 2;
 
-        // Each inner array represents an $outputItem's content, with strings being individual 'text' fields
+        // 各内部配列は$outputItemのコンテンツを表し、文字列は個々の'text'フィールド
         $apiOutputContents = [
-            ["First search result snippet."], // Corresponds to $outputItem1->content
-            ["Second search result snippet."] // Corresponds to $outputItem2->content
+            ["最初の検索結果スニペット。"], // $outputItem1->content に対応
+            ["2番目の検索結果スニペット。"]  // $outputItem2->content に対応
         ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
@@ -124,19 +127,19 @@ class WebSearchToolTest extends TestCase
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Snippet: First search result snippet.\n- Snippet: Second search result snippet.";
-        
+        $expectedSummary = "\n- Snippet: 最初の検索結果スニペット。\n- Snippet: 2番目の検索結果スニペット。";
+
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
-    
-    public function testSearchSuccessfulHandlesMultipleTextsInOneOutputItem(): void
+
+    public function test_1つの出力アイテムに複数のテキストが含まれる場合の検索成功(): void
     {
-        $query = "multi text query";
+        $query = "複数テキストクエリ";
         $numResults = 2;
 
         $apiOutputContents = [
-            ["First snippet.", "Second snippet from same output item."]
+            ["最初のスニペット。", "同じ出力アイテムからの2番目のスニペット。"]
         ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
@@ -144,20 +147,20 @@ class WebSearchToolTest extends TestCase
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Snippet: First snippet.\n- Snippet: Second snippet from same output item.";
-        
+        $expectedSummary = "\n- Snippet: 最初のスニペット。\n- Snippet: 同じ出力アイテムからの2番目のスニペット。";
+
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
 
-    public function testSearchSuccessfulWithFewerResultsThanReturnedByApi(): void
+    public function test_APIから返された結果より少ない結果数での検索成功(): void
     {
-        $query = "less results query";
-        $numResults = 1; // Request 1
+        $query = "少ない結果クエリ";
+        $numResults = 1; // 1件リクエスト
 
         $apiOutputContents = [
-            ["First snippet."],
-            ["Second snippet."] // API returns 2 snippets
+            ["最初のスニペット。"],
+            ["2番目のスニペット。"] // APIは2件のスニペットを返す
         ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
@@ -165,66 +168,66 @@ class WebSearchToolTest extends TestCase
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Snippet: First snippet."; // Should only take numResults
+        $expectedSummary = "\n- Snippet: 最初のスニペット。"; // numResults分だけ取得するべき
 
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
 
-    public function testSearchSuccessfulWithFewerResultsThanRequestedButApiReturnsEvenFewer(): void
+    public function test_リクエストより少ない結果だがAPIはさらに少ない結果を返す場合の検索成功(): void
     {
-        $query = "even less results query";
-        $numResults = 3; // Request 3
+        $query = "さらに少ない結果クエリ";
+        $numResults = 3; // 3件リクエスト
 
         $apiOutputContents = [
-            ["The only snippet."] // API returns only 1
+            ["唯一のスニペット。"] // APIは1件のみ返す
         ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
-        
+
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Snippet: The only snippet.";
+        $expectedSummary = "\n- Snippet: 唯一のスニペット。";
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
     }
 
-    public function testSearchQueryIncludesJapanesePhraseForRecentResults(): void
+    public function test_検索クエリに最近の結果を求める日本語フレーズが含まれる(): void
     {
-        $baseQuery = "original query";
+        $baseQuery = "元のクエリ";
         $numResults = 1;
-        // This is the Japanese phrase that should be appended, including the leading space.
+        // これが付加されるべき日本語フレーズ（先頭のスペースを含む）
         $expectedPhraseSuffix = " 検索結果はできるだけ新しいものを使うようにしてください。";
 
-        // Mock the API response
-        $apiOutputContents = [["Test snippet."]];
+        // APIレスポンスをモック
+        $apiOutputContents = [["テストスニペット。"]];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->with($this->callback(function ($params) use ($baseQuery, $expectedPhraseSuffix) {
-                $this->assertArrayHasKey('input', $params, "Params array must have 'input' key.");
-                $this->assertStringEndsWith($expectedPhraseSuffix, $params['input'], "Query input should end with the Japanese phrase.");
-                // Also check if the base query is at the beginning of the input
-                $this->assertStringStartsWith($baseQuery, $params['input'], "Query input should start with the base query.");
-                // Check that the full query is the base query + the suffix
-                $this->assertEquals($baseQuery . $expectedPhraseSuffix, $params['input'], "Full query string is not as expected.");
-                return true; // Callback must return true if assertions pass
+                $this->assertArrayHasKey('input', $params, "Params配列には'input'キーが必要です。");
+                $this->assertStringEndsWith($expectedPhraseSuffix, $params['input'], "クエリ入力は日本語フレーズで終わるべきです。");
+                // ベースクエリが入力の先頭にあるかも確認
+                $this->assertStringStartsWith($baseQuery, $params['input'], "クエリ入力はベースクエリで始まるべきです。");
+                // 完全なクエリがベースクエリ + サフィックスであることを確認
+                $this->assertEquals($baseQuery . $expectedPhraseSuffix, $params['input'], "完全なクエリ文字列が期待通りではありません。");
+                return true; // アサーションが通ればコールバックはtrueを返す
             }))
             ->willReturn($mockApiResponse);
 
-        // Call the search method
+        // searchメソッドを呼び出し
         $this->webSearchTool->search($baseQuery, $numResults);
-        // No need to assert the return value of search() itself for this test,
-        // as we are focused on the arguments passed to the mocked 'create' method.
+        // このテストではsearch()自体の戻り値を表明する必要はありません。
+        // モックされた'create'メソッドに渡された引数に焦点を当てているためです。
     }
 
-    public function testSearchReturnsNoResultsFoundWhenApiReturnsEmptyOutputArray(): void
+    public function test_APIが空の出力配列を返した場合に結果なしメッセージを返す(): void
     {
-        $query = "no results query empty output";
-        
-        $mockApiResponse = $this->createMockApiResponse([]); // Empty output array
+        $query = "結果なしクエリ空出力";
+
+        $mockApiResponse = $this->createMockApiResponse([]); // 空の出力配列
 
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
@@ -234,62 +237,62 @@ class WebSearchToolTest extends TestCase
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
-    
-    public function testSearchReturnsNoResultsFoundWhenApiReturnsEmptyContentArrayInOutputItem(): void
+
+    public function test_APIが出力アイテムに空のコンテンツ配列を返した場合に結果なしメッセージを返す(): void
     {
-        $query = "no results query empty content";
-        
-        $mockApiResponse = $this->createMockApiResponse([[]]); // Output item with empty content array
+        $query = "結果なしクエリ空コンテンツ";
+
+        $mockApiResponse = $this->createMockApiResponse([[]]); // 空のコンテンツ配列を持つ出力アイテム
 
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        // This will actually lead to "Could not extract useful information..." because output is not empty, but content parsing fails
+        // これは実際には「有用な情報を抽出できませんでした...」となる。出力は空ではないが、コンテンツ解析が失敗するため。
         $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query . " 検索結果はできるだけ新しいものを使うようにしてください。") . ". The response might not contain suitable text content.";
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
 
 
-    public function testSearchReturnsCouldNotExtractUsefulInfoFromMalformedContentType(): void
+    public function test_不正なコンテントタイプの場合に有用な情報を抽出できなかったメッセージを返す(): void
     {
-        $query = "malformed content type query";
-        
-        // Pass a special string to trigger malformed content item type in createMockApiResponse
+        $query = "不正コンテントタイプクエリ";
+
+        // createMockApiResponseで不正なコンテントアイテムタイプをトリガーする特殊な文字列を渡す
         $apiOutputContents = [ ['MALFORMED_CONTENT_ITEM_TYPE'] ];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
-        
+
         $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query . " 検索結果はできるだけ新しいものを使うようにしてください。") . ". The response might not contain suitable text content.";
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
-    
-    public function testSearchReturnsCouldNotExtractUsefulInfoFromEmptyTextInContentItem(): void
+
+    public function test_コンテントアイテム内のテキストが空の場合に有用な情報を抽出できなかったメッセージを返す(): void
     {
-        $query = "empty text content query";
-        
-        $apiOutputContents = [ ['EMPTY_TEXT_CONTENT_ITEM'] ]; // Special string for empty text
+        $query = "空テキストコンテントクエリ";
+
+        $apiOutputContents = [ ['EMPTY_TEXT_CONTENT_ITEM'] ]; // 空テキスト用の特殊文字列
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
             ->willReturn($mockApiResponse);
-        
+
         $expectedMessage = "Could not extract useful information from web search results for: " . htmlspecialchars($query . " 検索結果はできるだけ新しいものを使うようにしてください。") . ". The response might not contain suitable text content.";
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
 
 
-    public function testSearchHandlesOpenAiApiException(): void
+    public function test_OpenAI_API例外を処理する(): void
     {
-        $query = "openai api exception query";
-        $exceptionMessage = "OpenAI API error occurred (responses)";
+        $query = "openai api 例外クエリ";
+        $exceptionMessage = "OpenAI APIエラーが発生しました (responses)";
         $errorCode = "test_error_code";
         $errorType = "api_error";
         $statusCode = 500;
@@ -309,12 +312,12 @@ class WebSearchToolTest extends TestCase
         $this->assertSame($expectedMessage, $actualMessage);
     }
 
-    public function testSearchHandlesOpenAiTransporterException(): void
+    public function test_OpenAI_Transporter例外を処理する(): void
     {
-        $query = "openai transporter exception query";
-        $exceptionMessage = "Network issue with OpenAI (responses)";
+        $query = "openai transporter 例外クエリ";
+        $exceptionMessage = "OpenAIとのネットワーク問題 (responses)";
 
-        // Create a stub for Psr\Http\Client\ClientExceptionInterface
+        // Psr\Http\Client\ClientExceptionInterface のスタブを作成
         $clientExceptionStub = new class($exceptionMessage) extends \Exception implements \Psr\Http\Client\ClientExceptionInterface {
             public function __construct(string $message) {
                 parent::__construct($message);
@@ -329,8 +332,8 @@ class WebSearchToolTest extends TestCase
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }
-    
-    public function testSearchReturnsErrorForEmptyQuery(): void
+
+    public function test_空クエリの場合にエラーを返す(): void
     {
         $this->assertSame(
             "Error: Search query is empty.",
@@ -338,19 +341,19 @@ class WebSearchToolTest extends TestCase
         );
     }
 
-    public function testSearchReturnsErrorForZeroNumResults(): void
+    public function test_結果数がゼロの場合にエラーを返す(): void
     {
         $this->assertSame(
             "Error: Number of results must be positive.",
-            $this->webSearchTool->search("test query", 0)
+            $this->webSearchTool->search("テストクエリ", 0)
         );
     }
 
-    public function testSearchReturnsErrorForNegativeNumResults(): void
+    public function test_結果数が負の場合にエラーを返す(): void
     {
         $this->assertSame(
             "Error: Number of results must be positive.",
-            $this->webSearchTool->search("test query", -1)
+            $this->webSearchTool->search("テストクエリ", -1)
         );
     }
 }
