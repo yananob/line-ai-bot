@@ -2,11 +2,15 @@
 
 declare(strict_types=1);
 
+namespace MyApp\Tests; // 名前空間を追加
+
 use MyApp\Consts;
 use MyApp\LineWebhookMessage;
+use PHPUnit\Framework\TestCase; // TestCaseをuse
 
-final class LineWebhookMessageTest extends PHPUnit\Framework\TestCase
+final class LineWebhookMessageTest extends TestCase // TestCaseの完全修飾名を使用 (useしたのでこれでOK)
 {
+    // テスト用グループメッセージJSON
     const TEST_GROUP_MESSAGE = <<<EOM
 {
     "destination": "d4eb1d4beb26f7e26de2cbfc2d01fb51b",
@@ -36,6 +40,7 @@ final class LineWebhookMessageTest extends PHPUnit\Framework\TestCase
 }
 EOM;
 
+    // テスト用ユーザーメッセージJSON
     const TEST_USER_MESSAGE = <<<EOM
 {
     "destination": "d4eb1d4beb26f7e26de2cbfc2d01fb51b",
@@ -64,6 +69,7 @@ EOM;
 }
 EOM;
 
+    // テスト用ユーザーポストバックJSON
     const TEST_USER_POSTBACK = <<<EOM
 {
     "destination": "z4eb1d4beb26f7e26de2cbfc2d01fb51b",
@@ -100,32 +106,32 @@ EOM;
         $this->userPostback = new LineWebhookMessage(self::TEST_USER_POSTBACK);
     }
 
-    public function testGetType(): void
+    public function test_タイプを取得する(): void
     {
         $this->assertSame("message", $this->groupMessage->getType());
         $this->assertSame("message", $this->userMessage->getType());
         $this->assertSame("postback", $this->userPostback->getType());
     }
 
-    public function testGetMessage(): void
+    public function test_メッセージを取得する(): void
     {
         $this->assertSame("今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？", $this->groupMessage->getMessage());
     }
 
-    public function testGetPostbackData(): void
+    public function test_ポストバックデータを取得する(): void
     {
         parse_str($this->userPostback->getPostbackData(), $params);
         $this->assertSame(Consts::CMD_REMOVE_TRIGGER, $params["command"]);
         $this->assertSame("123456", $params["id"]);
     }
 
-    public function testGetTargetId(): void
+    public function test_ターゲットIDを取得する(): void
     {
         $this->assertSame("Cz8ae3320b1b13dbdaff35ae50dc09500", $this->groupMessage->getTargetId());
         $this->assertSame("U56b4c873e7e93648c421114c1b4b09e8", $this->userMessage->getTargetId());
     }
 
-    public function testGetReplyToken(): void
+    public function test_リプライトークンを取得する(): void
     {
         $this->assertSame("b3c26b13dfc74f6387c8bea36965e27c", $this->groupMessage->getReplyToken());
     }

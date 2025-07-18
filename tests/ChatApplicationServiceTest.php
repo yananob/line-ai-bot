@@ -2,35 +2,37 @@
 
 declare(strict_types=1);
 
+namespace MyApp\Tests\Application; // 名前空間を追加
+
 use Carbon\Carbon;
-use yananob\MyTools\Test;
-use yananob\MyTools\Gpt; // For mocking
-use MyApp\WebSearchTool; // For mocking the WebSearchTool instance
+// use yananob\MyTools\Test; // このテストクラス内では直接使用されていないようなのでコメントアウトも検討
+use yananob\MyTools\Gpt; // モック用
+use MyApp\WebSearchTool; // WebSearchToolインスタンスのモック用
 
 use MyApp\Application\ChatApplicationService;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Conversation\ConversationRepository;
 use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
-use MyApp\Domain\Bot\Service\CommandAndTriggerService;
-use MyApp\Domain\Conversation\Conversation; // For mocking conversation data
+// use MyApp\Domain\Bot\Service\CommandAndTriggerService; // 現状の設計ではChatApplicationServiceで直接使用されていない
+use MyApp\Domain\Conversation\Conversation; // 会話データのモック用
 
-// PHPUnit\Framework\TestCase is typically available globally or via autoloader
+// PHPUnit\Framework\TestCase は通常、グローバルにまたはオートローダー経由で利用可能
 
-final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
+final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // クラス宣言を更新
 {
-    private ChatApplicationService $chatService; // Renamed from $bot
-    // private ChatApplicationService $chatServiceWithNonExistentBot; // This concept needs re-evaluation
+    private ChatApplicationService $chatService; // $bot からリネームされました
+    // private ChatApplicationService $chatServiceWithNonExistentBot; // この概念は再評価が必要です
 
     private $botRepositoryMock;
     private $conversationRepositoryMock;
     private $gptMock;
     private $webSearchToolMock;
-    private $commandAndTriggerServiceMock; // Not used directly by ChatApplicationService in current design
+    // private $commandAndTriggerServiceMock; // ChatApplicationService に直接注入されていない
 
     const TARGET_ID_AUTOTEST = "TARGET_ID_AUTOTEST";
-    const TARGET_ID_FOR_DEFAULT_BEHAVIOR = "TARGET_ID_FOR_DEFAULT_BEHAVIOR"; // A bot that will have minimal/default config
-    const TARGET_ID_THAT_THROWS_EXCEPTION = "TARGET_ID_THAT_THROWS_EXCEPTION"; // For testing constructor failure
+    const TARGET_ID_FOR_DEFAULT_BEHAVIOR = "TARGET_ID_FOR_DEFAULT_BEHAVIOR"; // 最小/デフォルト設定を持つボット用
+    const TARGET_ID_THAT_THROWS_EXCEPTION = "TARGET_ID_THAT_THROWS_EXCEPTION"; // コンストラクタ失敗テスト用
 
     protected function setUp(): void
     {
@@ -38,45 +40,45 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
         $this->conversationRepositoryMock = $this->createMock(ConversationRepository::class);
         $this->gptMock = $this->createMock(Gpt::class);
         $this->webSearchToolMock = $this->createMock(WebSearchTool::class);
-        // $this->commandAndTriggerServiceMock = $this->createMock(CommandAndTriggerService::class); // Not directly injected into ChatApplicationService
+        // $this->commandAndTriggerServiceMock = $this->createMock(CommandAndTriggerService::class); // ChatApplicationService に直接注入されない
 
-        // --- Bot Mock for TARGET_ID_AUTOTEST (fully featured bot) ---
+        // --- TARGET_ID_AUTOTEST 用のボットモック (フル機能ボット) ---
         $mockBotAutotest = $this->createMock(Bot::class);
         $mockBotAutotest->method('getId')->willReturn(self::TARGET_ID_AUTOTEST);
-        $mockBotAutotest->method('getLineTarget')->willReturn('test_line_target_autotest'); // Unique line target
+        $mockBotAutotest->method('getLineTarget')->willReturn('test_line_target_autotest'); // ユニークなLINEターゲット
         $mockBotAutotest->method('hasHumanCharacteristics')->willReturn(true);
         $mockBotAutotest->method('getBotCharacteristics')->willReturn(['Bot char 1 AUTOTEST']);
         $mockBotAutotest->method('getHumanCharacteristics')->willReturn(['Human char 1 AUTOTEST']);
         $mockBotAutotest->method('getConfigRequests')->willReturn(['Default request AUTOTEST']);
-        $mockBotAutotest->method('getTriggers')->willReturn([]); // Default to no triggers initially
+        $mockBotAutotest->method('getTriggers')->willReturn([]); // 初期状態ではトリガーなし
 
-        // --- Bot Mock for TARGET_ID_FOR_DEFAULT_BEHAVIOR (bot with minimal/default-like config) ---
+        // --- TARGET_ID_FOR_DEFAULT_BEHAVIOR 用のボットモック (最小/デフォルト風設定ボット) ---
         $mockBotDefaultBehavior = $this->createMock(Bot::class);
         $mockBotDefaultBehavior->method('getId')->willReturn(self::TARGET_ID_FOR_DEFAULT_BEHAVIOR);
-        $mockBotDefaultBehavior->method('getLineTarget')->willReturn('test_line_target_default'); // Unique line target
-        $mockBotDefaultBehavior->method('hasHumanCharacteristics')->willReturn(false); // Different from autotest
+        $mockBotDefaultBehavior->method('getLineTarget')->willReturn('test_line_target_default'); // ユニークなLINEターゲット
+        $mockBotDefaultBehavior->method('hasHumanCharacteristics')->willReturn(false); // autotest とは異なる
         $mockBotDefaultBehavior->method('getBotCharacteristics')->willReturn(['Default Bot char BEHAVIOR']);
         $mockBotDefaultBehavior->method('getHumanCharacteristics')->willReturn([]);
         $mockBotDefaultBehavior->method('getConfigRequests')->willReturn(['Basic request BEHAVIOR']);
 
 
-        // --- Bot Mocks for specific search/GPT scenarios ---
-        // It's often cleaner to create specific mocks if their behavior diverges significantly,
-        // but for simple cases like different IDs, reusing a base mock is fine.
-        // Let's assume $mockBotAutotest can serve for most of these unless specific methods need different returns.
-        $mockBotSearchYes = $this->createMock(Bot::class); // Example of a dedicated mock
+        // --- 特定の検索/GPTシナリオ用のボットモック ---
+        // 振る舞いが大きく異なる場合は専用のモックを作成する方がクリーンですが、
+        // IDが異なるだけのような単純なケースでは、ベースモックを再利用しても問題ありません。
+        // 特定のメソッドが異なる戻り値を必要としない限り、$mockBotAutotest がこれらのほとんどに対応できると仮定します。
+        $mockBotSearchYes = $this->createMock(Bot::class); // 専用モックの例
         $mockBotSearchYes->method('getId')->willReturn("TARGET_ID_AUTOTEST_SEARCH_YES");
-        // ... other necessary method stubs for $mockBotSearchYes
+        // ... $mockBotSearchYes に必要なその他のメソッドスタブ
 
         $this->botRepositoryMock->method('findById')
             ->willReturnMap([
                 [self::TARGET_ID_AUTOTEST, $mockBotAutotest],
                 [self::TARGET_ID_FOR_DEFAULT_BEHAVIOR, $mockBotDefaultBehavior],
                 [self::TARGET_ID_THAT_THROWS_EXCEPTION, null],
-                ["TARGET_ID_AUTOTEST_SEARCH_YES", $mockBotAutotest], 
+                ["TARGET_ID_AUTOTEST_SEARCH_YES", $mockBotAutotest],
                 ["TARGET_ID_AUTOTEST_SEARCH_NO", $mockBotAutotest],
                 ["TARGET_ID_AUTOTEST_SEARCH_UNEXPECTED", $mockBotAutotest],
-                ["TARGET_ID_GETANSWER_SEARCH", $mockBotAutotest], 
+                ["TARGET_ID_GETANSWER_SEARCH", $mockBotAutotest],
                 ["TARGET_ID_GETANSWER_NOSEARCH", $mockBotAutotest],
                 ["TARGET_ID_GENERATE_QUERY", $mockBotAutotest],
                 ["TARGET_ID_GENERATE_QUERY_EMPTY", $mockBotAutotest],
@@ -84,7 +86,7 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
                 ["TARGET_ID_WEBSEARCH_CONFIGURED", $mockBotAutotest],
             ]);
 
-        // Main instance for most tests
+        // ほとんどのテスト用のメインインスタンス
         $this->chatService = new ChatApplicationService(
             self::TARGET_ID_AUTOTEST,
             $this->botRepositoryMock,
@@ -92,10 +94,10 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
             true // isTest
         );
         $this->setPrivateProperty($this->chatService, 'gpt', $this->gptMock);
-        // WebSearchTool is often re-mocked or its properties set per test for specific search scenarios
+        // WebSearchTool は、特定の検索シナリオごとに再モックされるか、プロパティが設定されることがよくあります
     }
 
-    public function testConstructorThrowsExceptionWhenBotNotFound(): void
+    public function test_ボットが見つからない場合にコンストラクタが例外をスローする(): void
     {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("Bot with ID '" . self::TARGET_ID_THAT_THROWS_EXCEPTION . "' not found.");
@@ -107,9 +109,9 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
         );
     }
 
-    public function testGetAnswerWithoutRecentConversation()
+    public function test_最近の会話なしで回答を取得する(): void
     {
-        $this->gptMock->method('getAnswer')->willReturn('Mocked Answer');
+        $this->gptMock->method('getAnswer')->willReturn('モックされた回答');
         $this->conversationRepositoryMock->method('findByBotId')->willReturn([]);
 
         $this->assertNotEmpty($this->chatService->getAnswer(
@@ -118,12 +120,12 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
         ));
     }
 
-    public function testGetAnswerWithRecentConversation()
+    public function test_最近の会話ありで回答を取得する(): void
     {
         $mockedConversation = $this->createMock(Conversation::class);
         $this->conversationRepositoryMock->method('findByBotId')
             ->willReturn([$mockedConversation]);
-        $this->gptMock->method('getAnswer')->willReturn('Mocked Answer');
+        $this->gptMock->method('getAnswer')->willReturn('モックされた回答');
 
         $this->assertNotEmpty($this->chatService->getAnswer(
             true, // applyRecentConversations
@@ -131,9 +133,9 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
         ));
     }
 
-    public function testAskRequestWithoutRecentConversation()
+    public function test_最近の会話なしでリクエストを尋ねる(): void
     {
-        $this->gptMock->method('getAnswer')->willReturn('Mocked Answer');
+        $this->gptMock->method('getAnswer')->willReturn('モックされた回答');
         $this->conversationRepositoryMock->method('findByBotId')->willReturn([]);
 
         $this->assertNotEmpty($this->chatService->askRequest(
@@ -142,8 +144,8 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
         ));
     }
 
-    // Refactored context tests: Test getAnswer and inspect context via GPT mock callback
-    public function testContextBuildingForBotWithNoHumanChars()
+    // リファクタリングされたコンテキストテスト: getAnswer をテストし、GPT モックコールバック経由でコンテキストを検査する
+    public function test_人間的な特徴がないボットのコンテキスト構築(): void
     {
         $chatServiceDefaultBehavior = new ChatApplicationService(
             self::TARGET_ID_FOR_DEFAULT_BEHAVIOR,
@@ -154,26 +156,26 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
         $this->setPrivateProperty($chatServiceDefaultBehavior, 'gpt', $this->gptMock);
 
 
-        $expectedContextPart = "【話し相手の情報】"; // This should be MISSING
+        $expectedContextPart = "【話し相手の情報】"; // これは存在しないはず
         $this->gptMock->method('getAnswer')
             ->with(
                 $this->callback(function ($context) use ($expectedContextPart) {
                     $this->assertStringNotContainsString($expectedContextPart, $context);
-                    // Check for default bot chars
+                    // デフォルトのボット特性をチェック
                     $this->assertStringContainsString("Default Bot char BEHAVIOR", $context);
                     return true;
                 }),
                 $this->anything() // message
             )
-            ->willReturn("Mocked answer");
+            ->willReturn("モックされた回答");
 
         $chatServiceDefaultBehavior->getAnswer(false, "some message");
     }
 
-    public function testContextBuildingForBotWithHumanChars()
+    public function test_人間的な特徴があるボットのコンテキスト構築(): void
     {
-        // chatService is already TARGET_ID_AUTOTEST which has human chars
-        $expectedContextPart = "【話し相手の情報】"; // This should be PRESENT
+        // chatService は既に人間的な特徴を持つ TARGET_ID_AUTOTEST です
+        $expectedContextPart = "【話し相手の情報】"; // これは存在するはず
         $humanCharPart = "Human char 1 AUTOTEST";
         $this->gptMock->method('getAnswer')
             ->with(
@@ -184,15 +186,15 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
                 }),
                 $this->anything()
             )
-            ->willReturn("Mocked answer");
+            ->willReturn("モックされた回答");
         $this->chatService->getAnswer(false, "some message");
     }
 
-    public function testContextBuildingWithoutRecentConversations()
+    public function test_最近の会話なしでのコンテキスト構築(): void
     {
         $this->conversationRepositoryMock->method('findByBotId')->willReturn([]);
-        
-        $expectedContextPart = "【最近の会話内容】"; // This should be MISSING
+
+        $expectedContextPart = "【最近の会話内容】"; // これは存在しないはず
         $this->gptMock->method('getAnswer')
             ->with(
                 $this->callback(function ($context) use ($expectedContextPart) {
@@ -201,21 +203,21 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
                 }),
                 $this->anything()
             )
-            ->willReturn("Mocked answer");
+            ->willReturn("モックされた回答");
         $this->chatService->getAnswer(false, "some message"); // applyRecentConversations = false
     }
 
-    public function testContextBuildingWithRecentConversations()
+    public function test_最近の会話ありでのコンテキスト構築(): void
     {
         $mockConversation = $this->createMock(Conversation::class);
         $mockConversation->method('getCreatedAt')->willReturn(Carbon::now());
         $mockConversation->method('getSpeaker')->willReturn('human');
-        $mockConversation->method('getContent')->willReturn('Test conversation content');
+        $mockConversation->method('getContent')->willReturn('テスト会話内容');
 
         $this->conversationRepositoryMock->method('findByBotId')->willReturn([$mockConversation]);
 
-        $expectedContextPart = "【最近の会話内容】"; // This should be PRESENT
-        $conversationContentPart = "Test conversation content";
+        $expectedContextPart = "【最近の会話内容】"; // これは存在するはず
+        $conversationContentPart = "テスト会話内容";
         $this->gptMock->method('getAnswer')
             ->with(
                 $this->callback(function ($context) use ($expectedContextPart, $conversationContentPart) {
@@ -225,57 +227,57 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
                 }),
                 $this->anything()
             )
-            ->willReturn("Mocked answer");
+            ->willReturn("モックされた回答");
         $this->chatService->getAnswer(true, "some message"); // applyRecentConversations = true
     }
 
 
-    public function testGetLineTarget_ForAutotestBot()
+    public function test_AutotestボットのLineTargetを取得する(): void
     {
-        // chatService is TARGET_ID_AUTOTEST
+        // chatService は TARGET_ID_AUTOTEST です
         $this->assertSame('test_line_target_autotest', $this->chatService->getLineTarget());
     }
 
-    public function testGetLineTarget_ForDefaultBehaviorBot()
+    public function test_DefaultBehaviorボットのLineTargetを取得する(): void
     {
         $chatServiceDefault = new ChatApplicationService(
             self::TARGET_ID_FOR_DEFAULT_BEHAVIOR,
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
-            true 
+            true
         );
         $this->assertSame('test_line_target_default', $chatServiceDefault->getLineTarget());
     }
 
-    public function testAddTimerTrigger(): void
+    public function test_タイマートリガーを追加する(): void
     {
         $mockTimerTrigger = $this->createMock(TimerTrigger::class);
-        // $mockTimerTrigger->method('getId')->willReturn('trigger123'); // Not strictly needed for this test's focus
+        // $mockTimerTrigger->method('getId')->willReturn('trigger123'); // このテストの焦点には厳密には不要
 
-        // Get the specific mock Bot instance that chatService will be using
+        // chatService が使用する特定のモック Bot インスタンスを取得
         $botFromRepo = $this->botRepositoryMock->findById(self::TARGET_ID_AUTOTEST);
-        
-        // Expect Bot::addTrigger to be called
-        $botFromRepo->expects($this->once()) // Or ->exactly(1) if you prefer for single call
-                    ->method('addTrigger')
-                    ->with($mockTimerTrigger) // Assert it's called with the trigger
-                    ->willReturn('new_mocked_trigger_id'); // Return value for Bot::addTrigger
 
-        // Expect BotRepository::save to be called with the correct Bot instance
+        // Bot::addTrigger が呼び出されることを期待
+        $botFromRepo->expects($this->once()) // または単一呼び出しの場合は ->exactly(1)
+                    ->method('addTrigger')
+                    ->with($mockTimerTrigger) // トリガーと共に呼び出されることを表明
+                    ->willReturn('new_mocked_trigger_id'); // Bot::addTrigger の戻り値
+
+        // BotRepository::save が正しい Bot インスタンスで呼び出されることを期待
         $this->botRepositoryMock->expects($this->once())
                                 ->method('save')
-                                ->with($botFromRepo); // Assert it's called with the bot instance
+                                ->with($botFromRepo); // ボットインスタンスと共に呼び出されることを表明
 
         $this->chatService->addTimerTrigger($mockTimerTrigger);
 
-        // The assertions are on the mock objects' expectations.
-        // If you want to assert the return value of addTimerTrigger from ChatApplicationService:
+        // アサーションはモックオブジェクトの期待値に対するものです。
+        // ChatApplicationService からの addTimerTrigger の戻り値を表明したい場合:
         // $returnedId = $this->chatService->addTimerTrigger($mockTimerTrigger);
         // $this->assertSame('new_mocked_trigger_id', $returnedId);
-        // For this, ensure the mock Bot's addTrigger returns what ChatApplicationService should return.
+        // このためには、モック Bot の addTrigger が ChatApplicationService が返すべき値を返すようにします。
     }
-    
-    public function testDeleteTrigger(): void
+
+    public function test_トリガーを削除する(): void
     {
         $triggerIdToDelete = 'trigger_to_delete_123';
 
@@ -283,66 +285,66 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
         $botFromRepo->expects($this->once())
                     ->method('deleteTriggerById')
                     ->with($triggerIdToDelete);
-        
+
         $this->botRepositoryMock->expects($this->once())
                                 ->method('save')
                                 ->with($botFromRepo);
-        
+
         $this->chatService->deleteTrigger($triggerIdToDelete);
     }
 
 
-    // Helper method for setting private properties
+    // プライベートプロパティ設定用のヘルパーメソッド
     protected function setPrivateProperty($object, string $propertyName, $value): void
     {
         $reflection = new \ReflectionClass($object);
         $property = $reflection->getProperty($propertyName);
-        $property->setAccessible(true); // In PHP 8.1+, setAccessible is no longer needed for private props of the same class
+        // $property->setAccessible(true); // PHP 8.1+ では、同じクラスのプライベートプロパティに対して setAccessible は不要になりました
         $property->setValue($object, $value);
     }
 
-    // Tests for __shouldPerformWebSearch (indirectly, by testing getAnswer)
-    public function testGetAnswerFlowWhenShouldPerformWebSearchReturnsTrue(): void
+    // __shouldPerformWebSearch のテスト (間接的に getAnswer をテストすることで)
+    public function test_shouldPerformWebSearchがTrueを返す場合のgetAnswerフロー(): void
     {
-        $userMessage = 'some message requiring search';
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key'); // Enable search logic path
-        $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');   // Enable search logic path
+        $userMessage = '検索が必要なメッセージ';
+        $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key'); // 検索ロジックパスを有効化
+        $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');   // 検索ロジックパスを有効化
         $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
 
 
-        // Mocking GPT for __shouldPerformWebSearch internal call
-        // This specific call is deep inside. We'll mock the GPT calls getAnswer makes.
-        // 1. For judging web search
-        // 2. For generating query (if search is needed)
-        // 3. For final response
-        $this->gptMock->expects($this->exactly(3)) // Adjusted based on the flow
+        // __shouldPerformWebSearch 内部呼び出しのためのGPTモック
+        // この特定の呼び出しは深部にあります。getAnswer が行うGPT呼び出しをモックします。
+        // 1. Web検索を判断するため
+        // 2. クエリを生成するため (検索が必要な場合)
+        // 3. 最終応答のため
+        $this->gptMock->expects($this->exactly(3)) // フローに基づいて調整
             ->method('getAnswer')
             ->willReturnMap([
-                [ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH, $userMessage, 'はい'], // Yes, search
-                [ChatApplicationService::PROMPT_GENERATE_SEARCH_QUERY, $userMessage, 'search query'], // Generated query
-                [$this->isType('string'), $userMessage, 'Final answer with search results'], // Context, message
+                [ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH, $userMessage, 'はい'], // はい、検索する
+                [ChatApplicationService::PROMPT_GENERATE_SEARCH_QUERY, $userMessage, '検索クエリ'], // 生成されたクエリ
+                [$this->isType('string'), $userMessage, '検索結果を含む最終回答'], // コンテキスト、メッセージ
             ]);
-        
-        $this->webSearchToolMock->method('search')->willReturn('Mocked search results');
+
+        $this->webSearchToolMock->method('search')->willReturn('モックされた検索結果');
 
         $this->chatService->getAnswer(true, $userMessage);
-        // Assertions are on the mocks (e.g., webSearchToolMock->expects($this->once())->method('search'))
-        // Or, more robustly, check the context passed to the final GPT call as in other tests.
+        // アサーションはモックに対するものです (例: webSearchToolMock->expects($this->once())->method('search'))
+        // または、より堅牢には、他のテストのように最終GPT呼び出しに渡されるコンテキストを確認します。
     }
 
 
-    public function testGetAnswerFlowWhenShouldPerformWebSearchReturnsFalse(): void
+    public function test_shouldPerformWebSearchがFalseを返す場合のgetAnswerフロー(): void
     {
-        $userMessage = 'another message not needing search';
-        // Ensure search tool is not called, GPT for query generation is not called.
-        $this->setPrivateProperty($this->chatService, 'gpt', $this->gptMock); // Ensure our mock is used
+        $userMessage = '検索が不要な別のメッセージ';
+        // 検索ツールが呼び出されないこと、クエリ生成用のGPTが呼び出されないことを確認します。
+        $this->setPrivateProperty($this->chatService, 'gpt', $this->gptMock); // モックが使用されることを確認
 
-        $this->gptMock->expects($this->exactly(2)) // Judge, Final Answer
+        $this->gptMock->expects($this->exactly(2)) // 判断、最終回答
             ->method('getAnswer')
             ->willReturnMap([
-                [ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH, $userMessage, 'いいえ'], // No search
-                // No call for PROMPT_GENERATE_SEARCH_QUERY
-                [$this->isType('string'), $userMessage, 'Final answer, no search'], // Context, message
+                [ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH, $userMessage, 'いいえ'], // 検索しない
+                // PROMPT_GENERATE_SEARCH_QUERY の呼び出しなし
+                [$this->isType('string'), $userMessage, '最終回答、検索なし'], // コンテキスト、メッセージ
             ]);
 
         $this->webSearchToolMock->expects($this->never())->method('search');
@@ -351,35 +353,35 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
     }
 
 
-    // Tests for __getContext (related to web search results) - by checking context in getAnswer
-    public function testContextIncludesWebSearchResultsWhenProvidedViaGetAnswer(): void
+    // __getContext のテスト (Web検索結果に関連) - getAnswer でコンテキストを確認することで
+    public function test_getAnswer経由で提供された場合にコンテキストにWeb検索結果が含まれる(): void
     {
-        $userMessage = "search this";
-        $searchResults = "Found web information: A, B, C.";
+        $userMessage = "これを検索";
+        $searchResults = "Web情報が見つかりました: A, B, C.";
         $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key');
         $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');
         $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
 
         $this->gptMock->method('getAnswer')
             ->will($this->onConsecutiveCalls(
-                'はい', // Judge web search
-                'search query for this', // Generate query
-                'Final Answer' // Generate final answer
+                'はい', // Web検索を判断
+                'これの検索クエリ', // クエリを生成
+                '最終回答' // 最終回答を生成
             ));
-        
+
         $this->webSearchToolMock->method('search')->willReturn($searchResults);
 
-        // Override the last gptMock expectation to inspect context
-        $this->gptMock->expects($this->atLeastOnce()) // Or $this->exactly(3) if precise
+        // 最後のgptMockの期待値をオーバーライドしてコンテキストを検査
+        $this->gptMock->expects($this->atLeastOnce()) // または正確に3回の場合は $this->exactly(3)
             ->method('getAnswer')
             ->with(
                 $this->callback(function ($contextArg) use ($searchResults) {
-                    // This callback will be invoked for all calls to gpt->getAnswer.
-                    // We are interested in the one that contains the search results.
+                    // このコールバックは gpt->getAnswer のすべての呼び出しに対して呼び出されます。
+                    // 検索結果を含むものに関心があります。
                     if (str_contains($contextArg, "【Web検索結果】")) {
                         $this->assertStringContainsString($searchResults, $contextArg);
                     }
-                    return true; // Allow the test to proceed
+                    return true; // テストを続行させる
                 }),
                 $this->anything()
             );
@@ -388,20 +390,20 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
         $this->chatService->getAnswer(true, $userMessage);
     }
 
-    public function testContextExcludesWebSearchResultsWhenNullViaGetAnswer(): void
+    public function test_getAnswer経由でnullの場合にコンテキストからWeb検索結果が除外される(): void
     {
-        $userMessage = "no search this";
-         // Ensure API keys are null or webSearchTool is null, or GPT says "いいえ"
-        $this->setPrivateProperty($this->chatService, 'googleApiKey', null); // Simulate no config for search
+        $userMessage = "これは検索しない";
+         // APIキーがnullであるか、webSearchToolがnullであるか、GPTが「いいえ」と言うことを確認します
+        $this->setPrivateProperty($this->chatService, 'googleApiKey', null); // 検索の設定がないことをシミュレート
 
 
         $this->gptMock->method('getAnswer')
             ->will($this->onConsecutiveCalls(
-                'いいえ', // Judge web search -> No
-                'Final Answer' // Final answer generation
+                'いいえ', // Web検索を判断 -> いいえ
+                '最終回答' // 最終回答生成
             ));
-        // webSearchToolMock->search should not be called.
-        // PROMPT_GENERATE_SEARCH_QUERY should not be called.
+        // webSearchToolMock->search は呼び出されないはずです。
+        // PROMPT_GENERATE_SEARCH_QUERY は呼び出されないはずです。
 
         $this->gptMock->expects($this->atLeastOnce())
             ->method('getAnswer')
@@ -409,7 +411,7 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
                 $this->callback(function ($contextArg) {
                     if (!str_contains($contextArg, ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH) &&
                         !str_contains($contextArg, ChatApplicationService::PROMPT_GENERATE_SEARCH_QUERY)
-                    ) { // Only inspect the final context
+                    ) { // 最終コンテキストのみを検査
                         $this->assertStringNotContainsString("【Web検索結果】", $contextArg);
                         $this->assertStringNotContainsString("<web_search_results>", $contextArg);
                     }
@@ -417,17 +419,17 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
                 }),
                 $this->anything()
             );
-        
+
         $this->chatService->getAnswer(true, $userMessage);
     }
 
 
-    public function testGetAnswerUsesWebSearchToolInstanceWhenConfigured(): void
+    public function test_設定されている場合にgetAnswerがWebSearchToolインスタンスを使用する(): void
     {
-        $userMessage = "Tell me about cats.";
-        $dummySearchQuery = "cats information";
-        $mockedSearchResults = "Web Search Results:\n- Title: Cats are great. Snippet: Yes they are.";
-        $expectedFinalAnswer = "Based on my research, cats are indeed great.";
+        $userMessage = "猫について教えて。";
+        $dummySearchQuery = "猫 情報";
+        $mockedSearchResults = "Web検索結果:\n- タイトル: 猫は素晴らしい。 スニペット: はい、そうです。";
+        $expectedFinalAnswer = "私の調査によると、猫は確かに素晴らしいです。";
 
         $this->setPrivateProperty($this->chatService, 'googleApiKey', "DUMMY_API_KEY");
         $this->setPrivateProperty($this->chatService, 'googleCxId', "DUMMY_CX_ID");
@@ -447,18 +449,18 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
 
         $this->webSearchToolMock->expects($this->once())
             ->method('search')
-            ->with($dummySearchQuery, "DUMMY_CX_ID") 
+            ->with($dummySearchQuery, "DUMMY_CX_ID")
             ->willReturn($mockedSearchResults);
-        
+
         $actualAnswer = $this->chatService->getAnswer(true, $userMessage);
         $this->assertSame($expectedFinalAnswer, $actualAnswer);
     }
 
-    // Tests for __generateSearchQuery (indirectly by testing getAnswer)
-    public function testGetAnswerCorrectlyUsesGeneratedSearchQuery(): void
+    // __generateSearchQuery のテスト (間接的に getAnswer をテストすることで)
+    public function test_getAnswerが生成された検索クエリを正しく使用する(): void
     {
-        $userMessage = "What is the weather like tomorrow in Tokyo?";
-        $expectedQuery = "weather tomorrow Tokyo";
+        $userMessage = "明日の東京の天気は？";
+        $expectedQuery = "天気 明日 東京";
 
         $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key');
         $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');
@@ -466,61 +468,61 @@ final class ChatApplicationServiceTest extends PHPUnit\Framework\TestCase
 
         $this->gptMock->method('getAnswer')
             ->will($this->onConsecutiveCalls(
-                'はい',           // Judge search: Yes
-                $expectedQuery,   // Generate query: "weather tomorrow Tokyo"
-                'Final answer based on Tokyo weather' // Final response
+                'はい',           // 検索を判断: はい
+                $expectedQuery,   // クエリを生成: "天気 明日 東京"
+                '東京の天気に基づく最終回答' // 最終応答
             ));
-        
+
         $this->webSearchToolMock->expects($this->once())
                                 ->method('search')
-                                ->with($expectedQuery, $this->anything()) // Assert this is called with the generated query
-                                ->willReturn('Tokyo weather data');
+                                ->with($expectedQuery, $this->anything()) // これが生成されたクエリで呼び出されることを表明
+                                ->willReturn('東京の気象データ');
 
         $this->chatService->getAnswer(true, $userMessage);
     }
-    
-    public function testGetAnswerFallbackToOriginalMessageForSearchIfGptQueryIsEmpty(): void
+
+    public function test_GPTクエリが空の場合にgetAnswerが検索に元のメッセージをフォールバックする(): void
     {
-        $userMessage = "A complex question with no easy keywords.";
-        
+        $userMessage = "簡単なキーワードがない複雑な質問。";
+
         $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key');
         $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');
         $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
 
         $this->gptMock->method('getAnswer')
             ->will($this->onConsecutiveCalls(
-                'はい', // Judge search: Yes
-                '',     // Generate query: Empty response
-                'Final answer based on complex question'
+                'はい', // 検索を判断: はい
+                '',     // クエリを生成: 空の応答
+                '複雑な質問に基づく最終回答'
             ));
 
         $this->webSearchToolMock->expects($this->once())
                                 ->method('search')
-                                ->with($userMessage, $this->anything()) // Should fallback to original message
-                                ->willReturn('Results for complex question');
-        
+                                ->with($userMessage, $this->anything()) // 元のメッセージにフォールバックするはず
+                                ->willReturn('複雑な質問の結果');
+
         $this->chatService->getAnswer(true, $userMessage);
     }
 
-    public function testGetAnswerFallbackToOriginalMessageForSearchIfGptQueryIsTooShort(): void
+    public function test_GPTクエリが短すぎる場合にgetAnswerが検索に元のメッセージをフォールバックする(): void
     {
-        $userMessage = "Another question.";
+        $userMessage = "別の質問。";
 
         $this->setPrivateProperty($this->chatService, 'googleApiKey', 'dummy_key');
         $this->setPrivateProperty($this->chatService, 'googleCxId', 'dummy_cx');
         $this->setPrivateProperty($this->chatService, 'webSearchTool', $this->webSearchToolMock);
-        
+
         $this->gptMock->method('getAnswer')
             ->will($this->onConsecutiveCalls(
-                'はい', // Judge search: Yes
-                'a',    // Generate query: Too short
-                'Final answer for another question'
+                'はい', // 検索を判断: はい
+                'a',    // クエリを生成: 短すぎる
+                '別の質問の最終回答'
             ));
 
         $this->webSearchToolMock->expects($this->once())
                                 ->method('search')
-                                ->with($userMessage, $this->anything()) // Should fallback to original message
-                                ->willReturn('Results for another question');
+                                ->with($userMessage, $this->anything()) // 元のメッセージにフォールバックするはず
+                                ->willReturn('別の質問の結果');
 
         $this->chatService->getAnswer(true, $userMessage);
     }
