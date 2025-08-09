@@ -62,7 +62,11 @@ EOM;
 
         $this->bot = $this->botRepository->findById($this->targetId);
         if ($this->bot === null) {
-            throw new \RuntimeException("Bot with ID '{$this->targetId}' not found.");
+            // 指定のbotの設定がないときは、defaultの設定で動作する
+            $this->bot = $this->botRepository->findDefault();
+            if ($this->bot === null) {
+                throw new \RuntimeException("Bot with ID '{$this->targetId}' not found.");
+            }
         }
 
         $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-4.1");
