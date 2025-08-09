@@ -79,8 +79,8 @@ class FirestoreBotRepository implements BotRepository
         if (!$configSnapshot->exists()) {
             return null;
         }
-        
-        // All bots (except default itself) need the default config for fallback
+
+        // 各Botは、自身のconfig + defaultで動作する
         $defaultBotConfig = $this->findDefault();
 
         return $this->loadBotFromSnapshot($id, $configSnapshot, $defaultBotConfig);
