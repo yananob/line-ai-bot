@@ -69,7 +69,7 @@ EOM;
             }
         }
 
-        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-4.1");
+        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-5");
 
         // Load Search API configuration (path adjusted)
         $this->openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT");
