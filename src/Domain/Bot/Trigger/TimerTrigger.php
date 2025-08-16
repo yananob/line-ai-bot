@@ -148,6 +148,6 @@ class TimerTrigger implements Trigger
 
     public function __toString(): string
     {
-        return "{$this->date} {$this->time}: {$this->request}";
+        return "{$this->date} {$this->time} {$this->request}";
     }
 }

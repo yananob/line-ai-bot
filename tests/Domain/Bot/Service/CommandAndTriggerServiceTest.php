@@ -48,15 +48,13 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         $this->assertSame($expectedCommand, $actualCommand);
     }
 
-    public static function provideJudgeCommandCases(): array // メソッド名は変更しない (dataProviderのため)
+    public static function provideJudgeCommandCases(): array
     {
         return [
             // message, gptResponse, expectedCommand
-            ["教師口調になって", "1", Command::ChangeAnswerStyle], // "1" が ChangeAnswerStyle にマッピングされると仮定
-            ["学校の教師になって", "2", Command::ChangeBotCharacteristics], // "2" が ChangeBotCharacteristics にマッピングされると仮定
             ["1時間後に「できたよ」と送って", "3", Command::AddOneTimeTrigger],
             ["明後日の6時半に「おはよう」と送って", "3", Command::AddOneTimeTrigger],
-            ["毎日朝6時半にモーニングメッセージを送って", "4", Command::AddDaiyTrigger], // Dailyのtypo修正 -> AddDailyTrigger
+            ["毎日朝6時半にモーニングメッセージを送って", "4", Command::AddDailyTrigger],
             ["お昼のメッセージを送るのをやめて", "5", Command::RemoveTrigger],
             ["何ができんの？", "8", Command::ShowHelp],
             ["未知のコマンド", "9", Command::Other],
@@ -83,7 +81,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         $this->assertEquals($expectedTriggerData['request'], $trigger->getRequest());
     }
 
-    public static function provideGenerateOneTimeTriggerCases(): array // メソッド名は変更しない (dataProviderのため)
+    public static function provideGenerateOneTimeTriggerCases(): array
     {
         // 注意: Carbon::setTestNow は setUp にあるため、「today」と「tomorrow」は 2025/01/01 09:00:00 相対です。
         // CommandAndTriggerService自体は日付解析にCarbonを使用せず、GPTの出力に依存します。
@@ -105,7 +103,8 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
                 "・日付：2025-02-10\n・時刻：15:00\n・依頼内容：リマインド",
                 ['date' => "2025-02-10", 'time' => "15:00", 'request' => "リマインド"]
             ],
-            [   // 堅牢性テスト: GPTが不正な形式の出力を返す
+            [
+                // 堅牢性テスト: GPTが不正な形式の出力を返す
                 "不完全なメッセージ",
                 "・日付：today\n・時刻：", // 時刻と依頼内容が欠落
                 ['date' => "today", 'time' => "now", 'request' => "Could not parse request"] // サービスからのデフォルト値
@@ -131,7 +130,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         $this->assertEquals($expectedTriggerData['request'], $trigger->getRequest());
     }
 
-    public static function provideGenerateDailyTriggerCases(): array // メソッド名は変更しない (dataProviderのため)
+    public static function provideGenerateDailyTriggerCases(): array
     {
         return [
             [

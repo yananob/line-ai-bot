@@ -27,6 +27,8 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
 
     protected function setUp(): void
     {
+        putenv('GCP_PROJECT=dummy-project');
+        putenv('GOOGLE_APPLICATION_CREDENTIALS=dummy-credentials.json');
         $this->firestoreClientMock = $this->createMock(FirestoreClient::class);
         $this->collectionReferenceMock = $this->createMock(CollectionReference::class); // 'ai-bot-test' をモック
         $this->conversationsDocRefMock = $this->createMock(DocumentReference::class); // 'conversations' ドキュメントをモック
@@ -229,12 +231,18 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
             ->willReturn($writeBatchMock);
 
         // 各ドキュメント参照に対してバッチでdeleteが呼び出されることを期待
+        $expectedArgs = [
+            [$docRefMock1],
+            [$docRefMock2]
+        ];
+
         $writeBatchMock->expects($this->exactly(2))
             ->method('delete')
-            ->withConsecutive(
-                [$docRefMock1],
-                [$docRefMock2]
-            );
+            ->with($this->callback(function (...$args) use (&$expectedArgs) {
+                $expected = array_shift($expectedArgs);
+                $this->assertEquals($expected, $args);
+                return true;
+            }));
 
         $writeBatchMock->expects($this->once())
             ->method('commit');
