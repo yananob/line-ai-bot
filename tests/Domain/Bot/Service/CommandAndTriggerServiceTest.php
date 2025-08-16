@@ -103,7 +103,8 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
                 "・日付：2025-02-10\n・時刻：15:00\n・依頼内容：リマインド",
                 ['date' => "2025-02-10", 'time' => "15:00", 'request' => "リマインド"]
             ],
-            [   // 堅牢性テスト: GPTが不正な形式の出力を返す
+            [
+                // 堅牢性テスト: GPTが不正な形式の出力を返す
                 "不完全なメッセージ",
                 "・日付：today\n・時刻：", // 時刻と依頼内容が欠落
                 ['date' => "today", 'time' => "now", 'request' => "Could not parse request"] // サービスからのデフォルト値

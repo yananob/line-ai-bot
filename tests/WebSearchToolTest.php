@@ -160,7 +160,7 @@ final class WebSearchToolTest extends TestCase // TestCaseの完全修飾名を�
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedSummary = "\n- Snippet: 最初のスニペット。\n- Snippet: 同じ出力アイテムからの2番目のスニペット。";
+        $expectedSummary = "\n- Snippet: 最初のスニペット。.\n- Snippet: 同じ出力アイテムからの2番目のスニペット。.";
 
         $actualSummary = $this->webSearchTool->search($query, $numResults);
         $this->assertSame($expectedSummary, $actualSummary);
