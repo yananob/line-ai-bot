@@ -106,7 +106,20 @@ final class WebSearchToolTest extends TestCase // TestCaseの完全修飾名を�
         ];
 
         // ダミーのMetaInformationオブジェクトを作成
-        $meta = \OpenAI\Responses\Meta\MetaInformation::from([]);
+        $metaData = [
+            'x-request-id' => ['req_123'],
+            'openai-model' => ['gpt-4o'],
+            'openai-organization' => ['org-123'],
+            'openai-version' => ['2020-10-01'],
+            'openai-processing-ms' => ['100'],
+            'x-ratelimit-limit-requests' => ['100'],
+            'x-ratelimit-remaining-requests' => ['99'],
+            'x-ratelimit-reset-requests' => ['1s'],
+            'x-ratelimit-limit-tokens' => ['1000'],
+            'x-ratelimit-remaining-tokens' => ['999'],
+            'x-ratelimit-reset-tokens' => ['1s'],
+        ];
+        $meta = \OpenAI\Responses\Meta\MetaInformation::from($metaData);
 
         return \OpenAI\Responses\Responses\CreateResponse::from($attributes, $meta);
     }

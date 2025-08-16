@@ -9,6 +9,7 @@ use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Conversation\Conversation;
 use MyApp\Domain\Conversation\ConversationRepository;
+use MyApp\Domain\Bot\Trigger\Trigger;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use MyApp\WebSearchTool;
 use yananob\MyGcpTools\CFUtils; // Keep for getLineTarget
@@ -242,7 +243,7 @@ EOM;
     }
 
     /**
-     * @return MyApp\Domain\Bot\Trigger\Trigger[]
+     * @return Trigger[]
      */
     public function getTriggers(): array
     {

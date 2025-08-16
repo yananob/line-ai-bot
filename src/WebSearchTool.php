@@ -86,14 +86,6 @@ Separate each finding with exactly two newline characters. Do not include any ot
             error_log("Generic error in WebSearchTool (responses): " . $e->getMessage());
             return "Error performing web search. An unexpected error occurred. " . $e->getMessage();
         }
-
-        if (empty($findings)) {
-            // Log $rawContent here for debugging if needed
-            // error_log("Could not parse any findings from OpenAI response for query '{$query}'. Raw: " . $rawContent);
-            return "Could not extract useful information from AI response for: " . htmlspecialchars($query) . ". The AI might not have found relevant information or the format was unexpected.";
-        }
-
-        return "\n- " . implode("\n- ", $findings);
     }
 
     /**

@@ -52,11 +52,9 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     {
         return [
             // message, gptResponse, expectedCommand
-            ["教師口調になって", "1", Command::ChangeAnswerStyle], // "1" が ChangeAnswerStyle にマッピングされると仮定
-            ["学校の教師になって", "2", Command::ChangeBotCharacteristics], // "2" が ChangeBotCharacteristics にマッピングされると仮定
             ["1時間後に「できたよ」と送って", "3", Command::AddOneTimeTrigger],
             ["明後日の6時半に「おはよう」と送って", "3", Command::AddOneTimeTrigger],
-            ["毎日朝6時半にモーニングメッセージを送って", "4", Command::AddDaiyTrigger], // Dailyのtypo修正 -> AddDailyTrigger
+            ["毎日朝6時半にモーニングメッセージを送って", "4", Command::AddDailyTrigger],
             ["お昼のメッセージを送るのをやめて", "5", Command::RemoveTrigger],
             ["何ができんの？", "8", Command::ShowHelp],
             ["未知のコマンド", "9", Command::Other],

@@ -49,9 +49,9 @@ final class BotTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修�
         // if (empty($this->botCharacteristics) && $this->configDefault) {
         //     return $this->configDefault->getBotCharacteristics();
         // }
-        $mockDefaultConfig = $this->createMock(\MyApp\BotConfig::class); // これは古いBotConfigをモックします
-        $mockDefaultConfig->method('getBotCharacteristics')->willReturn(['デフォルト特性']);
-        $botWithDefault = new Bot("botWithDef", $mockDefaultConfig);
+        $mockDefaultBot = $this->createMock(Bot::class);
+        $mockDefaultBot->method('getBotCharacteristics')->willReturn(['デフォルト特性']);
+        $botWithDefault = new Bot("botWithDef", $mockDefaultBot);
         $this->assertEquals(['デフォルト特性'], $botWithDefault->getBotCharacteristics());
     }
 
