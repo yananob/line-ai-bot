@@ -120,6 +120,7 @@ EOM;
                 $webSearchResults
             ),
             message: $message,
+            options: ["reasoning_effort" => "minimal"],
         );
     }
 
