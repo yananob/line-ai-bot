@@ -36,6 +36,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // ã‚
 
     protected function setUp(): void
     {
+        putenv('OPENAI_KEY_LINE_AI_BOT=dummy_key');
         $this->botRepositoryMock = $this->createMock(BotRepository::class);
         $this->conversationRepositoryMock = $this->createMock(ConversationRepository::class);
         $this->gptMock = $this->createMock(Gpt::class);

@@ -48,7 +48,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         $this->assertSame($expectedCommand, $actualCommand);
     }
 
-    public static function provideJudgeCommandCases(): array // メソッド名は変更しない (dataProviderのため)
+    public static function provideJudgeCommandCases(): array
     {
         return [
             // message, gptResponse, expectedCommand
@@ -81,7 +81,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         $this->assertEquals($expectedTriggerData['request'], $trigger->getRequest());
     }
 
-    public static function provideGenerateOneTimeTriggerCases(): array // メソッド名は変更しない (dataProviderのため)
+    public static function provideGenerateOneTimeTriggerCases(): array
     {
         // 注意: Carbon::setTestNow は setUp にあるため、「today」と「tomorrow」は 2025/01/01 09:00:00 相対です。
         // CommandAndTriggerService自体は日付解析にCarbonを使用せず、GPTの出力に依存します。
@@ -129,7 +129,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         $this->assertEquals($expectedTriggerData['request'], $trigger->getRequest());
     }
 
-    public static function provideGenerateDailyTriggerCases(): array // メソッド名は変更しない (dataProviderのため)
+    public static function provideGenerateDailyTriggerCases(): array
     {
         return [
             [

@@ -27,6 +27,8 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
 
     protected function setUp(): void
     {
+        putenv('GCP_PROJECT=dummy-project');
+        putenv('GOOGLE_APPLICATION_CREDENTIALS=dummy-credentials.json');
         $this->firestoreClientMock = $this->createMock(FirestoreClient::class);
         $this->collectionReferenceMock = $this->createMock(CollectionReference::class); // 'ai-bot-test' をモック
         $this->conversationsDocRefMock = $this->createMock(DocumentReference::class); // 'conversations' ドキュメントをモック
