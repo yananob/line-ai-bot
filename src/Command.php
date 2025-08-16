@@ -9,7 +9,7 @@ enum Command: string
     // case AddRequest = "1";
     // case AddCharacteristic = "2";
     case AddOneTimeTrigger = "3";
-    case AddDaiyTrigger = "4";
+    case AddDailyTrigger = "4";
     case RemoveTrigger = "5";
     case ShowHelp = "8";
     case Other = "9";

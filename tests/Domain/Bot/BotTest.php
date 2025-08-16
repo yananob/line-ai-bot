@@ -49,9 +49,9 @@ final class BotTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修�
         // if (empty($this->botCharacteristics) && $this->configDefault) {
         //     return $this->configDefault->getBotCharacteristics();
         // }
-        $mockDefaultConfig = $this->createMock(\MyApp\BotConfig::class); // これは古いBotConfigをモックします
-        $mockDefaultConfig->method('getBotCharacteristics')->willReturn(['デフォルト特性']);
-        $botWithDefault = new Bot("botWithDef", $mockDefaultConfig);
+        $mockDefaultBot = $this->createMock(Bot::class);
+        $mockDefaultBot->method('getBotCharacteristics')->willReturn(['デフォルト特性']);
+        $botWithDefault = new Bot("botWithDef", $mockDefaultBot);
         $this->assertEquals(['デフォルト特性'], $botWithDefault->getBotCharacteristics());
     }
 
@@ -87,7 +87,7 @@ final class BotTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修�
     public function test_トリガーを追加および取得する(): void
     {
         $this->assertCount(0, $this->bot->getTriggers());
-        $trigger1 = new TimerTrigger("今日", "10:00", "リクエスト1");
+        $trigger1 = new TimerTrigger("today", "10:00", "リクエスト1");
         $triggerId1 = $this->bot->addTrigger($trigger1);
 
         $this->assertNotEmpty($triggerId1);
@@ -104,7 +104,7 @@ final class BotTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修�
 
     public function test_トリガーを削除する(): void
     {
-        $trigger1 = new TimerTrigger("今日", "10:00", "リクエスト1");
+        $trigger1 = new TimerTrigger("today", "10:00", "リクエスト1");
         $id1 = $this->bot->addTrigger($trigger1);
 
         $trigger2 = new TimerTrigger("明日", "11:00", "リクエスト2");
@@ -123,7 +123,7 @@ final class BotTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修�
 
     public function test_存在しないトリガーを削除する(): void
     {
-        $trigger1 = new TimerTrigger("今日", "10:00", "リクエスト1");
+        $trigger1 = new TimerTrigger("today", "10:00", "リクエスト1");
         $this->bot->addTrigger($trigger1);
         $this->assertCount(1, $this->bot->getTriggers());
         $this->bot->deleteTriggerById("存在しないID"); // エラーをスローせず、何もしないはず

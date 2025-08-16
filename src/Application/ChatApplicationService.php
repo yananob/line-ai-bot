@@ -9,6 +9,7 @@ use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Conversation\Conversation;
 use MyApp\Domain\Conversation\ConversationRepository;
+use MyApp\Domain\Bot\Trigger\Trigger;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use MyApp\WebSearchTool;
 use yananob\MyGcpTools\CFUtils; // Keep for getLineTarget
@@ -69,7 +70,7 @@ EOM;
             }
         }
 
-        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-4.1");
+        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-5");
 
         // Load Search API configuration (path adjusted)
         $this->openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT");
@@ -120,6 +121,7 @@ EOM;
                 $webSearchResults
             ),
             message: $message,
+            options: ["reasoning_effort" => "minimal"],
         );
     }
 
@@ -241,7 +243,7 @@ EOM;
     }
 
     /**
-     * @return MyApp\Domain\Bot\Trigger\Trigger[]
+     * @return Trigger[]
      */
     public function getTriggers(): array
     {

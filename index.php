@@ -80,7 +80,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
                 $answer = "タイマーを追加しました：" . $trigger;  // TODO: メッセージに
                 break;
 
-            case Command::AddDaiyTrigger:
+            case Command::AddDailyTrigger:
                 $trigger = $commandAndTriggerService->generateDailyTrigger($webhookMessage->getMessage());
                 $chatService->addTimerTrigger($trigger);
                 $answer = "タイマーを追加しました：" . $trigger;  // TODO: メッセージに
