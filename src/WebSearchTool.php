@@ -115,7 +115,7 @@ Separate each finding with exactly two newline characters. Do not include any ot
                     }
                     // Assuming $contentItem is an object with 'type' and 'text' properties
                     if (isset($contentItem->type) && $contentItem->type === 'output_text' && !empty($contentItem->text)) {
-                        $findings[] = "Snippet: " . rtrim(trim($contentItem->text), '.') . ".";
+                        $findings[] = "Snippet: " . rtrim(trim($contentItem->text), '.');
                     }
                 }
             }
