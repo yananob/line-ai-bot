@@ -7,6 +7,11 @@
             "label": "run_tests",
             "type": "shell",
             "command": "./tests/run_tests.sh"
+        },
+        {
+            "label": "merge and deploy main",
+            "type": "shell",
+            "command": "miscs/merge_and_deploy_main.sh"
         }
     ]
 }
