@@ -17,7 +17,7 @@ final class TimerTriggerTest extends \PHPUnit\Framework\TestCase // TestCaseの�
     public function test_toStringが正しくフォーマットされる(): void
     {
         $trigger = new TimerTrigger("2023-12-25", "10:00", "テストリクエスト");
-        $this->assertEquals("2023-12-25 10:00: テストリクエスト", (string)$trigger);
+        $this->assertEquals("2023-12-25 10:00 テストリクエスト", (string)$trigger);
     }
 
     protected function tearDown(): void
