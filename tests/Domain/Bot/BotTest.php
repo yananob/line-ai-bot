@@ -97,7 +97,7 @@ final class BotTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修�
         $this->assertSame($trigger1, $triggersArray[0]);
         $this->assertEquals($triggerId1, $trigger1->getId());
 
-        $trigger2 = new TimerTrigger("毎日", "12:00", "リクエスト2");
+        $trigger2 = new TimerTrigger("everyday", "12:00", "リクエスト2");
         $this->bot->addTrigger($trigger2);
         $this->assertCount(2, $this->bot->getTriggers());
     }
@@ -107,7 +107,7 @@ final class BotTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修�
         $trigger1 = new TimerTrigger("today", "10:00", "リクエスト1");
         $id1 = $this->bot->addTrigger($trigger1);
 
-        $trigger2 = new TimerTrigger("明日", "11:00", "リクエスト2");
+        $trigger2 = new TimerTrigger("tomorrow", "11:00", "リクエスト2");
         $id2 = $this->bot->addTrigger($trigger2);
 
         $this->assertCount(2, $this->bot->getTriggers());

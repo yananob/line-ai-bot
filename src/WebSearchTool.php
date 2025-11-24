@@ -71,7 +71,7 @@ Separate each finding with exactly two newline characters. Do not include any ot
             $response = $this->openaiClient->responses()->create($params);
 
             // Log the raw response object
-            error_log(print_r($response, true));
+            // error_log(print_r($response, true));
 
             // The response structure for web_search_preview needs to be handled by parseAndFormatOpenAIResponse
             return $this->parseAndFormatOpenAIResponse($response, $query, $numResults);
