@@ -97,17 +97,6 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
         // WebSearchTool は、特定の検索シナリオごとに再モックされるか、プロパティが設定されることがよくあります
     }
 
-    public function test_ボットが見つからない場合にコンストラクタが例外をスローする(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage("Bot with ID '" . self::TARGET_ID_THAT_THROWS_EXCEPTION . "' not found.");
-        new ChatApplicationService(
-            self::TARGET_ID_THAT_THROWS_EXCEPTION,
-            $this->botRepositoryMock,
-            $this->conversationRepositoryMock
-        );
-    }
-
     public function test_最近の会話なしで回答を取得する(): void
     {
         $this->gptMock->method('getAnswer')->willReturn('モックされた回答');

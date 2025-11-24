@@ -61,11 +61,12 @@ EOM;
         $this->botRepository = $botRepository;
         $this->conversationRepository = $conversationRepository;
 
-        $this->bot = $this->botRepository->findById($this->targetId);
-        if ($this->bot === null) {
+        $bot = $this->botRepository->findById($this->targetId);
+        if ($bot === null) {
             // 指定のbotの設定がないときは、defaultの設定で動作する
-            $this->bot = $this->botRepository->findDefault();
+            $bot = $this->botRepository->findDefault();
         }
+        $this->bot = $bot;
 
         $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-5.1");
 

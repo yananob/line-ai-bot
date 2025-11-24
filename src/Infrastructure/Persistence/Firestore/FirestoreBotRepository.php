@@ -70,6 +70,7 @@ class FirestoreBotRepository implements BotRepository
     public function findById(string $id): ?Bot
     {
         if ($id === 'default') { // Default bot should be fetched by findDefault
+            error_log("Warning: Attempted to find default bot using findById. Use findDefault() instead.");
             return $this->findDefault();
         }
 
@@ -77,11 +78,13 @@ class FirestoreBotRepository implements BotRepository
         $configSnapshot = $botCollection->document('config')->snapshot();
 
         if (!$configSnapshot->exists()) {
+            error_log("Bot with ID '{$id}' not found.");
             return null;
         }
 
         // 各Botは、自身のconfig + defaultで動作する
         $defaultBotConfig = $this->findDefault();
+        error_log("Loading bot with ID '{$id}' using default config.");
 
         return $this->loadBotFromSnapshot($id, $configSnapshot, $defaultBotConfig);
     }
