@@ -15,9 +15,9 @@ interface BotRepository
     /**
      * Finds the default Bot configuration.
      *
-     * @return Bot|null The default Bot object if found, otherwise null.
+     * @return Bot The default Bot object.
      */
-    public function findDefault(): ?Bot;
+    public function findDefault(): Bot;
 
     /**
      * Saves a Bot aggregate.
