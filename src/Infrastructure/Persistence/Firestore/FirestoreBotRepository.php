@@ -152,7 +152,9 @@ class FirestoreBotRepository implements BotRepository
             if ($botId !== 'default') {
                 // findById will fetch the bot, including its default config.
                 $bot = $this->findById($botId);
-                $userBots[] = $bot;
+                if ($bot !== null) {
+                    $userBots[] = $bot;
+                }
             }
         }
         return $userBots;
