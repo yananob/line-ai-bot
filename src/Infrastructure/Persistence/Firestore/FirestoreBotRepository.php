@@ -70,6 +70,7 @@ class FirestoreBotRepository implements BotRepository
     public function findById(string $id): ?Bot
     {
         if ($id === 'default') { // Default bot should be fetched by findDefault
+            error_log("Warning: Attempted to find default bot using findById. Use findDefault() instead.");
             return $this->findDefault();
         }
 
@@ -77,24 +78,24 @@ class FirestoreBotRepository implements BotRepository
         $configSnapshot = $botCollection->document('config')->snapshot();
 
         if (!$configSnapshot->exists()) {
+            error_log("Bot with ID '{$id}' not found.");
             return null;
         }
 
         // 各Botは、自身のconfig + defaultで動作する
         $defaultBotConfig = $this->findDefault();
+        error_log("Loading bot with ID '{$id}' using default config.");
 
         return $this->loadBotFromSnapshot($id, $configSnapshot, $defaultBotConfig);
     }
 
-    public function findDefault(): ?Bot
+    public function findDefault(): Bot
     {
         $defaultBotCollection = $this->getBotCollection('default');
         $configSnapshot = $defaultBotCollection->document('config')->snapshot();
 
         if (!$configSnapshot->exists()) {
-            // This case should ideally not happen in a well-configured system
-            // or means the default bot config is missing.
-            return null;
+            throw new \RuntimeException("Default bot configuration does not exist.");
         }
 
         // The default bot does not have a further default config, so pass null.
@@ -151,9 +152,7 @@ class FirestoreBotRepository implements BotRepository
             if ($botId !== 'default') {
                 // findById will fetch the bot, including its default config.
                 $bot = $this->findById($botId);
-                if ($bot) {
-                    $userBots[] = $bot;
-                }
+                $userBots[] = $bot;
             }
         }
         return $userBots;

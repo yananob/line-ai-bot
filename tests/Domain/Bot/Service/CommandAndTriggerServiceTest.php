@@ -21,6 +21,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         Carbon::setTestNow(new Carbon("2025/01/01T09:00:00+09:00")); // 日付に敏感なテストがあれば維持
 
         $this->gptMock = $this->createMock(Gpt::class);
+        putenv("OPENAI_KEY_LINE_AI_BOT=test_api_key"); // 環境変数の設定
         $this->commandAndTriggerService = new CommandAndTriggerService();
         $this->setPrivateProperty($this->commandAndTriggerService, 'gpt', $this->gptMock);
     }
@@ -35,7 +36,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     }
 
     /**
-     * @dataProvider provideJudgeCommandCases // データプロバイダーの参照名を変更する必要はありません
+     * @dataProvider provideJudgeCommandCases
      */
     public function test_コマンド判定が正しいコマンドを返す(string $message, string $gptResponse, Command $expectedCommand): void
     {
@@ -64,7 +65,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     }
 
     /**
-     * @dataProvider provideGenerateOneTimeTriggerCases // データプロバイダーの参照名を変更する必要はありません
+     * @dataProvider provideGenerateOneTimeTriggerCases
      */
     public function test_単発トリガー生成が正しいタイマートリガーを返す(string $message, string $gptResponse, array $expectedTriggerData): void
     {
@@ -113,7 +114,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     }
 
     /**
-     * @dataProvider provideGenerateDailyTriggerCases // データプロバイダーの参照名を変更する必要はありません
+     * @dataProvider provideGenerateDailyTriggerCases
      */
     public function test_デイリートリガー生成が正しいタイマートリガーを返す(string $message, string $gptResponse, array $expectedTriggerData): void
     {
