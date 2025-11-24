@@ -40,15 +40,15 @@ class TimerTrigger implements Trigger
                 break;
             case 'today':
                 $this->actualDate = $carbonNow->copy()->format('Y/m/d');
-                $this->date = $this->actualDate;
+                // $this->date = $this->actualDate;
                 break;
             case 'tomorrow':
                 $this->actualDate = $carbonNow->copy()->addDay()->format('Y/m/d');
-                $this->date = $this->actualDate;
+                // $this->date = $this->actualDate;
                 break;
             case 'day after tomorrow':
                 $this->actualDate = $carbonNow->copy()->addDays(2)->format('Y/m/d');
-                $this->date = $this->actualDate;
+                // $this->date = $this->actualDate;
                 break;
             default:
                 // Assumes a specific date string like YYYY/MM/DD or YYYY-MM-DD

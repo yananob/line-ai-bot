@@ -72,7 +72,7 @@ EOM;
 
     public function __construct()
     {
-        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-4.1");
+        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-5.1");
     }
 
     public function judgeCommand(string $message): Command

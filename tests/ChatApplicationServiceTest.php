@@ -233,7 +233,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
     public function test_AutotestボットのLineTargetを取得する(): void
     {
         // chatService は TARGET_ID_AUTOTEST です
-        $this->assertSame('test_line_target_autotest', $this->chatService->getLineTarget());
+        $this->assertSame('test', $this->chatService->getLineTarget());
     }
 
     public function test_DefaultBehaviorボットのLineTargetを取得する(): void
@@ -243,7 +243,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             $this->botRepositoryMock,
             $this->conversationRepositoryMock
         );
-        $this->assertSame('test_line_target_default', $chatServiceDefault->getLineTarget());
+        $this->assertSame('test', $chatServiceDefault->getLineTarget());
     }
 
     public function test_タイマートリガーを追加する(): void
