@@ -2,7 +2,7 @@
 set -eu
 
 # Export credentials
-SECRETS=("OPENAI_KEY_LINE_AI_BOT" "LINE_TOKENS_N_TARGETS" "FIREBASE_CONFIG")
+SECRETS=("OPENAI_KEY_LINE_AI_BOT" "LINE_TOKENS_N_TARGETS" "FIREBASE_SERVICE_ACCOUNT")
 for secret in "${SECRETS[@]}"; do
     export "$secret"="$(gcloud secrets versions access latest --secret="$secret")"
     # echo "$secret: ${!secret}"

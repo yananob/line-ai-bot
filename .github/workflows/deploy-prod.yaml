@@ -24,6 +24,6 @@ jobs:
       secrets_config: |-
         OPENAI_KEY_LINE_AI_BOT
         LINE_TOKENS_N_TARGETS
-        FIREBASE_CONFIG
+        FIREBASE_SERVICE_ACCOUNT
       deploy_http_trigger: true
       deploy_event_trigger: true
