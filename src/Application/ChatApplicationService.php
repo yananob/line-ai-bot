@@ -55,7 +55,9 @@ EOM;
     public function __construct(
         string $targetId,
         BotRepository $botRepository,
-        ConversationRepository $conversationRepository
+        ConversationRepository $conversationRepository,
+        ?Gpt $gpt = null,
+        ?WebSearchTool $webSearchTool = null
     ) {
         $this->targetId = $targetId;
         $this->botRepository = $botRepository;
@@ -68,13 +70,15 @@ EOM;
         }
         $this->bot = $bot;
 
-        $this->gpt = new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT"), "gpt-5.1");
+        $this->gpt = $gpt ?? new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy', "gpt-5.1");
 
         // Load Search API configuration (path adjusted)
-        $this->openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT");
+        $this->openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: null;
         $this->openaiSearchModel = "gpt-4o-mini";
 
-        if (!empty($this->openaiApiKey) && !empty($this->openaiSearchModel)) {
+        if ($webSearchTool !== null) {
+            $this->webSearchTool = $webSearchTool;
+        } elseif (!empty($this->openaiApiKey) && !empty($this->openaiSearchModel)) {
             try {
                 $openaiClient = OpenAI::client($this->openaiApiKey); // Uses the factory method
                 $this->webSearchTool = new WebSearchTool($openaiClient, $this->openaiSearchModel);

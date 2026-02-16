@@ -16,10 +16,10 @@ class FirestoreConversationRepository implements ConversationRepository
     private FirestoreClient $db;
     private string $collectionName;
 
-    public function __construct(bool $isTest = true)
+    public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
     {
         $this->collectionName = $isTest ? "ai-bot-test" : "ai-bot";
-        $this->db = new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT"), true)]);
+        $this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);
     }
 
     private function getBotConversationsCollection(string $botId): CollectionReference

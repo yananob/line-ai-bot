@@ -43,17 +43,7 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
         $this->conversationsDocRefMock->method('collection')
             ->willReturn($this->botConversationsCollRefMock); // '{botId}' サブコレクションを返す
 
-        $this->repository = new FirestoreConversationRepository(isTest: true);
-        $this->setPrivateProperty($this->repository, 'db', $this->firestoreClientMock);
-    }
-
-    // プライベートプロパティ設定用のヘルパーメソッド
-    protected function setPrivateProperty($object, string $propertyName, $value): void
-    {
-        $reflection = new \ReflectionClass($object);
-        $property = $reflection->getProperty($propertyName);
-        $property->setAccessible(true); // PHP8.1+ではsetAccessibleは不要な場合あり
-        $property->setValue($object, $value);
+        $this->repository = new FirestoreConversationRepository(isTest: true, db: $this->firestoreClientMock);
     }
 
     public function test_botIdによる会話取得が成功する(): void

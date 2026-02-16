@@ -21,18 +21,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         Carbon::setTestNow(new Carbon("2025/01/01T09:00:00+09:00")); // 日付に敏感なテストがあれば維持
 
         $this->gptMock = $this->createMock(Gpt::class);
-        putenv("OPENAI_KEY_LINE_AI_BOT=test_api_key"); // 環境変数の設定
-        $this->commandAndTriggerService = new CommandAndTriggerService();
-        $this->setPrivateProperty($this->commandAndTriggerService, 'gpt', $this->gptMock);
-    }
-
-    // プライベートプロパティ設定用のヘルパーメソッド
-    protected function setPrivateProperty($object, string $propertyName, $value): void
-    {
-        $reflection = new \ReflectionClass($object);
-        $property = $reflection->getProperty($propertyName);
-        $property->setAccessible(true); // PHP8.1+ではprivateプロパティへのアクセスにsetAccessible(true)は不要な場合あり
-        $property->setValue($object, $value);
+        $this->commandAndTriggerService = new CommandAndTriggerService($this->gptMock);
     }
 
     /**
