@@ -17,10 +17,10 @@ class FirestoreBotRepository implements BotRepository
     private string $collectionName;
     private DocumentReference $documentRoot; // e.g., /ai-bots/{bot_id}/configs/
 
-    public function __construct(bool $isTest = true)
+    public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
     {
         $this->collectionName = $isTest ? "ai-bot-test" : "ai-bot";
-        $this->db = new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT"), true)]);
+        $this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);
         // This documentRoot points to the 'configs' document within the main collection.
         // e.g. /ai-bot/configs or /ai-bot-test/configs
         // Individual bot data will be subcollections under this.
