@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MyApp;
 
+use MyApp\Domain\Exception\InvalidWebhookEventException;
+
 // TODO: MyToolsに移す
 class LineWebhookMessage
 {
@@ -47,7 +49,7 @@ class LineWebhookMessage
         } else if ($type === 'room') {
             return $this->event->source->roomId;
         } else {
-            throw new \Exception("Unknown type :" + $type);
+            throw new InvalidWebhookEventException("Unknown type :" . $type);
         }
     }
 
