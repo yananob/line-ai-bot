@@ -10,6 +10,7 @@ use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use MyApp\Domain\Bot\Trigger\Trigger;
+use MyApp\Domain\Exception\BotNotFoundException;
 
 class FirestoreBotRepository implements BotRepository
 {
@@ -95,7 +96,7 @@ class FirestoreBotRepository implements BotRepository
         $configSnapshot = $defaultBotCollection->document('config')->snapshot();
 
         if (!$configSnapshot->exists()) {
-            throw new \RuntimeException("Default bot configuration does not exist.");
+            throw new BotNotFoundException("Default bot configuration with ID 'default' not found.");
         }
 
         // The default bot does not have a further default config, so pass null.

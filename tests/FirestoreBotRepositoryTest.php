@@ -7,6 +7,7 @@ namespace MyApp\Tests\Infrastructure\Persistence\Firestore;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
+use MyApp\Domain\Exception\BotNotFoundException;
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\DocumentReference;
@@ -72,11 +73,25 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->assertEquals($botId, $bot->getId());
     }
 
+    public function test_findDefaultThrowsExceptionWhenNotFound(): void
+    {
+        $botId = 'default';
+        [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+
+        $this->documentRootMock->method('collection')->with($botId)->willReturn($botCollMock);
+        $snapshotMock->method('exists')->willReturn(false);
+
+        $this->expectException(BotNotFoundException::class);
+        $this->expectExceptionMessage("Default bot configuration with ID 'default' not found.");
+
+        $this->repository->findDefault();
+    }
+
     public function test_findByIdが成功する(): void
     {
         $botId = 'test-bot';
 
-        $this->documentRootMock->method('collection')->willReturnCallback(function($id) use ($botId) {
+        $this->documentRootMock->method('collection')->willReturnCallback(function($id) {
             [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
             $snapshotMock->method('exists')->willReturn(true);
             if ($id === 'default') {

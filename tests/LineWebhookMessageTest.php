@@ -6,6 +6,7 @@ namespace MyApp\Tests; // 名前空間を追加
 
 use MyApp\Consts;
 use MyApp\LineWebhookMessage;
+use MyApp\Domain\Exception\InvalidWebhookEventException;
 use PHPUnit\Framework\TestCase; // TestCaseをuse
 
 final class LineWebhookMessageTest extends TestCase // TestCaseの完全修飾名を使用 (useしたのでこれでOK)
@@ -134,5 +135,26 @@ EOM;
     public function test_リプライトークンを取得する(): void
     {
         $this->assertSame("b3c26b13dfc74f6387c8bea36965e27c", $this->groupMessage->getReplyToken());
+    }
+
+    public function test_getTargetIdThrowsExceptionForUnknownType(): void
+    {
+        $invalidJson = <<<EOM
+{
+    "events": [
+        {
+            "type": "message",
+            "source": {
+                "type": "unknown",
+                "id": "123"
+            }
+        }
+    ]
+}
+EOM;
+        $message = new LineWebhookMessage($invalidJson);
+        $this->expectException(InvalidWebhookEventException::class);
+        $this->expectExceptionMessage("Unknown type :unknown");
+        $message->getTargetId();
     }
 }
