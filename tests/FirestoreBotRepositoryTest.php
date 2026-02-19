@@ -6,6 +6,7 @@ namespace MyApp\Tests\Infrastructure\Persistence\Firestore;
 
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use MyApp\Domain\Bot\Bot;
+use MyApp\Domain\Exception\BotNotFoundException;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
@@ -92,6 +93,18 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->assertInstanceOf(Bot::class, $bot);
         $this->assertEquals($botId, $bot->getId());
         $this->assertEquals(['test-char'], $bot->getBotCharacteristics());
+    }
+
+    public function test_findDefaultが失敗したときに例外を投げる(): void
+    {
+        $botId = 'default';
+        [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+
+        $this->documentRootMock->method('collection')->with($botId)->willReturn($botCollMock);
+        $snapshotMock->method('exists')->willReturn(false);
+
+        $this->expectException(BotNotFoundException::class);
+        $this->repository->findDefault();
     }
 
     public function test_saveが成功する(): void

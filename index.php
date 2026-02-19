@@ -16,6 +16,9 @@ use MyApp\Consts;
 use MyApp\Command;
 use MyApp\LineWebhookMessage;
 use MyApp\Application\ChatApplicationService;
+use MyApp\Domain\Exception\BotNotFoundException;
+use MyApp\Domain\Exception\InvalidWebhookEventException;
+use MyApp\Domain\Exception\DomainException;
 use MyApp\Domain\Bot\Service\CommandAndTriggerService;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
@@ -48,15 +51,22 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $commandAndTriggerService = new CommandAndTriggerService(); // Assumes Gpt config path is correct in its constructor
 
     try {
+        $targetId = $webhookMessage->getTargetId();
         $chatService = new ChatApplicationService(
-            $webhookMessage->getTargetId(),
+            $targetId,
             $botRepository,
             $conversationRepository,
             // $isLocal
         );
-    } catch (\RuntimeException $e) {
-        $logger->log("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
+    } catch (InvalidWebhookEventException $e) {
+        $logger->log("Invalid webhook event: " . $e->getMessage());
+        return new Response(400, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Invalid webhook event."}');
+    } catch (BotNotFoundException $e) {
+        $logger->log("Bot initialization failed: " . $e->getMessage());
         return new Response(500, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Bot initialization failed."}');
+    } catch (\RuntimeException $e) {
+        $logger->log("Runtime error during initialization: " . $e->getMessage());
+        return new Response(500, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Internal server error."}');
     }
 
     $line = __getLineInstance();
@@ -172,8 +182,11 @@ function main_event(CloudEventInterface $event): void
                     $conversationRepository, // Pass the already instantiated repository
                     // $isLocal
                 );
+            } catch (DomainException $e) {
+                $logger->log("TRIGGER: Domain error for user {$botUser->getId()}: " . $e->getMessage());
+                continue; // Skip to next botUser
             } catch (\RuntimeException $e) {
-                $logger->log("TRIGGER: Failed to initialize ChatApplicationService for user {$botUser->getId()}: " . $e->getMessage());
+                $logger->log("TRIGGER: Runtime error for user {$botUser->getId()}: " . $e->getMessage());
                 continue; // Skip to next botUser
             }
 
