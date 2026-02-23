@@ -94,6 +94,60 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
         $this->assertEquals('こんにちは', $conversations[1]->getContent());
     }
 
+    public function test_新しい会話を保存する(): void
+    {
+        $conversation = new Conversation("testBotId", "human", "メッセージ");
+
+        $newDocRefMock = $this->createMock(DocumentReference::class);
+        $newDocRefMock->method('id')->willReturn('new-doc-id');
+
+        $this->botConversationsCollRefMock->expects($this->once())
+            ->method('add')
+            ->with($this->callback(function($data) {
+                return $data['botId'] === 'testBotId' && $data['content'] === 'メッセージ';
+            }))
+            ->willReturn($newDocRefMock);
+
+        $this->repository->save($conversation);
+
+        $this->assertEquals('new-doc-id', $conversation->getId());
+    }
+
+    public function test_既存の会話を保存する(): void
+    {
+        $conversation = new Conversation("testBotId", "human", "メッセージ", new \DateTimeImmutable(), "existing-id");
+
+        $existingDocRefMock = $this->createMock(DocumentReference::class);
+        $this->botConversationsCollRefMock->method('document')->with('existing-id')->willReturn($existingDocRefMock);
+
+        $existingDocRefMock->expects($this->once())
+            ->method('set')
+            ->with($this->callback(function($data) {
+                return $data['botId'] === 'testBotId';
+            }), ['merge' => true]);
+
+        $this->repository->save($conversation);
+    }
+
+    public function test_botIdによる削除が成功する(): void
+    {
+        $botId = "testBotId";
+        $count = 1;
+
+        $docReferenceMock = $this->createMock(DocumentReference::class);
+        $docSnapshotMock = $this->createMock(DocumentSnapshot::class);
+        $docSnapshotMock->method('exists')->willReturn(true);
+        $docSnapshotMock->method('reference')->willReturn($docReferenceMock);
+
+        $this->botConversationsCollRefMock->method('orderBy')->willReturnSelf();
+        $this->botConversationsCollRefMock->method('limit')->with($count)->willReturnSelf();
+        $this->botConversationsCollRefMock->method('documents')->willReturn(new \ArrayObject([$docSnapshotMock]));
+
+        $docReferenceMock->expects($this->once())->method('delete');
+
+        $this->repository->deleteByBotId($botId, $count);
+    }
+
     public function test_カウントがゼロの場合にbotIdによる削除が何もしない(): void
     {
         $botId = "testBotId";
