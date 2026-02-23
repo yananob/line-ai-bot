@@ -102,15 +102,17 @@ EOM;
 
         // TODO: Google APIを使っていたときのように、いちど検索語を作ってから検索しているので、最適な処理じゃゃなさそう
         $webSearchResults = null;
-        if ($this->webSearchTool instanceof WebSearchTool && $this->__shouldPerformWebSearch($message)) {
-            $webSearchResults = $this->webSearchTool->search(
-                $message, // Use raw message as search query
-                5 // Number of results
-            );
-        } elseif (empty($this->openaiApiKey) && $this->__shouldPerformWebSearch($message)) { // Check if API key is missing
-            $webSearchResults = "Error: Web search is not available due to missing OpenAI API key configuration.";
-        } elseif ($this->webSearchTool === null && $this->__shouldPerformWebSearch($message)) { // General check if tool failed to initialize
-             $webSearchResults = "Error: Web search tool is not configured properly or failed to initialize.";
+        if ($this->__shouldPerformWebSearch($message)) {
+            if ($this->webSearchTool instanceof WebSearchTool) {
+                $webSearchResults = $this->webSearchTool->search(
+                    $message, // Use raw message as search query
+                    5 // Number of results
+                );
+            } elseif (empty($this->openaiApiKey)) {
+                $webSearchResults = "Error: Web search is not available due to missing OpenAI API key configuration.";
+            } else {
+                $webSearchResults = "Error: Web search tool is not configured properly or failed to initialize.";
+            }
         }
         
         // Use bot's config requests (personal and default)

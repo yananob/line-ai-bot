@@ -33,7 +33,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->repository = new FirestoreBotRepository(isTest: true, db: $this->firestoreClientMock);
     }
 
-    private function createBotMocks()
+    private function createBotMocks(?iterable $triggerDocuments = null)
     {
         $botCollMock = $this->createMock(CollectionReference::class);
         $configDocMock = $this->createMock(DocumentReference::class);
@@ -48,7 +48,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         });
         $configDocMock->method('snapshot')->willReturn($snapshotMock);
         $triggersDocMock->method('collection')->with('triggers')->willReturn($triggersCollMock);
-        $triggersCollMock->method('documents')->willReturn(new \ArrayObject([]));
+        $triggersCollMock->method('documents')->willReturn($triggerDocuments ?? new \ArrayObject([]));
 
         return [$botCollMock, $configDocMock, $snapshotMock, $triggersDocMock, $triggersCollMock];
     }
@@ -107,6 +107,92 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->assertInstanceOf(Bot::class, $bot);
         $this->assertEquals($botId, $bot->getId());
         $this->assertEquals(['test-char'], $bot->getBotCharacteristics());
+    }
+
+    public function test_findByIdがトリガーをロードする(): void
+    {
+        $botId = 'test-bot';
+
+        $mocks = [];
+
+        $this->documentRootMock->method('collection')->willReturnCallback(function($id) use (&$mocks) {
+            if (isset($mocks[$id])) {
+                return $mocks[$id][0];
+            }
+
+            if ($id === 'default') {
+                [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+                $snapshotMock->method('exists')->willReturn(true);
+                $snapshotMock->method('data')->willReturn(['bot_characteristics' => ['default-char']]);
+            } else {
+                $triggerDocMock = $this->createMock(DocumentSnapshot::class);
+                $triggerDocMock->method('exists')->willReturn(true);
+                $triggerDocMock->method('id')->willReturn('trigger-id-123');
+                $triggerDocMock->method('data')->willReturn([
+                    'event' => 'timer',
+                    'date' => 'today',
+                    'time' => '12:00',
+                    'request' => 'テストリクエスト'
+                ]);
+
+                [$botCollMock, $configDocMock, $snapshotMock, $triggersDocMock, $triggersCollMock] = $this->createBotMocks(new \ArrayObject([$triggerDocMock]));
+                $snapshotMock->method('exists')->willReturn(true);
+                $snapshotMock->method('data')->willReturn(['bot_characteristics' => ['test-char']]);
+            }
+            $mocks[$id] = [$botCollMock, $configDocMock, $snapshotMock];
+            return $botCollMock;
+        });
+
+        $bot = $this->repository->findById($botId);
+
+        $this->assertInstanceOf(Bot::class, $bot);
+        $triggers = $bot->getTriggers();
+        $this->assertCount(1, $triggers);
+        $this->assertArrayHasKey('trigger-id-123', $triggers);
+        $this->assertEquals('テストリクエスト', $triggers['trigger-id-123']->getRequest());
+    }
+
+    public function test_findByIdが存在しないボットに対してNullを返す(): void
+    {
+        $botId = 'non-existent-bot';
+
+        $this->documentRootMock->method('collection')->willReturnCallback(function($id) {
+            [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+            if ($id === 'non-existent-bot') {
+                $snapshotMock->method('exists')->willReturn(false);
+            } else {
+                $snapshotMock->method('exists')->willReturn(true); // default bot exists
+                $snapshotMock->method('data')->willReturn([]);
+            }
+            return $botCollMock;
+        });
+
+        $bot = $this->repository->findById($botId);
+        $this->assertNull($bot);
+    }
+
+    public function test_getAllUserBotsが成功する(): void
+    {
+        $botCollMock1 = $this->createMock(CollectionReference::class);
+        $botCollMock1->method('id')->willReturn('user-bot-1');
+
+        $botCollMock2 = $this->createMock(CollectionReference::class);
+        $botCollMock2->method('id')->willReturn('default'); // ignore default
+
+        $this->documentRootMock->method('collections')->willReturn([$botCollMock1, $botCollMock2]);
+
+        // findById will be called for 'user-bot-1'
+        $this->documentRootMock->method('collection')->willReturnCallback(function($id) {
+            [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+            $snapshotMock->method('exists')->willReturn(true);
+            $snapshotMock->method('data')->willReturn([]);
+            return $botCollMock;
+        });
+
+        $bots = $this->repository->getAllUserBots();
+
+        $this->assertCount(1, $bots);
+        $this->assertEquals('user-bot-1', $bots[0]->getId());
     }
 
     public function test_saveが成功する(): void
