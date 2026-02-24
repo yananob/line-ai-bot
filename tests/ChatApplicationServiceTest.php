@@ -10,6 +10,7 @@ use yananob\MyTools\Gpt; // モック用
 use MyApp\Application\ChatApplicationService;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Conversation\ConversationRepository;
+use MyApp\Domain\Bot\Service\ChatPromptService;
 use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Conversation\Conversation; // 会話データのモック用
 
@@ -21,6 +22,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
 
     private $botRepositoryMock;
     private $conversationRepositoryMock;
+    private $chatPromptService;
     private $gptMock;
     private $webSearchToolMock;
 
@@ -32,6 +34,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
     {
         $this->botRepositoryMock = $this->createMock(BotRepository::class);
         $this->conversationRepositoryMock = $this->createMock(ConversationRepository::class);
+        $this->chatPromptService = new ChatPromptService();
         $this->gptMock = $this->createMock(Gpt::class);
         $this->webSearchToolMock = $this->createMock(\MyApp\WebSearchTool::class);
 
@@ -62,6 +65,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             self::TARGET_ID_AUTOTEST,
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
+            $this->chatPromptService,
             $this->gptMock,
             $this->webSearchToolMock
         );
@@ -165,6 +169,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             self::TARGET_ID_AUTOTEST,
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
+            $this->chatPromptService,
             $this->gptMock,
             null // WebSearchTool を null に
         );
@@ -201,6 +206,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             self::TARGET_ID_FOR_DEFAULT_BEHAVIOR, // 人間特性が空のボット
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
+            $this->chatPromptService,
             $this->gptMock
         );
 
@@ -220,6 +226,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             self::TARGET_ID_FOR_DEFAULT_BEHAVIOR,
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
+            $this->chatPromptService,
             $this->gptMock
         );
         $this->assertSame('test', $chatServiceDefault->getLineTarget());

@@ -16,6 +16,7 @@ use MyApp\Consts;
 use MyApp\Command;
 use MyApp\LineWebhookMessage;
 use MyApp\Application\ChatApplicationService;
+use MyApp\Domain\Bot\Service\ChatPromptService;
 use MyApp\Domain\Bot\Service\CommandAndTriggerService;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
@@ -45,6 +46,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
 
     $botRepository = new FirestoreBotRepository($isLocal);
     $conversationRepository = new FirestoreConversationRepository($isLocal);
+    $chatPromptService = new ChatPromptService();
     $commandAndTriggerService = new CommandAndTriggerService(); // Assumes Gpt config path is correct in its constructor
 
     try {
@@ -52,6 +54,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             $webhookMessage->getTargetId(),
             $botRepository,
             $conversationRepository,
+            $chatPromptService,
             // $isLocal
         );
     } catch (\RuntimeException $e) {
@@ -138,6 +141,7 @@ function main_event(CloudEventInterface $event): void
     $line = __getLineInstance();
     $botRepository = new FirestoreBotRepository($isLocal);
     $conversationRepository = new FirestoreConversationRepository($isLocal); // Needed for ChatApplicationService constructor
+    $chatPromptService = new ChatPromptService();
 
     foreach ($botRepository->getAllUserBots() as $botUser) {
         foreach ($botUser->getTriggers() as $trigger) {
@@ -170,6 +174,7 @@ function main_event(CloudEventInterface $event): void
                     $botUser->getId(),
                     $botRepository, // Pass the already instantiated repository
                     $conversationRepository, // Pass the already instantiated repository
+                    $chatPromptService,
                     // $isLocal
                 );
             } catch (\RuntimeException $e) {
