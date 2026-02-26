@@ -106,7 +106,7 @@ final class FirestoreBotRepositoryTest extends TestCase
 
         $this->assertInstanceOf(Bot::class, $bot);
         $this->assertEquals($botId, $bot->getId());
-        $this->assertEquals(['test-char'], $bot->getBotCharacteristics());
+        $this->assertEquals(['test-char'], $bot->getBotCharacteristics()->toArray());
     }
 
     public function test_findByIdがトリガーをロードする(): void

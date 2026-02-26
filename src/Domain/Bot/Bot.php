@@ -2,15 +2,15 @@
 
 namespace MyApp\Domain\Bot;
 
-use MyApp\BotConfig;
 use MyApp\Domain\Bot\Trigger\Trigger;
+use MyApp\Domain\Bot\ValueObject\StringList;
+use MyApp\Domain\Bot\ValueObject\BotPersonalityConfig;
 
 class Bot
 {
     private string $id;
-    private array $botCharacteristics = [];
-    private array $humanCharacteristics = [];
-    private array $configRequests = [];
+    private BotPersonalityConfig $personality;
+    private StringList $configRequests;
     private string $lineTarget = '';
     private array $triggers = []; // This will hold Trigger objects
     private ?Bot $defaultBot;
@@ -19,6 +19,8 @@ class Bot
     {
         $this->id = $id;
         $this->defaultBot = $defaultBot;
+        $this->personality = new BotPersonalityConfig(new StringList([]), new StringList([]));
+        $this->configRequests = new StringList([]);
     }
 
     public function getId(): string
@@ -26,39 +28,48 @@ class Bot
         return $this->id;
     }
 
-    public function getBotCharacteristics(): array
+    public function getPersonality(): BotPersonalityConfig
     {
-        if (empty($this->botCharacteristics) && $this->defaultBot !== null) {
-            return $this->defaultBot->getBotCharacteristics();
-        }
-        return $this->botCharacteristics;
+        return $this->personality;
     }
 
-    public function getHumanCharacteristics(): array
+    public function getBotCharacteristics(): StringList
     {
-        if (empty($this->humanCharacteristics) && $this->defaultBot !== null) {
+        $personalChars = $this->personality->getBotCharacteristics();
+        if ($personalChars->isEmpty() && $this->defaultBot !== null) {
+            return $this->defaultBot->getBotCharacteristics();
+        }
+        return $personalChars;
+    }
+
+    public function getHumanCharacteristics(): StringList
+    {
+        $personalChars = $this->personality->getHumanCharacteristics();
+        if ($personalChars->isEmpty() && $this->defaultBot !== null) {
             return $this->defaultBot->getHumanCharacteristics();
         }
-        return $this->humanCharacteristics;
+        return $personalChars;
     }
 
     public function hasHumanCharacteristics(): bool
     {
-        return !empty($this->humanCharacteristics) || ($this->defaultBot !== null && $this->defaultBot->hasHumanCharacteristics());
+        if (!$this->personality->getHumanCharacteristics()->isEmpty()) {
+            return true;
+        }
+        return $this->defaultBot !== null && $this->defaultBot->hasHumanCharacteristics();
     }
 
-    public function getConfigRequests(bool $usePersonal = true, bool $useDefault = true): array
+    public function getConfigRequests(bool $usePersonal = true, bool $useDefault = true): StringList
     {
-        $requests = [];
+        $requests = new StringList([]);
         if ($usePersonal) {
             $requests = $this->configRequests;
         }
 
         if ($useDefault && $this->defaultBot !== null) {
-            // Assuming BotConfig::getConfigRequests(true, false) returns only personal configRequests
             $defaultRequests = $this->defaultBot->getConfigRequests(true, false);
-            // Simple merge, could be more sophisticated depending on desired behavior for duplicates
-            $requests = array_merge($defaultRequests, $requests);
+            // Default requests come first
+            $requests = $defaultRequests->merge($requests);
         }
         return $requests;
     }
@@ -86,28 +97,35 @@ class Bot
 
     public function deleteTriggerById(string $id): void
     {
-        // Ensure that we only attempt to unset if the trigger exists.
-        // And if triggers are objects, we might want to compare $trigger->getId()
-        // However, since we store them by $triggerId as key, direct unsetting is fine.
         if (isset($this->triggers[$id])) {
             unset($this->triggers[$id]);
         }
     }
 
-    // Placeholder methods for Repository
+    public function setPersonality(BotPersonalityConfig $personality): void
+    {
+        $this->personality = $personality;
+    }
+
     public function setBotCharacteristics(array $characteristics): void
     {
-        $this->botCharacteristics = $characteristics;
+        $this->personality = new BotPersonalityConfig(
+            new StringList($characteristics),
+            $this->personality->getHumanCharacteristics()
+        );
     }
 
     public function setHumanCharacteristics(array $characteristics): void
     {
-        $this->humanCharacteristics = $characteristics;
+        $this->personality = new BotPersonalityConfig(
+            $this->personality->getBotCharacteristics(),
+            new StringList($characteristics)
+        );
     }
 
     public function setConfigRequests(array $requests): void
     {
-        $this->configRequests = $requests;
+        $this->configRequests = new StringList($requests);
     }
 
     public function setLineTarget(string $target): void

@@ -4,6 +4,7 @@ namespace MyApp\Domain\Bot\Service;
 
 use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Conversation\Conversation;
+use MyApp\Domain\Bot\ValueObject\StringList;
 
 class ChatPromptService
 {
@@ -27,16 +28,16 @@ EOM;
     /**
      * @param Bot $bot
      * @param Conversation[] $conversations Array of Conversation entities
-     * @param array $requests Array of request strings
+     * @param StringList $requests Bot's configured requests
      * @param string|null $webSearchResults
      * @return string
      */
-    public function generateContext(Bot $bot, array $conversations, array $requests, ?string $webSearchResults = null): string
+    public function generateContext(Bot $bot, array $conversations, StringList $requests, ?string $webSearchResults = null): string
     {
         $result = self::GPT_CONTEXT;
         $replaceSettings = [
-            ["search" => "<bot/characteristics>", "replace" => $this->formatArray($bot->getBotCharacteristics())],
-            ["search" => "<requests>", "replace" => $this->formatArray($requests)],
+            ["search" => "<bot/characteristics>", "replace" => $bot->getBotCharacteristics()->format()],
+            ["search" => "<requests>", "replace" => $requests->format()],
         ];
         foreach ($replaceSettings as $replaceSetting) {
             $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);
@@ -46,7 +47,7 @@ EOM;
             $result = $this->removeFromContext(["<title/human_characteristics>", "<human/characteristics>"], $result);
         } else {
             $result = str_replace("<title/human_characteristics>", "【話し相手の情報】", $result);
-            $result = str_replace("<human/characteristics>", $this->formatArray($bot->getHumanCharacteristics()), $result);
+            $result = str_replace("<human/characteristics>", $bot->getHumanCharacteristics()->format(), $result);
         }
 
         if (empty($conversations)) {
@@ -64,12 +65,6 @@ EOM;
         }
 
         return $result;
-    }
-
-    private function formatArray(array $inputs): string
-    {
-        if (empty($inputs)) return "";
-        return "・" . implode("\n・", $inputs);
     }
 
     private function removeFromContext(array $keywords, string $source): string

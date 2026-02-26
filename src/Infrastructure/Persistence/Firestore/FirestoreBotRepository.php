@@ -109,9 +109,9 @@ class FirestoreBotRepository implements BotRepository
 
         // Save main config
         $configData = [
-            'bot_characteristics' => $bot->getBotCharacteristics(),
-            'human_characteristics' => $bot->getHumanCharacteristics(),
-            'requests' => $bot->getConfigRequests(true, false), // Only personal requests
+            'bot_characteristics' => $bot->getBotCharacteristics()->toArray(),
+            'human_characteristics' => $bot->getHumanCharacteristics()->toArray(),
+            'requests' => $bot->getConfigRequests(true, false)->toArray(), // Only personal requests
             'line_target' => $bot->getLineTarget(),
         ];
         $botCollection->document('config')->set($configData);
@@ -120,7 +120,6 @@ class FirestoreBotRepository implements BotRepository
         $triggersSubCollection = $botCollection->document('triggers')->collection('triggers');
         
         // Simple strategy: delete existing triggers and re-add.
-        // A more sophisticated approach might involve checking existing ones.
         $existingTriggers = $triggersSubCollection->documents();
         foreach ($existingTriggers as $doc) {
             $doc->reference()->delete();
@@ -128,14 +127,9 @@ class FirestoreBotRepository implements BotRepository
 
         foreach ($bot->getTriggers() as $trigger) {
             $triggerData = $trigger->toArray();
-            // The ID for the document comes from $trigger->getId(), which should be set.
-            // If $trigger->getId() is null, Firestore will generate an ID.
-            // Bot::addTrigger is expected to generate an ID if one isn't present.
             if ($trigger->getId()) {
                 $triggersSubCollection->document($trigger->getId())->set($triggerData);
             } else {
-                // This case should ideally not happen if Bot::addTrigger ensures an ID.
-                // If it can, we might need to update the trigger object with the new ID.
                 $newDocRef = $triggersSubCollection->add($triggerData);
                 $trigger->setId($newDocRef->id());
             }
@@ -145,13 +139,11 @@ class FirestoreBotRepository implements BotRepository
     public function getAllUserBots(): array
     {
         $userBots = [];
-        // List collections within the 'configs' document. Each subcollection ID is a bot ID.
         $botIdCollections = $this->documentRoot->collections();
         
         foreach ($botIdCollections as $botCollection) {
             $botId = $botCollection->id();
             if ($botId !== 'default') {
-                // findById will fetch the bot, including its default config.
                 $bot = $this->findById($botId);
                 if ($bot !== null) {
                     $userBots[] = $bot;

@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use MyApp\Domain\Bot\Bot;
 use MyApp\Domain\Conversation\Conversation;
 use MyApp\Domain\Bot\Service\ChatPromptService;
+use MyApp\Domain\Bot\ValueObject\StringList;
 
 class ChatPromptServiceTest extends TestCase
 {
@@ -26,7 +27,7 @@ class ChatPromptServiceTest extends TestCase
         $conversation2 = new Conversation("bot-123", "bot", "Hi there!");
         $conversations = [$conversation1, $conversation2];
 
-        $requests = ["Request 1"];
+        $requests = new StringList(["Request 1"]);
         $webSearchResults = "Search Results Content";
 
         $context = $this->service->generateContext($bot, $conversations, $requests, $webSearchResults);
@@ -52,7 +53,7 @@ class ChatPromptServiceTest extends TestCase
         $bot->setHumanCharacteristics([]);
 
         $conversations = [];
-        $requests = [];
+        $requests = new StringList([]);
         $webSearchResults = null;
 
         $context = $this->service->generateContext($bot, $conversations, $requests, $webSearchResults);
