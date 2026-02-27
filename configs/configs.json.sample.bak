@@ -1,0 +1,15 @@
+{
+    "default": {
+        "bot": {
+            "line_target": "LINE_TARGET_DEFAULT"
+        }
+    },
+    "TARGET_ID": {
+        "bot": {
+            "line_target": "LINE_TARGET_TEST"
+        },
+        "human": {
+            "characteristics": "・男性\n・年齢：90代"
+        }
+    }
+}

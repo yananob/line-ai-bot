@@ -1,0 +1,13 @@
+configs/*.json
+configs/*.json.bak
+
+tmp/
+_deploy/
+
+# for PHP
+cache/
+templates_c/
+vendor/
+configs/search_api.json
+
+cred.tmp
