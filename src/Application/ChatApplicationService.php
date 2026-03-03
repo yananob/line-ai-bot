@@ -19,15 +19,12 @@ use yananob\MyTools\Gpt;
 // TODO: extends GptBot (This comment can be reviewed based on future plans)
 class ChatApplicationService
 {
-    private string $targetId;
     private BotRepository $botRepository;
     private ConversationRepository $conversationRepository;
     private ChatPromptService $chatPromptService;
     private Bot $bot;
     private Gpt $gpt;
-    private ?string $openaiApiKey = null;
-    private ?string $openaiSearchModel = null;
-    private ?WebSearchTool $webSearchTool = null;
+    private ?WebSearchTool $webSearchTool;
 
     const RECENT_CONVERSATIONS_COUNT_FOR_GPT = 10; // As per instructions
 
@@ -38,43 +35,19 @@ Web検索が必要な場合は「はい」、そうでない場合は「いい�
 EOM;
 
     public function __construct(
-        string $targetId,
+        Bot $bot,
         BotRepository $botRepository,
         ConversationRepository $conversationRepository,
         ChatPromptService $chatPromptService,
-        ?Gpt $gpt = null,
+        Gpt $gpt,
         ?WebSearchTool $webSearchTool = null
     ) {
-        $this->targetId = $targetId;
+        $this->bot = $bot;
         $this->botRepository = $botRepository;
         $this->conversationRepository = $conversationRepository;
         $this->chatPromptService = $chatPromptService;
-
-        $bot = $this->botRepository->findById($this->targetId);
-        if ($bot === null) {
-            // 指定のbotの設定がないときは、defaultの設定で動作する
-            $bot = $this->botRepository->findDefault();
-        }
-        $this->bot = $bot;
-
-        $this->gpt = $gpt ?? new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy', "gpt-5.1");
-
-        // Load Search API configuration (path adjusted)
-        $this->openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: null;
-        $this->openaiSearchModel = "gpt-4o-mini";
-
-        if ($webSearchTool !== null) {
-            $this->webSearchTool = $webSearchTool;
-        } elseif (!empty($this->openaiApiKey) && !empty($this->openaiSearchModel)) {
-            try {
-                $openaiClient = OpenAI::client($this->openaiApiKey); // Uses the factory method
-                $this->webSearchTool = new WebSearchTool($openaiClient, $this->openaiSearchModel);
-            } catch (Exception $e) {
-                // Log error appropriately in a real application
-                error_log("Failed to initialize OpenAI client or WebSearchTool: " . $e->getMessage());
-                $this->webSearchTool = null;
-            }
-        }
+        $this->gpt = $gpt;
+        $this->webSearchTool = $webSearchTool;
     }
 
     public function getAnswer(bool $applyRecentConversations, string $message): string
@@ -95,8 +68,6 @@ EOM;
                     $message, // Use raw message as search query
                     5 // Number of results
                 );
-            } elseif (empty($this->openaiApiKey)) {
-                $webSearchResults = "Error: Web search is not available due to missing OpenAI API key configuration.";
             } else {
                 $webSearchResults = "Error: Web search tool is not configured properly or failed to initialize.";
             }

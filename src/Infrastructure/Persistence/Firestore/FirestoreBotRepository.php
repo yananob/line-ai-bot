@@ -90,6 +90,17 @@ class FirestoreBotRepository implements BotRepository
         return $this->loadBotFromSnapshot($id, $configSnapshot, $defaultBotConfig);
     }
 
+    public function findOrDefault(string $id): Bot
+    {
+        $bot = $this->findById($id);
+        if ($bot !== null) {
+            return $bot;
+        }
+
+        $defaultBotConfig = $this->findDefault();
+        return new Bot($id, $defaultBotConfig);
+    }
+
     public function findDefault(): Bot
     {
         $defaultBotCollection = $this->getBotCollection('default');

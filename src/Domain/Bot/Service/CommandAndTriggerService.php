@@ -70,9 +70,9 @@ EOM;
 ・依頼内容：お休みと送って
 EOM;
 
-    public function __construct(?Gpt $gpt = null)
+    public function __construct(Gpt $gpt)
     {
-        $this->gpt = $gpt ?? new Gpt(getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy', "gpt-5.1");
+        $this->gpt = $gpt;
     }
 
     public function judgeCommand(string $message): Command
