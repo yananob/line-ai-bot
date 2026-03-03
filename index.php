@@ -47,17 +47,33 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $botRepository = new FirestoreBotRepository($isLocal);
     $conversationRepository = new FirestoreConversationRepository($isLocal);
     $chatPromptService = new ChatPromptService();
-    $commandAndTriggerService = new CommandAndTriggerService(); // Assumes Gpt config path is correct in its constructor
+
+    $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
+    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-4o");
+    $commandAndTriggerService = new CommandAndTriggerService($gpt);
 
     try {
+        $bot = $botRepository->findOrDefault($webhookMessage->getTargetId());
+
+        $webSearchTool = null;
+        if ($openaiApiKey !== 'dummy') {
+            try {
+                $openaiClient = OpenAI::client($openaiApiKey);
+                $webSearchTool = new MyApp\WebSearchTool($openaiClient, "gpt-4o-mini");
+            } catch (\Exception $e) {
+                error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
+            }
+        }
+
         $chatService = new ChatApplicationService(
-            $webhookMessage->getTargetId(),
+            $bot,
             $botRepository,
             $conversationRepository,
             $chatPromptService,
-            // $isLocal
+            $gpt,
+            $webSearchTool
         );
-    } catch (\RuntimeException $e) {
+    } catch (\Exception $e) {
         $logger->log("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
         return new Response(500, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Bot initialization failed."}');
     }
@@ -143,6 +159,19 @@ function main_event(CloudEventInterface $event): void
     $conversationRepository = new FirestoreConversationRepository($isLocal); // Needed for ChatApplicationService constructor
     $chatPromptService = new ChatPromptService();
 
+    $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
+    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-4o");
+
+    $webSearchTool = null;
+    if ($openaiApiKey !== 'dummy') {
+        try {
+            $openaiClient = OpenAI::client($openaiApiKey);
+            $webSearchTool = new MyApp\WebSearchTool($openaiClient, "gpt-4o-mini");
+        } catch (\Exception $e) {
+            error_log("Failed to initialize WebSearchTool in main_event: " . $e->getMessage());
+        }
+    }
+
     foreach ($botRepository->getAllUserBots() as $botUser) {
         foreach ($botUser->getTriggers() as $trigger) {
             // Ensure $trigger is an instance of TimerTrigger or has shouldRunNow
@@ -171,13 +200,14 @@ function main_event(CloudEventInterface $event): void
 
             try {
                 $chatService = new ChatApplicationService(
-                    $botUser->getId(),
+                    $botUser,
                     $botRepository, // Pass the already instantiated repository
                     $conversationRepository, // Pass the already instantiated repository
                     $chatPromptService,
-                    // $isLocal
+                    $gpt,
+                    $webSearchTool
                 );
-            } catch (\RuntimeException $e) {
+            } catch (\Exception $e) {
                 $logger->log("TRIGGER: Failed to initialize ChatApplicationService for user {$botUser->getId()}: " . $e->getMessage());
                 continue; // Skip to next botUser
             }
