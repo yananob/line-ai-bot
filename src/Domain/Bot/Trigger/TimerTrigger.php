@@ -2,60 +2,23 @@
 
 namespace MyApp\Domain\Bot\Trigger;
 
-use Carbon\Carbon;
-use MyApp\Consts;
+use MyApp\Domain\Bot\ValueObject\TriggerSchedule;
 
 class TimerTrigger implements Trigger
 {
     private ?string $id = null;
-    private string $date;
-    private string $time;
+    private TriggerSchedule $schedule;
     private string $request;
-    private string $actualDate;
 
     /**
-     * Notes: このメソッド内でnew Carbon()をしているので、Carbon::setTestNow()など日付を調整する場合は、コンストラクタ以前に実行すること
      * @param string $date タイマー実行日（JST）
      * @param string $time タイマー実行時間（JST）
      * @param string $request タイマー実行時のリクエスト内容
      */
     public function __construct(string $date, string $time, string $request)
     {
-        $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
-
-        $this->date = $date;
+        $this->schedule = new TriggerSchedule($date, $time);
         $this->request = $request;
-
-        // Handle time
-        if (preg_match('/^now \+(\d+) mins$/', $time, $matches)) {
-            $this->time = $carbonNow->copy()->addMinutes((int)$matches[1])->format('H:i');
-        } else {
-            $this->time = $time;
-        }
-
-        // Handle date
-        switch ($this->date) {
-            case 'everyday':
-                $this->actualDate = 'everyday'; // Special case, doesn't resolve to a specific date
-                break;
-            case 'today':
-                $this->actualDate = $carbonNow->copy()->format('Y/m/d');
-                // $this->date = $this->actualDate;
-                break;
-            case 'tomorrow':
-                $this->actualDate = $carbonNow->copy()->addDay()->format('Y/m/d');
-                // $this->date = $this->actualDate;
-                break;
-            case 'day after tomorrow':
-                $this->actualDate = $carbonNow->copy()->addDays(2)->format('Y/m/d');
-                // $this->date = $this->actualDate;
-                break;
-            default:
-                // Assumes a specific date string like YYYY/MM/DD or YYYY-MM-DD
-                $this->actualDate = Carbon::parse($this->date, new \DateTimeZone(Consts::TIMEZONE))->format('Y/m/d');
-                // No need to update $this->date here as it's already specific
-                break;
-        }
     }
 
     public function getId(): ?string
@@ -80,74 +43,42 @@ class TimerTrigger implements Trigger
 
     public function toArray(): array
     {
+        // IMPORTANT: We store the resolved date and time to ensure that
+        // relative dates (like 'tomorrow') are fixed upon persistence.
         return [
             'id' => $this->id,
             'event' => $this->getEvent(),
-            'date' => $this->date,
-            'time' => $this->time,
+            'date' => $this->schedule->getResolvedDate(),
+            'time' => $this->schedule->getResolvedTime(),
             'request' => $this->request,
         ];
     }
 
     public function getDate(): string
     {
-        return $this->date;
+        return $this->schedule->getOriginalDate();
     }
 
     public function getTime(): string
     {
-        return $this->time;
+        // For 'now +X mins', the original code returned the resolved time.
+        return $this->schedule->getResolvedTime();
     }
 
     public function getActualDate(): string
     {
-        return $this->actualDate;
+        return $this->schedule->getResolvedDate();
     }
 
     public function shouldRunNow(int $timerTriggeredByNMins): bool
     {
-        $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
-
-        try {
-            list($hour, $minute) = sscanf($this->time, "%d:%d");
-            if (is_null($hour) || is_null($minute)) {
-                return false;
-            }
-        } catch (\Exception $e) {
-            return false;
-        }
-
-        $triggerDateCarbon = null;
-        try {
-            if ($this->actualDate === 'everyday') {
-                $triggerDateCarbon = $carbonNow->copy()->startOfDay();
-            } else {
-                $triggerDateCarbon = Carbon::parse($this->actualDate, new \DateTimeZone(Consts::TIMEZONE))->startOfDay();
-            }
-        } catch (\Exception $e) {
-            return false;
-        }
-        
-        if (!$triggerDateCarbon) {
-            return false;
-        }
-
-        $triggerDateTimeCarbon = $triggerDateCarbon->hour($hour)->minute($minute)->second(0);
-
-        // Calculate current time slot
-        $slotMinuteValue = floor($carbonNow->minute / $timerTriggeredByNMins) * $timerTriggeredByNMins;
-        $slotStartTime = $carbonNow->copy()->minute((int)$slotMinuteValue)->second(0)->microsecond(0);
-        $slotEndTime = $slotStartTime->copy()->addMinutes($timerTriggeredByNMins);
-
-        // Timer should run if its scheduled time is within the current slot
-        $result = $triggerDateTimeCarbon->gte($slotStartTime) &&
-                  $triggerDateTimeCarbon->lt($slotEndTime);
-
-        return $result;
+        return $this->schedule->shouldRunNow($timerTriggeredByNMins);
     }
 
     public function __toString(): string
     {
-        return "{$this->date} {$this->time} {$this->request}";
+        // Maintains consistency with original behavior where time was resolved for 'now +X mins'
+        // but date remained as the original input (e.g., 'today', 'tomorrow', or '2023-12-25').
+        return "{$this->schedule->getOriginalDate()} {$this->schedule->getResolvedTime()} {$this->request}";
     }
 }

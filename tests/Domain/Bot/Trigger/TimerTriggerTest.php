@@ -245,4 +245,31 @@ final class TimerTriggerTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_永続化をシミュレートした際に相対日付が解決された状態で維持される(): void
+    {
+        $timeZone = new \DateTimeZone(Consts::TIMEZONE);
+        // 2024-01-01に「明日」を指定してトリガーを作成
+        Carbon::setTestNow(Carbon::parse("2024-01-01 10:00:00", $timeZone));
+        $trigger = new TimerTrigger("tomorrow", "10:00", "テスト");
+
+        // toArray()は解決済みの日付 (2024/01/02) を返すべき
+        $data = $trigger->toArray();
+        $this->assertEquals("2024/01/02", $data['date']);
+
+        // 翌日 (2024-01-02) に、保存されたデータから再構成
+        Carbon::setTestNow(Carbon::parse("2024-01-02 08:00:00", $timeZone));
+        $reconstructedTrigger = new TimerTrigger($data['date'], $data['time'], $data['request']);
+
+        // 解決済みの「2024/01/02」として扱われ、実行されるべき
+        // 元のテストデータでは 10:00 スケジュール。
+        // スロット [10:00, 10:10) なので、10:00:00 なら実行されるはず
+        Carbon::setTestNow(Carbon::parse("2024-01-02 10:00:00", $timeZone));
+        $this->assertTrue($reconstructedTrigger->shouldRunNow(10));
+
+        // さらにその翌日 (2024-01-03)
+        Carbon::setTestNow(Carbon::parse("2024-01-03 10:00:00", $timeZone));
+        // 「tomorrow」のままだとここでまた実行されてしまうが、解決済みなので実行されないはず
+        $this->assertFalse($reconstructedTrigger->shouldRunNow(10));
+    }
 }
