@@ -3,7 +3,7 @@
 namespace MyApp\Domain\Bot\ValueObject;
 
 use Carbon\Carbon;
-use MyApp\Consts;
+use MyApp\Domain\Bot\Consts;
 
 /**
  * Handles the scheduling logic for a trigger, including relative date/time resolution.

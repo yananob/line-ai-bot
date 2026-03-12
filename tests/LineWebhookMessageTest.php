@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace MyApp\Tests; // 名前空間を追加
 
-use MyApp\Consts;
-use MyApp\LineWebhookMessage;
+use MyApp\Domain\Bot\Consts;
+use MyApp\Infrastructure\Line\LineWebhookMessage;
 use MyApp\Domain\Exception\InvalidWebhookEventException;
 use PHPUnit\Framework\TestCase; // TestCaseをuse
 

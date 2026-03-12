@@ -6,7 +6,7 @@ namespace MyApp\Tests; // 名前空間を追加
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use MyApp\WebSearchTool;
+use MyApp\Infrastructure\Search\OpenAIWebSearchTool as WebSearchTool;
 
 // OpenAI 関連クラス
 use OpenAI\Contracts\ClientContract as OpenAiClientContract;

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace MyApp\Tests; // 名前空間を追加
 
-use MyApp\Consts;
+use MyApp\Domain\Bot\Consts;
 // use MyApp\TimerTrigger; // TimerTriggerはTools::convertTriggersToQuickReply内で型宣言されているが、このファイル内で直接newされていないのでuseは不要かも。ただし、可読性のために残すことも可能。
 // PHPUnitのTestCaseをuseする
 use PHPUnit\Framework\TestCase;
 use MyApp\Domain\Bot\Trigger\TimerTrigger; // TimerTriggerクラスの完全修飾名に変更、またはuse文を追加
-use MyApp\Tools;
+use MyApp\Infrastructure\Line\LineTools;
 
 
 final class ToolsTest extends TestCase // TestCaseの完全修飾名を使用 (useしたのでこれでOK)
@@ -51,6 +51,6 @@ final class ToolsTest extends TestCase // TestCaseの完全修飾名を使用 (u
             $trigger->setId($line[3]);
             $triggers[] = $trigger;
         }
-        $this->assertEquals($expected, Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $triggers));
+        $this->assertEquals($expected, LineTools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $triggers));
     }
 }
