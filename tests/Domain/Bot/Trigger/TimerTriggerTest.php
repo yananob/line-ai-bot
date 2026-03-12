@@ -7,7 +7,7 @@ namespace MyApp\Tests\Domain\Bot\Trigger; // PSR-4のための調整済み名前
 use PHPUnit\Framework\TestCase;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use Carbon\Carbon;
-use MyApp\Consts;
+use MyApp\Domain\Bot\Consts;
 
 final class TimerTriggerTest extends TestCase
 {

@@ -12,7 +12,7 @@ use MyApp\Domain\Conversation\ConversationRepository;
 use MyApp\Domain\Bot\Trigger\Trigger;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use MyApp\Domain\Bot\Service\ChatPromptService;
-use MyApp\WebSearchTool;
+use MyApp\Domain\Bot\Service\WebSearchInterface;
 use yananob\MyGcpTools\CFUtils; // Keep for getLineTarget
 use yananob\MyTools\Gpt;
 
@@ -24,7 +24,7 @@ class ChatApplicationService
     private ChatPromptService $chatPromptService;
     private Bot $bot;
     private Gpt $gpt;
-    private ?WebSearchTool $webSearchTool;
+    private ?WebSearchInterface $webSearchTool;
 
     const RECENT_CONVERSATIONS_COUNT_FOR_GPT = 10; // As per instructions
 
@@ -40,7 +40,7 @@ EOM;
         ConversationRepository $conversationRepository,
         ChatPromptService $chatPromptService,
         Gpt $gpt,
-        ?WebSearchTool $webSearchTool = null
+        ?WebSearchInterface $webSearchTool = null
     ) {
         $this->bot = $bot;
         $this->botRepository = $botRepository;
@@ -63,7 +63,7 @@ EOM;
         // TODO: Google APIを使っていたときのように、いちど検索語を作ってから検索しているので、最適な処理じゃゃなさそう
         $webSearchResults = null;
         if ($this->__shouldPerformWebSearch($message)) {
-            if ($this->webSearchTool instanceof WebSearchTool) {
+            if ($this->webSearchTool instanceof WebSearchInterface) {
                 $webSearchResults = $this->webSearchTool->search(
                     $message, // Use raw message as search query
                     5 // Number of results

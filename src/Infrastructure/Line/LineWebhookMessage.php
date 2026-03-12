@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MyApp;
+namespace MyApp\Infrastructure\Line;
 
 use MyApp\Domain\Exception\InvalidWebhookEventException;
 
-// TODO: MyToolsに移す
 class LineWebhookMessage
 {
     private $bodyObj;

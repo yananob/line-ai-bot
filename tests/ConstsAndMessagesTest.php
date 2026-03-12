@@ -3,8 +3,8 @@
 namespace MyApp\Tests;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Consts;
-use MyApp\Messages;
+use MyApp\Domain\Bot\Consts;
+use MyApp\Domain\Bot\Messages;
 
 final class ConstsAndMessagesTest extends TestCase
 {

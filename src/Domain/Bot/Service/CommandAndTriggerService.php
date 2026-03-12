@@ -3,7 +3,7 @@
 namespace MyApp\Domain\Bot\Service;
 
 use yananob\MyTools\Gpt;
-use MyApp\Command;
+use MyApp\Domain\Bot\ValueObject\Command;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 
 class CommandAndTriggerService

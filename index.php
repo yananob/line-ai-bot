@@ -12,17 +12,17 @@ use GuzzleHttp\Psr7\Response;
 use yananob\MyTools\Logger;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
-use MyApp\Consts;
-use MyApp\Command;
-use MyApp\LineWebhookMessage;
+use MyApp\Domain\Bot\Consts;
+use MyApp\Domain\Bot\ValueObject\Command;
+use MyApp\Infrastructure\Line\LineWebhookMessage;
 use MyApp\Application\ChatApplicationService;
 use MyApp\Domain\Bot\Service\ChatPromptService;
 use MyApp\Domain\Bot\Service\CommandAndTriggerService;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger; // For type hinting if needed
-use MyApp\Messages;
-use MyApp\Tools;
+use MyApp\Domain\Bot\Messages;
+use MyApp\Infrastructure\Line\LineTools;
 
 const TIMER_TRIGGERED_BY_N_MINS = 10;
 
@@ -59,7 +59,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         if ($openaiApiKey !== 'dummy') {
             try {
                 $openaiClient = OpenAI::client($openaiApiKey);
-                $webSearchTool = new MyApp\WebSearchTool($openaiClient, "gpt-4o-mini");
+                $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-4o-mini");
             } catch (\Exception $e) {
                 error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
             }
@@ -107,7 +107,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
 
             case Command::RemoveTrigger:
                 $answer = "どのタイマーを止めますか？";
-                $quickReply = Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $chatService->getTriggers());
+                $quickReply = LineTools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $chatService->getTriggers());
                 break;
 
             default:
@@ -166,7 +166,7 @@ function main_event(CloudEventInterface $event): void
     if ($openaiApiKey !== 'dummy') {
         try {
             $openaiClient = OpenAI::client($openaiApiKey);
-            $webSearchTool = new MyApp\WebSearchTool($openaiClient, "gpt-4o-mini");
+            $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-4o-mini");
         } catch (\Exception $e) {
             error_log("Failed to initialize WebSearchTool in main_event: " . $e->getMessage());
         }
@@ -189,7 +189,7 @@ function main_event(CloudEventInterface $event): void
             }
 
             // Add these logs BEFORE the condition:
-            $currentTimeForCheck = new Carbon\Carbon(timezone: new \DateTimeZone(MyApp\Consts::TIMEZONE));
+            $currentTimeForCheck = new Carbon\Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
             $logger->log("trigger_function: About to call shouldRunNow for trigger ID " . $trigger->getId() . " for user {$botUser->getId()}");
             $logger->log("trigger_function: Current time is " . $currentTimeForCheck->toString() . " (TZ: " . $currentTimeForCheck->getTimezone()->getName() . ")");
             $logger->log("trigger_function: Trigger details: Date='{$trigger->getDate()}', Time='{$trigger->getTime()}', ActualDate='{$trigger->getActualDate()}', Request='{$trigger->getRequest()}'");
