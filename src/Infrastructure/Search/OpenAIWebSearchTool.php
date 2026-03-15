@@ -53,6 +53,7 @@ class OpenAIWebSearchTool implements WebSearchInterface
             'tools' => [['type' => 'web_search_preview']],
             'max_output_tokens' => 200 * $numResults,
             'temperature' => 0.7,
+            'reasoning_effort' => 'none',
         ];
 
         try {

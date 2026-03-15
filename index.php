@@ -49,7 +49,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $chatPromptService = new ChatPromptService();
 
     $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
-    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-4o");
+    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-5.1");
     $commandAndTriggerService = new CommandAndTriggerService($gpt);
 
     try {
@@ -59,7 +59,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         if ($openaiApiKey !== 'dummy') {
             try {
                 $openaiClient = OpenAI::client($openaiApiKey);
-                $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-4o-mini");
+                $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
             } catch (\Exception $e) {
                 error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
             }
@@ -160,13 +160,13 @@ function main_event(CloudEventInterface $event): void
     $chatPromptService = new ChatPromptService();
 
     $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
-    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-4o");
+    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-5.1");
 
     $webSearchTool = null;
     if ($openaiApiKey !== 'dummy') {
         try {
             $openaiClient = OpenAI::client($openaiApiKey);
-            $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-4o-mini");
+            $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
         } catch (\Exception $e) {
             error_log("Failed to initialize WebSearchTool in main_event: " . $e->getMessage());
         }

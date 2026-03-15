@@ -84,7 +84,7 @@ EOM;
                 $webSearchResults
             ),
             message: $message,
-            // options: ["reasoning_effort" => "minimal"],
+            options: ["reasoning_effort" => "none"],
         );
     }
 
@@ -102,12 +102,17 @@ EOM;
         return $this->gpt->getAnswer(
             context: $this->chatPromptService->generateContext($this->bot, $recentConversations, $requests),
             message: $requestMessage,
+            options: ["reasoning_effort" => "none"],
         );
     }
 
     private function __shouldPerformWebSearch(string $message): bool
     {
-        $response = trim($this->gpt->getAnswer(context: self::PROMPT_JUDGE_WEB_SEARCH, message: $message));
+        $response = trim($this->gpt->getAnswer(
+            context: self::PROMPT_JUDGE_WEB_SEARCH,
+            message: $message,
+            options: ["reasoning_effort" => "none"],
+        ));
         return $response === "はい";
     }
 
