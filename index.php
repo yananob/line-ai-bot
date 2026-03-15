@@ -12,17 +12,17 @@ use GuzzleHttp\Psr7\Response;
 use yananob\MyTools\Logger;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
-use MyApp\Consts;
-use MyApp\Command;
-use MyApp\LineWebhookMessage;
+use MyApp\Domain\Bot\Consts;
+use MyApp\Domain\Bot\ValueObject\Command;
+use MyApp\Infrastructure\Line\LineWebhookMessage;
 use MyApp\Application\ChatApplicationService;
 use MyApp\Domain\Bot\Service\ChatPromptService;
 use MyApp\Domain\Bot\Service\CommandAndTriggerService;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger; // For type hinting if needed
-use MyApp\Messages;
-use MyApp\Tools;
+use MyApp\Domain\Bot\Messages;
+use MyApp\Infrastructure\Line\LineTools;
 
 const TIMER_TRIGGERED_BY_N_MINS = 10;
 
@@ -47,17 +47,33 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $botRepository = new FirestoreBotRepository($isLocal);
     $conversationRepository = new FirestoreConversationRepository($isLocal);
     $chatPromptService = new ChatPromptService();
-    $commandAndTriggerService = new CommandAndTriggerService(); // Assumes Gpt config path is correct in its constructor
+
+    $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
+    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-5.1");
+    $commandAndTriggerService = new CommandAndTriggerService($gpt);
 
     try {
+        $bot = $botRepository->findOrDefault($webhookMessage->getTargetId());
+
+        $webSearchTool = null;
+        if ($openaiApiKey !== 'dummy') {
+            try {
+                $openaiClient = OpenAI::client($openaiApiKey);
+                $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
+            } catch (\Exception $e) {
+                error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
+            }
+        }
+
         $chatService = new ChatApplicationService(
-            $webhookMessage->getTargetId(),
+            $bot,
             $botRepository,
             $conversationRepository,
             $chatPromptService,
-            // $isLocal
+            $gpt,
+            $webSearchTool
         );
-    } catch (\RuntimeException $e) {
+    } catch (\Exception $e) {
         $logger->log("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
         return new Response(500, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Bot initialization failed."}');
     }
@@ -91,7 +107,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
 
             case Command::RemoveTrigger:
                 $answer = "どのタイマーを止めますか？";
-                $quickReply = Tools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $chatService->getTriggers());
+                $quickReply = LineTools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $chatService->getTriggers());
                 break;
 
             default:
@@ -143,6 +159,19 @@ function main_event(CloudEventInterface $event): void
     $conversationRepository = new FirestoreConversationRepository($isLocal); // Needed for ChatApplicationService constructor
     $chatPromptService = new ChatPromptService();
 
+    $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
+    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-5.1");
+
+    $webSearchTool = null;
+    if ($openaiApiKey !== 'dummy') {
+        try {
+            $openaiClient = OpenAI::client($openaiApiKey);
+            $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
+        } catch (\Exception $e) {
+            error_log("Failed to initialize WebSearchTool in main_event: " . $e->getMessage());
+        }
+    }
+
     foreach ($botRepository->getAllUserBots() as $botUser) {
         foreach ($botUser->getTriggers() as $trigger) {
             // Ensure $trigger is an instance of TimerTrigger or has shouldRunNow
@@ -160,7 +189,7 @@ function main_event(CloudEventInterface $event): void
             }
 
             // Add these logs BEFORE the condition:
-            $currentTimeForCheck = new Carbon\Carbon(timezone: new \DateTimeZone(MyApp\Consts::TIMEZONE));
+            $currentTimeForCheck = new Carbon\Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
             $logger->log("trigger_function: About to call shouldRunNow for trigger ID " . $trigger->getId() . " for user {$botUser->getId()}");
             $logger->log("trigger_function: Current time is " . $currentTimeForCheck->toString() . " (TZ: " . $currentTimeForCheck->getTimezone()->getName() . ")");
             $logger->log("trigger_function: Trigger details: Date='{$trigger->getDate()}', Time='{$trigger->getTime()}', ActualDate='{$trigger->getActualDate()}', Request='{$trigger->getRequest()}'");
@@ -171,13 +200,14 @@ function main_event(CloudEventInterface $event): void
 
             try {
                 $chatService = new ChatApplicationService(
-                    $botUser->getId(),
+                    $botUser,
                     $botRepository, // Pass the already instantiated repository
                     $conversationRepository, // Pass the already instantiated repository
                     $chatPromptService,
-                    // $isLocal
+                    $gpt,
+                    $webSearchTool
                 );
-            } catch (\RuntimeException $e) {
+            } catch (\Exception $e) {
                 $logger->log("TRIGGER: Failed to initialize ChatApplicationService for user {$botUser->getId()}: " . $e->getMessage());
                 continue; // Skip to next botUser
             }

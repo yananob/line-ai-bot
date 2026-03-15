@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MyApp;
+namespace MyApp\Domain\Bot;
 
 class Consts
 {

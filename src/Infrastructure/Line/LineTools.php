@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MyApp;
+namespace MyApp\Infrastructure\Line;
 
-class Tools
+use MyApp\Domain\Bot\Consts;
+
+class LineTools
 {
     public static function convertTriggersToQuickReply(string $command, array $triggers): array
     {

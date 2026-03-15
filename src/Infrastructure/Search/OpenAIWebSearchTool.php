@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace MyApp;
+namespace MyApp\Infrastructure\Search;
 
+use MyApp\Domain\Bot\Service\WebSearchInterface;
 use OpenAI\Contracts\ClientContract;
-use OpenAI\Responses\Responses\CreateResponse as ResponsesCreateResponse; // Updated use statement
+use OpenAI\Responses\Responses\CreateResponse as ResponsesCreateResponse;
 use OpenAI\Exceptions\ErrorException as OpenAIErrorException;
 use OpenAI\Exceptions\TransporterException as OpenAITransporterException;
-use Exception; // Keep for general exceptions
+use Exception;
 
-class WebSearchTool
+class OpenAIWebSearchTool implements WebSearchInterface
 {
     private ClientContract $openaiClient;
     private string $openaiModel;
@@ -19,7 +20,7 @@ class WebSearchTool
      * Constructor.
      *
      * @param ClientContract $openaiClient An initialized OpenAI API client.
-     * @param string $openaiModel The OpenAI model to use for searches (e.g., 'gpt-4o' or similar that supports responses()->create).
+     * @param string $openaiModel The OpenAI model to use for searches.
      */
     public function __construct(ClientContract $openaiClient, string $openaiModel)
     {
@@ -31,7 +32,7 @@ class WebSearchTool
      * Performs a web search using the OpenAI API's responses()->create() with web_search_preview.
      *
      * @param string $query The search query.
-     * @param int $numResults Number of desired results/findings. (Note: web_search_preview might not directly support 'numResults' in the API call, so we parse up to this many from the response).
+     * @param int $numResults Number of desired results/findings.
      * @return string A summary of the web search results, or an error message.
      */
     public function search(string $query, int $numResults = 3): string
@@ -50,30 +51,13 @@ class WebSearchTool
             'model' => $this->openaiModel,
             'input' => $query,
             'tools' => [['type' => 'web_search_preview']],
-            'max_output_tokens' => 200 * $numResults, // Estimate, actual output structure will dictate usefulness
+            'max_output_tokens' => 200 * $numResults,
             'temperature' => 0.7,
+            'reasoning_effort' => 'none',
         ];
 
-        // System prompt to guide the AI's response format
-        $systemPrompt = "You are a simulated web search engine. For the user's query, provide {$numResults} relevant findings.
-For each finding, strictly format it as:
-Title: [The title of the finding]
-Snippet: [A brief snippet of the finding]
-
-Separate each finding with exactly two newline characters. Do not include any other text before or after the findings.";
-
-        // User prompt with the actual query
-        $userPrompt = "Search the web for: " . htmlspecialchars($query);
-
         try {
-            // Note: The actual method might be slightly different based on client version for experimental features
-            // Assuming $this->openaiClient->responses()->create(...) is the correct path.
             $response = $this->openaiClient->responses()->create($params);
-
-            // Log the raw response object
-            // error_log(print_r($response, true));
-
-            // The response structure for web_search_preview needs to be handled by parseAndFormatOpenAIResponse
             return $this->parseAndFormatOpenAIResponse($response, $query, $numResults);
 
         } catch (OpenAITransporterException $e) {
@@ -90,11 +74,6 @@ Separate each finding with exactly two newline characters. Do not include any ot
 
     /**
      * Parses the response from OpenAI's responses()->create() with web_search_preview and formats it.
-     *
-     * @param ResponsesCreateResponse $response The response object from OpenAI.
-     * @param string $query The original search query (for error messages).
-     * @param int $numResults The desired number of results to extract.
-     * @return string Formatted summary string or error message.
      */
     private function parseAndFormatOpenAIResponse(ResponsesCreateResponse $response, string $query, int $numResults): string
     {
@@ -111,9 +90,8 @@ Separate each finding with exactly two newline characters. Do not include any ot
             if (isset($outputItem->content) && is_array($outputItem->content)) {
                 foreach ($outputItem->content as $contentItem) {
                     if (count($findings) >= $numResults) {
-                        break 2; // Break outer loop as well
+                        break 2;
                     }
-                    // Assuming $contentItem is an object with 'type' and 'text' properties
                     if (isset($contentItem->type) && $contentItem->type === 'output_text' && !empty($contentItem->text)) {
                         $findings[] = "Snippet: " . rtrim(trim($contentItem->text), '.');
                     }

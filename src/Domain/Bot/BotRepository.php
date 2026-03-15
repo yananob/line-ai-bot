@@ -13,6 +13,14 @@ interface BotRepository
     public function findById(string $id): ?Bot;
 
     /**
+     * Finds a Bot by its ID, or returns a new Bot instance with the default settings if not found.
+     *
+     * @param string $id The ID of the Bot to find.
+     * @return Bot The Bot object.
+     */
+    public function findOrDefault(string $id): Bot;
+
+    /**
      * Finds the default Bot configuration.
      *
      * @return Bot The default Bot object.
