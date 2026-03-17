@@ -8,6 +8,11 @@ use Carbon\Carbon;
 use yananob\MyTools\Gpt; // モック用
 
 use MyApp\Application\ChatApplicationService;
+use MyApp\Application\BotResponse;
+use MyApp\Domain\Bot\Service\CommandAndTriggerService;
+use MyApp\Domain\Bot\ValueObject\Command;
+use MyApp\Domain\Bot\Messages;
+use MyApp\Domain\Bot\Consts;
 use MyApp\Domain\Bot\BotRepository;
 use MyApp\Domain\Conversation\ConversationRepository;
 use MyApp\Domain\Bot\Service\ChatPromptService;
@@ -24,6 +29,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
     private $botRepositoryMock;
     private $conversationRepositoryMock;
     private $chatPromptService;
+    private $commandAndTriggerServiceMock;
     private $gptMock;
     private $webSearchToolMock;
 
@@ -36,6 +42,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
         $this->botRepositoryMock = $this->createMock(BotRepository::class);
         $this->conversationRepositoryMock = $this->createMock(ConversationRepository::class);
         $this->chatPromptService = new ChatPromptService();
+        $this->commandAndTriggerServiceMock = $this->createMock(CommandAndTriggerService::class);
         $this->gptMock = $this->createMock(Gpt::class);
         $this->webSearchToolMock = $this->createMock(WebSearchInterface::class);
 
@@ -73,6 +80,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
             $this->chatPromptService,
+            $this->commandAndTriggerServiceMock,
             $this->gptMock,
             $this->webSearchToolMock
         );
@@ -177,6 +185,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
             $this->chatPromptService,
+            $this->commandAndTriggerServiceMock,
             $this->gptMock,
             null // WebSearchTool を null に
         );
@@ -209,6 +218,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
             $this->chatPromptService,
+            $this->commandAndTriggerServiceMock,
             $this->gptMock
         );
 
@@ -230,6 +240,7 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
             $this->botRepositoryMock,
             $this->conversationRepositoryMock,
             $this->chatPromptService,
+            $this->commandAndTriggerServiceMock,
             $this->gptMock
         );
         $this->assertSame('test', $chatServiceDefault->getLineTarget());
@@ -273,5 +284,56 @@ final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // �
 
         $this->chatService->deleteTrigger($triggerId);
         $this->assertArrayNotHasKey($triggerId, $this->chatService->getTriggers());
+    }
+
+    public function test_handleMessage_ShowHelp(): void
+    {
+        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::ShowHelp);
+
+        $response = $this->chatService->handleMessage("help");
+
+        $this->assertInstanceOf(BotResponse::class, $response);
+        $this->assertSame(Messages::HELP, $response->getText());
+        $this->assertNull($response->getQuickReply());
+    }
+
+    public function test_handleMessage_AddOneTimeTrigger(): void
+    {
+        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::AddOneTimeTrigger);
+        $trigger = new \MyApp\Domain\Bot\Trigger\TimerTrigger("today", "12:00", "test");
+        $this->commandAndTriggerServiceMock->method('generateOneTimeTrigger')->willReturn($trigger);
+
+        $response = $this->chatService->handleMessage("12時に通知して");
+
+        $this->assertSame("タイマーを追加しました：" . $trigger, $response->getText());
+    }
+
+    public function test_handleMessage_RemoveTrigger(): void
+    {
+        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::RemoveTrigger);
+
+        $response = $this->chatService->handleMessage("タイマー止めて");
+
+        $this->assertSame("どのタイマーを止めますか？", $response->getText());
+        $this->assertNotNull($response->getQuickReply());
+    }
+
+    public function test_handleMessage_DefaultChat(): void
+    {
+        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::Other);
+        $this->gptMock->method('getAnswer')->willReturn("こんにちは");
+
+        $response = $this->chatService->handleMessage("普通のメッセージ");
+
+        $this->assertSame("こんにちは", $response->getText());
+    }
+
+    public function test_handlePostback_RemoveTrigger(): void
+    {
+        $data = "command=" . Consts::CMD_REMOVE_TRIGGER . "&id=trigger_1&trigger=today 12:00 test";
+
+        $response = $this->chatService->handlePostback($data);
+
+        $this->assertSame("削除しました：today 12:00 test", $response->getText());
     }
 }
