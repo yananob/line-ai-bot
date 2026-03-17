@@ -12,17 +12,14 @@ use GuzzleHttp\Psr7\Response;
 use yananob\MyTools\Logger;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
-use MyApp\Domain\Bot\Consts;
-use MyApp\Domain\Bot\ValueObject\Command;
 use MyApp\Infrastructure\Line\LineWebhookMessage;
 use MyApp\Application\ChatApplicationService;
 use MyApp\Domain\Bot\Service\ChatPromptService;
+use MyApp\Domain\Bot\Consts;
 use MyApp\Domain\Bot\Service\CommandAndTriggerService;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
 use MyApp\Domain\Bot\Trigger\TimerTrigger; // For type hinting if needed
-use MyApp\Domain\Bot\Messages;
-use MyApp\Infrastructure\Line\LineTools;
 
 const TIMER_TRIGGERED_BY_N_MINS = 10;
 
@@ -70,6 +67,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             $botRepository,
             $conversationRepository,
             $chatPromptService,
+            $commandAndTriggerService,
             $gpt,
             $webSearchTool
         );
@@ -84,63 +82,19 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         targetId: $webhookMessage->getTargetId(),
     );
 
-    $answer = "";
-    $quickReply = null;
     if ($webhookMessage->getType() === LineWebhookMessage::TYPE_MESSAGE) {
-        $command = $commandAndTriggerService->judgeCommand($webhookMessage->getMessage());
-        switch ($command) {
-            case Command::ShowHelp:
-                $answer = Messages::HELP;
-                break;
-
-            case Command::AddOneTimeTrigger:
-                $trigger = $commandAndTriggerService->generateOneTimeTrigger($webhookMessage->getMessage());
-                $chatService->addTimerTrigger($trigger);
-                $answer = "タイマーを追加しました：" . $trigger;  // TODO: メッセージに
-                break;
-
-            case Command::AddDailyTrigger:
-                $trigger = $commandAndTriggerService->generateDailyTrigger($webhookMessage->getMessage());
-                $chatService->addTimerTrigger($trigger);
-                $answer = "タイマーを追加しました：" . $trigger;  // TODO: メッセージに
-                break;
-
-            case Command::RemoveTrigger:
-                $answer = "どのタイマーを止めますか？";
-                $quickReply = LineTools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $chatService->getTriggers());
-                break;
-
-            default:
-                $answer = $chatService->getAnswer(
-                    applyRecentConversations: true,
-                    message: $webhookMessage->getMessage(),
-                );
-                $chatService->storeConversations(
-                    message: $webhookMessage->getMessage(),
-                    answer: $answer,
-                );
-                break;
-        }
+        $botResponse = $chatService->handleMessage($webhookMessage->getMessage());
     } elseif ($webhookMessage->getType() === LineWebhookMessage::TYPE_POSTBACK) {
-        parse_str($webhookMessage->getPostbackData(), $params);
-        switch ($params["command"]) {
-            case Consts::CMD_REMOVE_TRIGGER:
-                $chatService->deleteTrigger($params["id"]);
-                $answer = "削除しました：" . $params["trigger"];  // TODO: メッセージに
-                break;
-
-            default:
-                throw new \Exception("Unsupported command: " . $params["command"]);
-        }
+        $botResponse = $chatService->handlePostback($webhookMessage->getPostbackData());
     } else {
         throw new \Exception("Unsupported message type: " . $webhookMessage->getType());
     }
 
     $line->sendReply(
         bot: $chatService->getLineTarget(),
-        message: $answer,
+        message: $botResponse->getText(),
         replyToken: $webhookMessage->getReplyToken(),
-        quickReply: $quickReply,
+        quickReply: $botResponse->getQuickReply(),
     );
         
     return new Response(200, $headers, '{"result": "ok"}');
@@ -161,6 +115,7 @@ function main_event(CloudEventInterface $event): void
 
     $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
     $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-5.1");
+    $commandAndTriggerService = new CommandAndTriggerService($gpt);
 
     $webSearchTool = null;
     if ($openaiApiKey !== 'dummy') {
@@ -204,6 +159,7 @@ function main_event(CloudEventInterface $event): void
                     $botRepository, // Pass the already instantiated repository
                     $conversationRepository, // Pass the already instantiated repository
                     $chatPromptService,
+                    $commandAndTriggerService,
                     $gpt,
                     $webSearchTool
                 );
@@ -212,10 +168,7 @@ function main_event(CloudEventInterface $event): void
                 continue; // Skip to next botUser
             }
 
-            $answer =  $chatService->askRequest(
-                applyRecentConversations: true,
-                requestMessage: $trigger->getRequest()
-            );
+            $answer = $chatService->handleMessage($trigger->getRequest())->getText();
             $line->sendPush(
                 bot: $chatService->getLineTarget(),
                 targetId: $botUser->getId(),

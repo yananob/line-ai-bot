@@ -13,6 +13,11 @@ use MyApp\Domain\Bot\Trigger\Trigger;
 use MyApp\Domain\Bot\Trigger\TimerTrigger;
 use MyApp\Domain\Bot\Service\ChatPromptService;
 use MyApp\Domain\Bot\Service\WebSearchInterface;
+use MyApp\Domain\Bot\Service\CommandAndTriggerService;
+use MyApp\Domain\Bot\ValueObject\Command;
+use MyApp\Domain\Bot\Consts;
+use MyApp\Domain\Bot\Messages;
+use MyApp\Infrastructure\Line\LineTools;
 use yananob\MyGcpTools\CFUtils; // Keep for getLineTarget
 use yananob\MyTools\Gpt;
 
@@ -22,6 +27,7 @@ class ChatApplicationService
     private BotRepository $botRepository;
     private ConversationRepository $conversationRepository;
     private ChatPromptService $chatPromptService;
+    private CommandAndTriggerService $commandAndTriggerService;
     private Bot $bot;
     private Gpt $gpt;
     private ?WebSearchInterface $webSearchTool;
@@ -39,6 +45,7 @@ EOM;
         BotRepository $botRepository,
         ConversationRepository $conversationRepository,
         ChatPromptService $chatPromptService,
+        CommandAndTriggerService $commandAndTriggerService,
         Gpt $gpt,
         ?WebSearchInterface $webSearchTool = null
     ) {
@@ -46,8 +53,71 @@ EOM;
         $this->botRepository = $botRepository;
         $this->conversationRepository = $conversationRepository;
         $this->chatPromptService = $chatPromptService;
+        $this->commandAndTriggerService = $commandAndTriggerService;
         $this->gpt = $gpt;
         $this->webSearchTool = $webSearchTool;
+    }
+
+    public function handleMessage(string $message): BotResponse
+    {
+        $command = $this->commandAndTriggerService->judgeCommand($message);
+        $answer = "";
+        $quickReply = null;
+
+        switch ($command) {
+            case Command::ShowHelp:
+                $answer = Messages::HELP;
+                break;
+
+            case Command::AddOneTimeTrigger:
+                $trigger = $this->commandAndTriggerService->generateOneTimeTrigger($message);
+                $this->addTimerTrigger($trigger);
+                $answer = "タイマーを追加しました：" . $trigger;
+                break;
+
+            case Command::AddDailyTrigger:
+                $trigger = $this->commandAndTriggerService->generateDailyTrigger($message);
+                $this->addTimerTrigger($trigger);
+                $answer = "タイマーを追加しました：" . $trigger;
+                break;
+
+            case Command::RemoveTrigger:
+                $answer = "どのタイマーを止めますか？";
+                $quickReply = LineTools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $this->getTriggers());
+                break;
+
+            default:
+                $answer = $this->getAnswer(
+                    applyRecentConversations: true,
+                    message: $message,
+                );
+                $this->storeConversations(
+                    message: $message,
+                    answer: $answer,
+                );
+                break;
+        }
+
+        return new BotResponse($answer, $quickReply);
+    }
+
+    public function handlePostback(string $data): BotResponse
+    {
+        parse_str($data, $params);
+        $command = $params["command"] ?? null;
+        $answer = "";
+
+        switch ($command) {
+            case Consts::CMD_REMOVE_TRIGGER:
+                $this->deleteTrigger($params["id"]);
+                $answer = "削除しました：" . ($params["trigger"] ?? "");
+                break;
+
+            default:
+                throw new \Exception("Unsupported command: " . $command);
+        }
+
+        return new BotResponse($answer);
     }
 
     public function getAnswer(bool $applyRecentConversations, string $message): string
