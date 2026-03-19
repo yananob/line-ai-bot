@@ -2,338 +2,93 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Application; // 名前空間を追加
-
-use Carbon\Carbon;
-use yananob\MyTools\Gpt; // モック用
+namespace MyApp\Tests\Application;
 
 use MyApp\Application\ChatApplicationService;
 use MyApp\Application\BotResponse;
 use MyApp\Domain\Bot\Service\CommandAndTriggerService;
 use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Messages;
-use MyApp\Domain\Bot\Consts;
-use MyApp\Domain\Bot\BotRepository;
-use MyApp\Domain\Conversation\ConversationRepository;
-use MyApp\Domain\Bot\Service\ChatPromptService;
 use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Conversation\Conversation; // 会話データのモック用
-use MyApp\Domain\Bot\Service\WebSearchInterface;
+use MyApp\Application\CommandHandler\CommandHandlerInterface;
+use MyApp\Application\CommandHandler\PostbackHandlerInterface;
+use PHPUnit\Framework\TestCase;
 
-// PHPUnit\Framework\TestCase は通常、グローバルにまたはオートローダー経由で利用可能
-
-final class ChatApplicationServiceTest extends \PHPUnit\Framework\TestCase // クラス宣言を更新
+final class ChatApplicationServiceTest extends TestCase
 {
-    private ChatApplicationService $chatService; // $bot からリネームされました
-
-    private $botRepositoryMock;
-    private $conversationRepositoryMock;
-    private $chatPromptService;
+    private ChatApplicationService $chatService;
+    private $bot;
     private $commandAndTriggerServiceMock;
-    private $gptMock;
-    private $webSearchToolMock;
+    private $messageHandlerMock;
+    private $postbackHandlerMock;
 
-    const TARGET_ID_AUTOTEST = "TARGET_ID_AUTOTEST";
-    const TARGET_ID_FOR_DEFAULT_BEHAVIOR = "TARGET_ID_FOR_DEFAULT_BEHAVIOR"; // 最小/デフォルト設定を持つボット用
-    const TARGET_ID_THAT_THROWS_EXCEPTION = "TARGET_ID_THAT_THROWS_EXCEPTION"; // コンストラクタ失敗テスト用
+    const TARGET_ID = "TARGET_ID";
 
     protected function setUp(): void
     {
-        $this->botRepositoryMock = $this->createMock(BotRepository::class);
-        $this->conversationRepositoryMock = $this->createMock(ConversationRepository::class);
-        $this->chatPromptService = new ChatPromptService();
+        $this->bot = new Bot(self::TARGET_ID);
         $this->commandAndTriggerServiceMock = $this->createMock(CommandAndTriggerService::class);
-        $this->gptMock = $this->createMock(Gpt::class);
-        $this->webSearchToolMock = $this->createMock(WebSearchInterface::class);
+        $this->messageHandlerMock = $this->createMock(CommandHandlerInterface::class);
+        $this->postbackHandlerMock = $this->createMock(PostbackHandlerInterface::class);
 
-        // --- TARGET_ID_AUTOTEST 用のボット (フル機能ボット) ---
-        $botAutotest = new Bot(self::TARGET_ID_AUTOTEST);
-        $botAutotest->setLineTarget('test_line_target_autotest');
-        $botAutotest->setBotCharacteristics(['Bot char 1 AUTOTEST']);
-        $botAutotest->setHumanCharacteristics(['Human char 1 AUTOTEST']);
-        $botAutotest->setConfigRequests(['Default request AUTOTEST']);
-
-        // --- TARGET_ID_FOR_DEFAULT_BEHAVIOR 用のボット (最小/デフォルト風設定ボット) ---
-        $botDefaultBehavior = new Bot(self::TARGET_ID_FOR_DEFAULT_BEHAVIOR);
-        $botDefaultBehavior->setLineTarget('test_line_target_default');
-        $botDefaultBehavior->setBotCharacteristics(['Default Bot char BEHAVIOR']);
-        $botDefaultBehavior->setHumanCharacteristics([]);
-        $botDefaultBehavior->setConfigRequests(['Basic request BEHAVIOR']);
-
-        $this->botRepositoryMock->method('findById')
-            ->willReturnMap([
-                [self::TARGET_ID_AUTOTEST, $botAutotest],
-                [self::TARGET_ID_FOR_DEFAULT_BEHAVIOR, $botDefaultBehavior],
-                [self::TARGET_ID_THAT_THROWS_EXCEPTION, null],
-            ]);
-        $this->botRepositoryMock->method('findOrDefault')
-            ->willReturnMap([
-                [self::TARGET_ID_AUTOTEST, $botAutotest],
-                [self::TARGET_ID_FOR_DEFAULT_BEHAVIOR, $botDefaultBehavior],
-                [self::TARGET_ID_THAT_THROWS_EXCEPTION, new Bot(self::TARGET_ID_THAT_THROWS_EXCEPTION, $botDefaultBehavior)],
-            ]);
-        $this->botRepositoryMock->method('findDefault')->willReturn($botDefaultBehavior);
-
-        // ほとんどのテスト用のメインインスタンス
         $this->chatService = new ChatApplicationService(
-            $botAutotest,
-            $this->botRepositoryMock,
-            $this->conversationRepositoryMock,
-            $this->chatPromptService,
+            $this->bot,
             $this->commandAndTriggerServiceMock,
-            $this->gptMock,
-            $this->webSearchToolMock
+            [$this->messageHandlerMock],
+            [$this->postbackHandlerMock]
         );
     }
 
-    public function test_最近の会話なしで回答を取得する(): void
-    {
-        $this->gptMock->method('getAnswer')->willReturn('モックされた回答');
-        $this->conversationRepositoryMock->method('findByBotId')->willReturn([]);
-
-        $answer = $this->chatService->getAnswer(
-            false, // applyRecentConversations
-            "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"
-        );
-        $this->assertSame('モックされた回答', $answer);
-    }
-
-    public function test_最近の会話ありで回答を取得する(): void
-    {
-        $conversation = new Conversation(self::TARGET_ID_AUTOTEST, "human", "こんにちは");
-        $this->conversationRepositoryMock->method('findByBotId')
-            ->willReturn([$conversation]);
-        $this->gptMock->method('getAnswer')->willReturn('モックされた回答');
-
-        $answer = $this->chatService->getAnswer(
-            true, // applyRecentConversations
-            "今年のクリスマスは何月何日でしょうか？\n昨年のクリスマスとは違うのでしょうか？"
-        );
-        $this->assertSame('モックされた回答', $answer);
-    }
-
-    public function test_最近の会話なしでリクエストを尋ねる(): void
-    {
-        $this->gptMock->method('getAnswer')->willReturn('モックされた回答');
-        $this->conversationRepositoryMock->method('findByBotId')->willReturn([]);
-
-        $answer = $this->chatService->askRequest(
-            false, // applyRecentConversations
-            "今年のクリスマスメッセージを送って"
-        );
-        $this->assertSame('モックされた回答', $answer);
-    }
-
-    public function test_最近の会話ありでリクエストを尋ねる(): void
-    {
-        $conversation = new Conversation(self::TARGET_ID_AUTOTEST, "human", "リクエスト");
-        $this->conversationRepositoryMock->method('findByBotId')
-            ->willReturn([$conversation]);
-        $this->gptMock->method('getAnswer')->willReturn('モックされた回答');
-
-        $answer = $this->chatService->askRequest(
-            true, // applyRecentConversations
-            "今年のクリスマスメッセージを送って"
-        );
-        $this->assertSame('モックされた回答', $answer);
-    }
-
-    public function test_Web検索が必要な場合に検索を実行して回答を取得する(): void
-    {
-        // 最初の getAnswer 呼び出しは __shouldPerformWebSearch 用
-        // 2番目の getAnswer 呼び出しは最終的な回答用
-        $this->gptMock->expects($this->exactly(2))
-            ->method('getAnswer')
-            ->willReturnCallback(function($context, $message) {
-                if ($context === ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH) {
-                    return 'はい';
-                }
-                return '検索結果に基づいた回答';
-            });
-
-        $this->webSearchToolMock->expects($this->once())
-            ->method('search')
-            ->with('検索が必要な質問', 5)
-            ->willReturn('Web検索の結果内容');
-
-        $answer = $this->chatService->getAnswer(false, '検索が必要な質問');
-        $this->assertSame('検索結果に基づいた回答', $answer);
-    }
-
-    public function test_Web検索が不要な場合に検索を実行せずに回答を取得する(): void
-    {
-        $this->gptMock->expects($this->exactly(2))
-            ->method('getAnswer')
-            ->willReturnCallback(function($context, $message) {
-                if ($context === ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH) {
-                    return 'いいえ';
-                }
-                return '普通の回答';
-            });
-
-        $this->webSearchToolMock->expects($this->never())->method('search');
-
-        $answer = $this->chatService->getAnswer(false, '普通の質問');
-        $this->assertSame('普通の回答', $answer);
-    }
-
-    public function test_WebSearchToolがnullの場合にエラーメッセージを含めて回答を取得する(): void
-    {
-        $botAutotest = $this->botRepositoryMock->findById(self::TARGET_ID_AUTOTEST);
-        $chatServiceWithoutTool = new ChatApplicationService(
-            $botAutotest,
-            $this->botRepositoryMock,
-            $this->conversationRepositoryMock,
-            $this->chatPromptService,
-            $this->commandAndTriggerServiceMock,
-            $this->gptMock,
-            null // WebSearchTool を null に
-        );
-
-        $this->gptMock->expects($this->exactly(2))
-            ->method('getAnswer')
-            ->willReturnCallback(function($context, $message) {
-                if ($context === ChatApplicationService::PROMPT_JUDGE_WEB_SEARCH) {
-                    return 'はい';
-                }
-                $this->assertStringContainsString('Error: Web search tool is not configured properly', $context);
-                return 'エラーを考慮した回答';
-            });
-
-        $answer = $chatServiceWithoutTool->getAnswer(false, '検索が必要な質問');
-        $this->assertSame('エラーを考慮した回答', $answer);
-    }
-
-    public function test_人間特性がない場合にコンテキストから削除されることを確認(): void
-    {
-        $this->gptMock->method('getAnswer')
-            ->willReturnCallback(function($context, $message) {
-                $this->assertStringNotContainsString('【話し相手の情報】', $context);
-                return '特性なし回答';
-            });
-
-        $botDefault = $this->botRepositoryMock->findById(self::TARGET_ID_FOR_DEFAULT_BEHAVIOR);
-        $chatServiceDefault = new ChatApplicationService(
-            $botDefault, // 人間特性が空のボット
-            $this->botRepositoryMock,
-            $this->conversationRepositoryMock,
-            $this->chatPromptService,
-            $this->commandAndTriggerServiceMock,
-            $this->gptMock
-        );
-
-        $answer = $chatServiceDefault->getAnswer(false, 'こんにちは');
-        $this->assertSame('特性なし回答', $answer);
-    }
-
-    public function test_AutotestボットのLineTargetを取得する(): void
-    {
-        // chatService は TARGET_ID_AUTOTEST です
-        $this->assertSame('test', $this->chatService->getLineTarget());
-    }
-
-    public function test_DefaultBehaviorボットのLineTargetを取得する(): void
-    {
-        $botDefault = $this->botRepositoryMock->findById(self::TARGET_ID_FOR_DEFAULT_BEHAVIOR);
-        $chatServiceDefault = new ChatApplicationService(
-            $botDefault,
-            $this->botRepositoryMock,
-            $this->conversationRepositoryMock,
-            $this->chatPromptService,
-            $this->commandAndTriggerServiceMock,
-            $this->gptMock
-        );
-        $this->assertSame('test', $chatServiceDefault->getLineTarget());
-    }
-
-    public function test_会話を保存する(): void
-    {
-        $this->conversationRepositoryMock->expects($this->exactly(2))
-            ->method('save')
-            ->with($this->isInstanceOf(Conversation::class));
-
-        $this->chatService->storeConversations("ユーザーメッセージ", "ボットの回答");
-    }
-
-    public function test_トリガーを取得する(): void
-    {
-        $triggers = $this->chatService->getTriggers();
-        $this->assertIsArray($triggers);
-    }
-
-    public function test_タイマートリガーを追加する(): void
-    {
-        $trigger = new \MyApp\Domain\Bot\Trigger\TimerTrigger("today", "12:00", "テストリクエスト");
-
-        $this->botRepositoryMock->expects($this->once())
-            ->method('save')
-            ->with($this->isInstanceOf(Bot::class));
-
-        $triggerId = $this->chatService->addTimerTrigger($trigger);
-        $this->assertNotEmpty($triggerId);
-    }
-
-    public function test_トリガーを削除する(): void
-    {
-        $trigger = new \MyApp\Domain\Bot\Trigger\TimerTrigger("today", "12:00", "テストリクエスト");
-        $triggerId = $this->chatService->addTimerTrigger($trigger);
-
-        $this->botRepositoryMock->expects($this->once())
-            ->method('save')
-            ->with($this->isInstanceOf(Bot::class));
-
-        $this->chatService->deleteTrigger($triggerId);
-        $this->assertArrayNotHasKey($triggerId, $this->chatService->getTriggers());
-    }
-
-    public function test_handleMessage_ShowHelp(): void
-    {
-        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::ShowHelp);
-
-        $response = $this->chatService->handleMessage("help");
-
-        $this->assertInstanceOf(BotResponse::class, $response);
-        $this->assertSame(Messages::HELP, $response->getText());
-        $this->assertNull($response->getQuickReply());
-    }
-
-    public function test_handleMessage_AddOneTimeTrigger(): void
-    {
-        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::AddOneTimeTrigger);
-        $trigger = new \MyApp\Domain\Bot\Trigger\TimerTrigger("today", "12:00", "test");
-        $this->commandAndTriggerServiceMock->method('generateOneTimeTrigger')->willReturn($trigger);
-
-        $response = $this->chatService->handleMessage("12時に通知して");
-
-        $this->assertSame("タイマーを追加しました：" . $trigger, $response->getText());
-    }
-
-    public function test_handleMessage_RemoveTrigger(): void
-    {
-        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::RemoveTrigger);
-
-        $response = $this->chatService->handleMessage("タイマー止めて");
-
-        $this->assertSame("どのタイマーを止めますか？", $response->getText());
-        $this->assertNotNull($response->getQuickReply());
-    }
-
-    public function test_handleMessage_DefaultChat(): void
+    public function test_handleMessage_delegates_to_handler(): void
     {
         $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::Other);
-        $this->gptMock->method('getAnswer')->willReturn("こんにちは");
+        $this->messageHandlerMock->method('canHandle')->with(Command::Other)->willReturn(true);
+        $this->messageHandlerMock->expects($this->once())
+            ->method('handle')
+            ->with("hello", $this->bot, Command::Other)
+            ->willReturn(new BotResponse("hi"));
 
-        $response = $this->chatService->handleMessage("普通のメッセージ");
-
-        $this->assertSame("こんにちは", $response->getText());
+        $response = $this->chatService->handleMessage("hello");
+        $this->assertSame("hi", $response->getText());
     }
 
-    public function test_handlePostback_RemoveTrigger(): void
+    public function test_handleMessage_throws_exception_if_no_handler_found(): void
     {
-        $data = "command=" . Consts::CMD_REMOVE_TRIGGER . "&id=trigger_1&trigger=today 12:00 test";
+        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::Other);
+        $this->messageHandlerMock->method('canHandle')->willReturn(false);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("No handler found for command: 9");
+
+        $this->chatService->handleMessage("hello");
+    }
+
+    public function test_handlePostback_delegates_to_handler(): void
+    {
+        $data = "command=test_cmd&id=123";
+        $this->postbackHandlerMock->method('canHandle')->with("test_cmd")->willReturn(true);
+        $this->postbackHandlerMock->expects($this->once())
+            ->method('handle')
+            ->with(["command" => "test_cmd", "id" => "123"], $this->bot)
+            ->willReturn(new BotResponse("postback response"));
 
         $response = $this->chatService->handlePostback($data);
+        $this->assertSame("postback response", $response->getText());
+    }
 
-        $this->assertSame("削除しました：today 12:00 test", $response->getText());
+    public function test_handlePostback_throws_exception_if_unsupported(): void
+    {
+        $data = "command=unknown";
+        $this->postbackHandlerMock->method('canHandle')->willReturn(false);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Unsupported postback command: unknown");
+
+        $this->chatService->handlePostback($data);
+    }
+
+    public function test_getLineTarget_returns_test_in_testing_env(): void
+    {
+        // CFUtils::isTestingEnv() is mocked by environment variable or usually returns true in tests
+        $this->assertSame('test', $this->chatService->getLineTarget());
     }
 }
