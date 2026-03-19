@@ -15,11 +15,11 @@ use yananob\MyGcpTools\CFUtils;
 use MyApp\Infrastructure\Line\LineWebhookMessage;
 use MyApp\Application\ChatApplicationService;
 use MyApp\Domain\Bot\Service\ChatPromptService;
-use MyApp\Domain\Bot\Consts;
 use MyApp\Domain\Bot\Service\CommandAndTriggerService;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
-use MyApp\Domain\Bot\Trigger\TimerTrigger; // For type hinting if needed
+use MyApp\Domain\Bot\Trigger\TimerTrigger;
+use MyApp\Application\CommandHandler\CommandHandlerFactory;
 
 const TIMER_TRIGGERED_BY_N_MINS = 10;
 
@@ -29,8 +29,6 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $logger = new Logger(CFUtils::getFunctionName());
     $logger->logSplitter();
     $logger->log("headers: " . json_encode($request->getHeaders()));
-    // $logger->log("params: " . json_encode($request->getQueryParams()));
-    // $logger->log("parsedBody: " . json_encode($request->getParsedBody()));
     $body = $request->getBody()->getContents();
     $logger->log("body: " . $body);
 
@@ -62,14 +60,21 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             }
         }
 
-        $chatService = new ChatApplicationService(
-            $bot,
+        $messageHandlers = CommandHandlerFactory::createMessageHandlers(
+            $commandAndTriggerService,
             $botRepository,
+            $gpt,
             $conversationRepository,
             $chatPromptService,
-            $commandAndTriggerService,
-            $gpt,
             $webSearchTool
+        );
+        $postbackHandlers = CommandHandlerFactory::createPostbackHandlers($botRepository);
+
+        $chatService = new ChatApplicationService(
+            $bot,
+            $commandAndTriggerService,
+            $messageHandlers,
+            $postbackHandlers
         );
     } catch (\Exception $e) {
         $logger->log("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
@@ -110,7 +115,7 @@ function main_event(CloudEventInterface $event): void
 
     $line = __getLineInstance();
     $botRepository = new FirestoreBotRepository($isLocal);
-    $conversationRepository = new FirestoreConversationRepository($isLocal); // Needed for ChatApplicationService constructor
+    $conversationRepository = new FirestoreConversationRepository($isLocal);
     $chatPromptService = new ChatPromptService();
 
     $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
@@ -127,27 +132,26 @@ function main_event(CloudEventInterface $event): void
         }
     }
 
+    $messageHandlers = CommandHandlerFactory::createMessageHandlers(
+        $commandAndTriggerService,
+        $botRepository,
+        $gpt,
+        $conversationRepository,
+        $chatPromptService,
+        $webSearchTool
+    );
+    $postbackHandlers = CommandHandlerFactory::createPostbackHandlers($botRepository);
+
     foreach ($botRepository->getAllUserBots() as $botUser) {
         foreach ($botUser->getTriggers() as $trigger) {
-            // Ensure $trigger is an instance of TimerTrigger or has shouldRunNow
-            $logger->log("Processing trigger for user: {$botUser->getId()}. Trigger details: " . (string)$trigger); // Log basic trigger info
-
             if (!$trigger instanceof TimerTrigger) {
-                // Log or handle cases where trigger is not a TimerTrigger, if other types exist
-                $logger->log("Skipping trigger for user {$botUser->getId()} as it's not a TimerTrigger. Trigger: " . (string)$trigger);
+                $logger->log("Skipping trigger for user {$botUser->getId()} as it's not a TimerTrigger.");
                 continue;
             }
             
-            $logger->log("user: {$botUser->getId()}, trigger: {$trigger}");
-            if ($trigger->getEvent() !== "timer") { // This check might be redundant if only TimerTriggers are stored/expected
+            if ($trigger->getEvent() !== "timer") {
                 continue;
             }
-
-            // Add these logs BEFORE the condition:
-            $currentTimeForCheck = new Carbon\Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
-            $logger->log("trigger_function: About to call shouldRunNow for trigger ID " . $trigger->getId() . " for user {$botUser->getId()}");
-            $logger->log("trigger_function: Current time is " . $currentTimeForCheck->toString() . " (TZ: " . $currentTimeForCheck->getTimezone()->getName() . ")");
-            $logger->log("trigger_function: Trigger details: Date='{$trigger->getDate()}', Time='{$trigger->getTime()}', ActualDate='{$trigger->getActualDate()}', Request='{$trigger->getRequest()}'");
 
             if (!$trigger->shouldRunNow(TIMER_TRIGGERED_BY_N_MINS)) {
                 continue;
@@ -156,16 +160,13 @@ function main_event(CloudEventInterface $event): void
             try {
                 $chatService = new ChatApplicationService(
                     $botUser,
-                    $botRepository, // Pass the already instantiated repository
-                    $conversationRepository, // Pass the already instantiated repository
-                    $chatPromptService,
                     $commandAndTriggerService,
-                    $gpt,
-                    $webSearchTool
+                    $messageHandlers,
+                    $postbackHandlers
                 );
             } catch (\Exception $e) {
                 $logger->log("TRIGGER: Failed to initialize ChatApplicationService for user {$botUser->getId()}: " . $e->getMessage());
-                continue; // Skip to next botUser
+                continue;
             }
 
             $answer = $chatService->handleMessage($trigger->getRequest())->getText();
