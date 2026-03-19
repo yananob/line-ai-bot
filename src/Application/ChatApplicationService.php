@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Application;
+namespace App\Application;
 
 use Exception;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\Service\CommandAndTriggerService;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\Service\CommandAndTriggerService;
 use yananob\MyGcpTools\CFUtils;
-use MyApp\Application\CommandHandler\CommandHandlerInterface;
-use MyApp\Application\CommandHandler\PostbackHandlerInterface;
+use App\Application\CommandHandler\CommandHandlerInterface;
+use App\Application\CommandHandler\PostbackHandlerInterface;
 
 class ChatApplicationService
 {

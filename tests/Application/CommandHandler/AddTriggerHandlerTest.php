@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Application\CommandHandler;
+namespace Tests\Application\CommandHandler;
 
-use MyApp\Application\CommandHandler\AddTriggerHandler;
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\BotRepository;
-use MyApp\Domain\Bot\Service\CommandAndTriggerService;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
+use App\Application\CommandHandler\AddTriggerHandler;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\BotRepository;
+use App\Domain\Bot\Service\CommandAndTriggerService;
+use App\Domain\Bot\Trigger\TimerTrigger;
 use PHPUnit\Framework\TestCase;
 
 final class AddTriggerHandlerTest extends TestCase

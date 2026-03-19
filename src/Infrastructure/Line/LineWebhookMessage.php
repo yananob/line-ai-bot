@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Infrastructure\Line;
+namespace App\Infrastructure\Line;
 
-use MyApp\Domain\Exception\InvalidWebhookEventException;
+use App\Domain\Exception\InvalidWebhookEventException;
 
 class LineWebhookMessage
 {

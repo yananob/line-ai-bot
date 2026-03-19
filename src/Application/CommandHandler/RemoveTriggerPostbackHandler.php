@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Application\CommandHandler;
+namespace App\Application\CommandHandler;
 
-use MyApp\Application\BotResponse;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\BotRepository;
-use MyApp\Domain\Bot\Consts;
+use App\Application\BotResponse;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\BotRepository;
+use App\Domain\Bot\Consts;
 
 class RemoveTriggerPostbackHandler implements PostbackHandlerInterface
 {

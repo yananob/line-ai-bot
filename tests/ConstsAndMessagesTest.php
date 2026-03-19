@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Tests;
+namespace Tests;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Bot\Consts;
-use MyApp\Domain\Bot\Messages;
+use App\Domain\Bot\Consts;
+use App\Domain\Bot\Messages;
 
 final class ConstsAndMessagesTest extends TestCase
 {

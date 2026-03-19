@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Application\CommandHandler;
+namespace App\Application\CommandHandler;
 
-use MyApp\Application\BotResponse;
-use MyApp\Domain\Bot\Bot;
+use App\Application\BotResponse;
+use App\Domain\Bot\Bot;
 
 interface PostbackHandlerInterface
 {

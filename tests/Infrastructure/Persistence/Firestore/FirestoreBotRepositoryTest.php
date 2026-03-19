@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Infrastructure\Persistence\Firestore;
+namespace Tests\Infrastructure\Persistence\Firestore;
 
-use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
-use MyApp\Domain\Exception\BotNotFoundException;
+use App\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Exception\BotNotFoundException;
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\DocumentReference;

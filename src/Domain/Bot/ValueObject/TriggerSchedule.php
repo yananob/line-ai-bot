@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Domain\Bot\ValueObject;
+namespace App\Domain\Bot\ValueObject;
 
 use Carbon\Carbon;
-use MyApp\Domain\Bot\Consts;
+use App\Domain\Bot\Consts;
 
 /**
  * Handles the scheduling logic for a trigger, including relative date/time resolution.

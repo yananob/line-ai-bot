@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Domain\Conversation;
+namespace App\Domain\Conversation;
 
 use DateTimeImmutable;
 

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Application\CommandHandler;
+namespace Tests\Application\CommandHandler;
 
-use MyApp\Application\CommandHandler\DefaultChatHandler;
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Conversation\ConversationRepository;
-use MyApp\Domain\Bot\Service\ChatPromptService;
-use MyApp\Domain\Bot\Service\WebSearchInterface;
+use App\Application\CommandHandler\DefaultChatHandler;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Bot;
+use App\Domain\Conversation\ConversationRepository;
+use App\Domain\Bot\Service\ChatPromptService;
+use App\Domain\Bot\Service\WebSearchInterface;
 use yananob\MyTools\Gpt;
 use PHPUnit\Framework\TestCase;
 

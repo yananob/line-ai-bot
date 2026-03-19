@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Bot\ValueObject;
+namespace Tests\Domain\Bot\ValueObject;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Bot\ValueObject\TriggerSchedule;
+use App\Domain\Bot\ValueObject\TriggerSchedule;
 use Carbon\Carbon;
-use MyApp\Domain\Bot\Consts;
+use App\Domain\Bot\Consts;
 
 final class TriggerScheduleTest extends TestCase
 {

@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Infrastructure\Persistence\Firestore;
+namespace App\Infrastructure\Persistence\Firestore;
 
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\FieldValue;
 use Google\Cloud\Firestore\Query;
-use MyApp\Domain\Conversation\Conversation;
-use MyApp\Domain\Conversation\ConversationRepository;
+use App\Domain\Conversation\Conversation;
+use App\Domain\Conversation\ConversationRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 

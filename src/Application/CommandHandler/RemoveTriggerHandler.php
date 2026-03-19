@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Application\CommandHandler;
+namespace App\Application\CommandHandler;
 
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Application\BotResponse;
-use MyApp\Domain\Bot\Consts;
-use MyApp\Infrastructure\Line\LineTools;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Bot;
+use App\Application\BotResponse;
+use App\Domain\Bot\Consts;
+use App\Infrastructure\Line\LineTools;
 
 class RemoveTriggerHandler implements CommandHandlerInterface
 {

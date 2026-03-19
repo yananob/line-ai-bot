@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Application\CommandHandler;
+namespace App\Application\CommandHandler;
 
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Application\BotResponse;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Bot;
+use App\Application\BotResponse;
 
 interface CommandHandlerInterface
 {

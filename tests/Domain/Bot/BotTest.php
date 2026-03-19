@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Bot;
+namespace Tests\Domain\Bot;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
-use MyApp\Domain\Bot\ValueObject\StringList;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\StringList;
 
 final class BotTest extends TestCase
 {

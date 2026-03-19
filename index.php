@@ -12,14 +12,14 @@ use GuzzleHttp\Psr7\Response;
 use yananob\MyTools\Logger;
 use yananob\MyTools\Line;
 use yananob\MyGcpTools\CFUtils;
-use MyApp\Infrastructure\Line\LineWebhookMessage;
-use MyApp\Application\ChatApplicationService;
-use MyApp\Domain\Bot\Service\ChatPromptService;
-use MyApp\Domain\Bot\Service\CommandAndTriggerService;
-use MyApp\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
-use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
-use MyApp\Application\CommandHandler\CommandHandlerFactory;
+use App\Infrastructure\Line\LineWebhookMessage;
+use App\Application\ChatApplicationService;
+use App\Domain\Bot\Service\ChatPromptService;
+use App\Domain\Bot\Service\CommandAndTriggerService;
+use App\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
+use App\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
+use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Application\CommandHandler\CommandHandlerFactory;
 
 const TIMER_TRIGGERED_BY_N_MINS = 10;
 
@@ -54,7 +54,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         if ($openaiApiKey !== 'dummy') {
             try {
                 $openaiClient = OpenAI::client($openaiApiKey);
-                $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
+                $webSearchTool = new App\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
             } catch (\Exception $e) {
                 error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
             }
@@ -126,7 +126,7 @@ function main_event(CloudEventInterface $event): void
     if ($openaiApiKey !== 'dummy') {
         try {
             $openaiClient = OpenAI::client($openaiApiKey);
-            $webSearchTool = new MyApp\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
+            $webSearchTool = new App\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
         } catch (\Exception $e) {
             error_log("Failed to initialize WebSearchTool in main_event: " . $e->getMessage());
         }

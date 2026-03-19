@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Domain\Bot;
+namespace App\Domain\Bot;
 
-use MyApp\Domain\Bot\Trigger\Trigger;
-use MyApp\Domain\Bot\ValueObject\StringList;
-use MyApp\Domain\Bot\ValueObject\BotPersonalityConfig;
+use App\Domain\Bot\Trigger\Trigger;
+use App\Domain\Bot\ValueObject\StringList;
+use App\Domain\Bot\ValueObject\BotPersonalityConfig;
 
 class Bot
 {

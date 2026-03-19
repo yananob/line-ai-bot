@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Application\CommandHandler;
+namespace App\Application\CommandHandler;
 
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\BotRepository;
-use MyApp\Domain\Bot\Service\CommandAndTriggerService;
-use MyApp\Application\BotResponse;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\BotRepository;
+use App\Domain\Bot\Service\CommandAndTriggerService;
+use App\Application\BotResponse;
 
 class AddTriggerHandler implements CommandHandlerInterface
 {

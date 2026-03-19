@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests; // 名前空間を追加
+namespace Tests; // 名前空間を追加
 
-use MyApp\Domain\Bot\Consts;
-use MyApp\Infrastructure\Line\LineWebhookMessage;
-use MyApp\Domain\Exception\InvalidWebhookEventException;
+use App\Domain\Bot\Consts;
+use App\Infrastructure\Line\LineWebhookMessage;
+use App\Domain\Exception\InvalidWebhookEventException;
 use PHPUnit\Framework\TestCase; // TestCaseをuse
 
 final class LineWebhookMessageTest extends TestCase // TestCaseの完全修飾名を使用 (useしたのでこれでOK)

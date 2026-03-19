@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Bot\Service; // PSR-4に合わせた名前空間 (既存)
+namespace Tests\Domain\Bot\Service; // PSR-4に合わせた名前空間 (既存)
 
 use PHPUnit\Framework\TestCase; // 標準的なPHPUnitの名前空間
 use Carbon\Carbon;
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Service\CommandAndTriggerService;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Service\CommandAndTriggerService;
+use App\Domain\Bot\Trigger\TimerTrigger;
 use yananob\MyTools\Gpt; // モック用
 
 final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修飾名を使用
