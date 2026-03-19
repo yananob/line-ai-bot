@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Infrastructure\Search;
+namespace App\Infrastructure\Search;
 
-use MyApp\Domain\Bot\Service\WebSearchInterface;
+use App\Domain\Bot\Service\WebSearchInterface;
 use OpenAI\Contracts\ClientContract;
 use OpenAI\Responses\Responses\CreateResponse as ResponsesCreateResponse;
 use OpenAI\Exceptions\ErrorException as OpenAIErrorException;

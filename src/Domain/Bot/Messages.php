@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Domain\Bot;
+namespace App\Domain\Bot;
 
 class Messages
 {

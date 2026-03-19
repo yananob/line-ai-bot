@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Application\CommandHandler;
+namespace App\Application\CommandHandler;
 
-use MyApp\Domain\Bot\BotRepository;
-use MyApp\Domain\Conversation\ConversationRepository;
-use MyApp\Domain\Bot\Service\ChatPromptService;
-use MyApp\Domain\Bot\Service\CommandAndTriggerService;
-use MyApp\Domain\Bot\Service\WebSearchInterface;
+use App\Domain\Bot\BotRepository;
+use App\Domain\Conversation\ConversationRepository;
+use App\Domain\Bot\Service\ChatPromptService;
+use App\Domain\Bot\Service\CommandAndTriggerService;
+use App\Domain\Bot\Service\WebSearchInterface;
 use yananob\MyTools\Gpt;
 
 class CommandHandlerFactory

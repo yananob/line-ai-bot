@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Infrastructure\Line;
+namespace App\Infrastructure\Line;
 
-use MyApp\Domain\Bot\Consts;
+use App\Domain\Bot\Consts;
 
 class LineTools
 {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Bot\ValueObject;
+namespace Tests\Domain\Bot\ValueObject;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\ValueObject\Command;
 
 final class CommandTest extends TestCase
 {

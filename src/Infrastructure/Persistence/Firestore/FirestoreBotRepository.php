@@ -1,16 +1,16 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Infrastructure\Persistence\Firestore;
+namespace App\Infrastructure\Persistence\Firestore;
 
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\DocumentReference;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\DocumentSnapshot;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\BotRepository;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
-use MyApp\Domain\Bot\Trigger\Trigger;
-use MyApp\Domain\Exception\BotNotFoundException;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\BotRepository;
+use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\Trigger\Trigger;
+use App\Domain\Exception\BotNotFoundException;
 
 class FirestoreBotRepository implements BotRepository
 {

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Application;
+namespace Tests\Application;
 
-use MyApp\Application\ChatApplicationService;
-use MyApp\Application\BotResponse;
-use MyApp\Domain\Bot\Service\CommandAndTriggerService;
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Application\CommandHandler\CommandHandlerInterface;
-use MyApp\Application\CommandHandler\PostbackHandlerInterface;
+use App\Application\ChatApplicationService;
+use App\Application\BotResponse;
+use App\Domain\Bot\Service\CommandAndTriggerService;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Bot;
+use App\Application\CommandHandler\CommandHandlerInterface;
+use App\Application\CommandHandler\PostbackHandlerInterface;
 use PHPUnit\Framework\TestCase;
 
 final class ChatApplicationServiceTest extends TestCase

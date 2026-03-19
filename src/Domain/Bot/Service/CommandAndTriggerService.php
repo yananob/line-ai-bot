@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Domain\Bot\Service;
+namespace App\Domain\Bot\Service;
 
 use yananob\MyTools\Gpt;
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Trigger\TimerTrigger;
 
 class CommandAndTriggerService
 {

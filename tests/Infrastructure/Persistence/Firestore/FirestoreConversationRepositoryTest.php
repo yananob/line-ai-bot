@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Infrastructure\Persistence\Firestore; // 名前空間を追加
+namespace Tests\Infrastructure\Persistence\Firestore; // 名前空間を追加
 
-use MyApp\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
-use MyApp\Domain\Conversation\Conversation;
-// use MyApp\Domain\Conversation\ConversationRepository; // インターフェースの型ヒント用 (このファイル内では直接使われていない模様)
+use App\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
+use App\Domain\Conversation\Conversation;
+// use App\Domain\Conversation\ConversationRepository; // インターフェースの型ヒント用 (このファイル内では直接使われていない模様)
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\DocumentReference;

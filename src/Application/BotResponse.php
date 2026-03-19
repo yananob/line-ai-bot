@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Application;
+namespace App\Application;
 
 class BotResponse
 {

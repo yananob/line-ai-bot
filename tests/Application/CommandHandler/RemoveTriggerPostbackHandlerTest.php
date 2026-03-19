@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Application\CommandHandler;
+namespace Tests\Application\CommandHandler;
 
-use MyApp\Application\CommandHandler\RemoveTriggerPostbackHandler;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\BotRepository;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
-use MyApp\Domain\Bot\Consts;
+use App\Application\CommandHandler\RemoveTriggerPostbackHandler;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\BotRepository;
+use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\Consts;
 use PHPUnit\Framework\TestCase;
 
 final class RemoveTriggerPostbackHandlerTest extends TestCase

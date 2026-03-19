@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Application\CommandHandler;
+namespace Tests\Application\CommandHandler;
 
-use MyApp\Application\CommandHandler\HelpHandler;
-use MyApp\Domain\Bot\ValueObject\Command;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Bot\Messages;
+use App\Application\CommandHandler\HelpHandler;
+use App\Domain\Bot\ValueObject\Command;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\Messages;
 use PHPUnit\Framework\TestCase;
 
 final class HelpHandlerTest extends TestCase

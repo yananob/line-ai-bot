@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Bot\Service;
+namespace Tests\Domain\Bot\Service;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Conversation\Conversation;
-use MyApp\Domain\Bot\Service\ChatPromptService;
-use MyApp\Domain\Bot\ValueObject\StringList;
+use App\Domain\Bot\Bot;
+use App\Domain\Conversation\Conversation;
+use App\Domain\Bot\Service\ChatPromptService;
+use App\Domain\Bot\ValueObject\StringList;
 
 class ChatPromptServiceTest extends TestCase
 {

@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Domain\Bot\Trigger;
+namespace App\Domain\Bot\Trigger;
 
-use MyApp\Domain\Bot\ValueObject\TriggerSchedule;
+use App\Domain\Bot\ValueObject\TriggerSchedule;
 
 class TimerTrigger implements Trigger
 {

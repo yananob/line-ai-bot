@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Domain\Bot\Service;
+namespace App\Domain\Bot\Service;
 
-use MyApp\Domain\Bot\Bot;
-use MyApp\Domain\Conversation\Conversation;
-use MyApp\Domain\Bot\ValueObject\StringList;
+use App\Domain\Bot\Bot;
+use App\Domain\Conversation\Conversation;
+use App\Domain\Bot\ValueObject\StringList;
 
 class ChatPromptService
 {
