@@ -17,9 +17,9 @@ use PHPUnit\Framework\TestCase;
 final class FirestoreBotRepositoryTest extends TestCase
 {
     private FirestoreBotRepository $repository;
-    private $firestoreClientMock;
-    private $rootCollectionMock;
-    private $documentRootMock;
+    private \PHPUnit\Framework\MockObject\MockObject $firestoreClientMock;
+    private \PHPUnit\Framework\MockObject\MockObject $rootCollectionMock;
+    private \PHPUnit\Framework\MockObject\MockObject $documentRootMock;
 
     protected function setUp(): void
     {
@@ -33,7 +33,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->repository = new FirestoreBotRepository(isTest: true, db: $this->firestoreClientMock);
     }
 
-    private function createBotMocks(?iterable $triggerDocuments = null)
+    private function createBotMocks(?iterable $triggerDocuments = null): array
     {
         $botCollMock = $this->createMock(CollectionReference::class);
         $configDocMock = $this->createMock(DocumentReference::class);

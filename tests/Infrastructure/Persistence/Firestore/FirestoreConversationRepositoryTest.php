@@ -20,10 +20,10 @@ use PHPUnit\Framework\TestCase; // TestCaseをuse
 final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの完全修飾名を使用
 {
     private FirestoreConversationRepository $repository;
-    private $firestoreClientMock;
-    private $collectionReferenceMock; // ルート 'ai-bot{-test}' コレクションのモック
-    private $conversationsDocRefMock; // 'conversations' ドキュメントのモック
-    private $botConversationsCollRefMock; // 特定のボットの会話サブコレクションのモック
+    private \PHPUnit\Framework\MockObject\MockObject $firestoreClientMock;
+    private \PHPUnit\Framework\MockObject\MockObject $collectionReferenceMock; // ルート 'ai-bot{-test}' コレクションのモック
+    private \PHPUnit\Framework\MockObject\MockObject $conversationsDocRefMock; // 'conversations' ドキュメントのモック
+    private \PHPUnit\Framework\MockObject\MockObject $botConversationsCollRefMock; // 特定のボットの会話サブコレクションのモック
 
     protected function setUp(): void
     {
