@@ -33,7 +33,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->repository = new FirestoreBotRepository(isTest: true, db: $this->firestoreClientMock);
     }
 
-    private function createBotMocks(?iterable $triggerDocuments = null)
+    private function createBotMocks(?iterable $triggerDocuments = null): array
     {
         $botCollMock = $this->createMock(CollectionReference::class);
         $configDocMock = $this->createMock(DocumentReference::class);
