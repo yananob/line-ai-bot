@@ -5,7 +5,7 @@ namespace App\Application;
 use Exception;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Service\CommandAndTriggerService;
-use yananob\MyGcpTools\CFUtils;
+use App\Infrastructure\Gcp\CloudFunctionUtils;
 use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
 
@@ -65,6 +65,6 @@ class ChatApplicationService
 
     public function getLineTarget(): string
     {
-        return CFUtils::isTestingEnv() ? "test" : $this->bot->getLineTarget();
+        return CloudFunctionUtils::isTestingEnv() ? "test" : $this->bot->getLineTarget();
     }
 }

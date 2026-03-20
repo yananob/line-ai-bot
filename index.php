@@ -9,9 +9,9 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use CloudEvents\V1\CloudEventInterface;
 use GuzzleHttp\Psr7\Response;
-use yananob\MyTools\Logger;
-use yananob\MyTools\Line;
-use yananob\MyGcpTools\CFUtils;
+use App\Infrastructure\Logger\Logger;
+use App\Infrastructure\Line\LineClient;
+use App\Infrastructure\Gcp\CloudFunctionUtils;
 use App\Infrastructure\Line\LineWebhookMessage;
 use App\Application\ChatApplicationService;
 use App\Domain\Bot\Service\ChatPromptService;
@@ -26,13 +26,13 @@ const TIMER_TRIGGERED_BY_N_MINS = 10;
 FunctionsFramework::http('main_http', 'main_http');
 function main_http(ServerRequestInterface $request): ResponseInterface
 {
-    $logger = new Logger(CFUtils::getFunctionName());
+    $logger = new Logger(CloudFunctionUtils::getFunctionName());
     $logger->logSplitter();
     $logger->log("headers: " . json_encode($request->getHeaders()));
     $body = $request->getBody()->getContents();
     $logger->log("body: " . $body);
 
-    $isLocal = CFUtils::isLocalHttp($request);
+    $isLocal = CloudFunctionUtils::isLocalHttp($request);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
     $headers = ['Content-Type' => 'application/json'];
@@ -44,7 +44,8 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $chatPromptService = new ChatPromptService();
 
     $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
-    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-5.1");
+    $openaiClient = OpenAI::client($openaiApiKey);
+    $gpt = new App\Infrastructure\Gpt\OpenAiGptClient($openaiClient, "gpt-5.1");
     $commandAndTriggerService = new CommandAndTriggerService($gpt);
 
     try {
@@ -108,9 +109,9 @@ function main_http(ServerRequestInterface $request): ResponseInterface
 FunctionsFramework::cloudEvent('main_event', 'main_event');
 function main_event(CloudEventInterface $event): void
 {
-    $logger = new Logger(CFUtils::getFunctionName());
+    $logger = new Logger(CloudFunctionUtils::getFunctionName());
     $logger->logSplitter();
-    $isLocal = CFUtils::isLocalEvent($event);
+    $isLocal = CloudFunctionUtils::isLocalEvent($event);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
     $line = __getLineInstance();
@@ -119,13 +120,13 @@ function main_event(CloudEventInterface $event): void
     $chatPromptService = new ChatPromptService();
 
     $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
-    $gpt = new yananob\MyTools\Gpt($openaiApiKey, "gpt-5.1");
+    $openaiClient = OpenAI::client($openaiApiKey);
+    $gpt = new App\Infrastructure\Gpt\OpenAiGptClient($openaiClient, "gpt-5.1");
     $commandAndTriggerService = new CommandAndTriggerService($gpt);
 
     $webSearchTool = null;
     if ($openaiApiKey !== 'dummy') {
         try {
-            $openaiClient = OpenAI::client($openaiApiKey);
             $webSearchTool = new App\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
         } catch (\Exception $e) {
             error_log("Failed to initialize WebSearchTool in main_event: " . $e->getMessage());
@@ -184,5 +185,5 @@ function main_event(CloudEventInterface $event): void
 function __getLineInstance()
 {
     $lineConfig = json_decode(getenv("LINE_TOKENS_N_TARGETS"), true);
-    return new Line($lineConfig["tokens"], $lineConfig["target_ids"]);
+    return new LineClient($lineConfig["tokens"], $lineConfig["target_ids"]);
 }
