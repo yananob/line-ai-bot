@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Logger;
 
+use Monolog\Logger as MonologLogger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Level;
+
 class Logger
 {
-    /** @var resource */
-    private $fp;
-    private string $title;
+    private MonologLogger $logger;
 
     public function __construct(string $title = '')
     {
-        $this->title = $title;
-        $this->fp = fopen(getenv('LOGGER_OUTPUT') ?: 'php://stderr', 'wb');
+        $this->logger = new MonologLogger($title ?: 'app');
+        $this->logger->pushHandler(new StreamHandler(getenv('LOGGER_OUTPUT') ?: 'php://stderr', Level::Debug));
     }
 
     public function log(mixed $message): void
@@ -24,23 +26,11 @@ class Logger
             $message = json_encode($message);
         }
 
-        $log_message = (string)$message;
-        if (!empty($this->title)) {
-            $log_message = "[{$this->title}] {$log_message}";
-        }
-
-        fwrite($this->fp, $log_message . PHP_EOL);
+        $this->logger->info((string)$message);
     }
 
     public function logSplitter(string $char = "-", int $count = 120): void
     {
         $this->log(str_repeat($char, $count));
-    }
-
-    public function __destruct()
-    {
-        if (is_resource($this->fp)) {
-            fclose($this->fp);
-        }
     }
 }

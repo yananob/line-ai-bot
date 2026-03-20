@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Line;
 
+use LINE\Clients\MessagingApi\Api\MessagingApiApi;
+use LINE\Clients\MessagingApi\Configuration;
+use LINE\Clients\MessagingApi\Model\PushMessageRequest;
+use LINE\Clients\MessagingApi\Model\ReplyMessageRequest;
+use LINE\Clients\MessagingApi\Model\TextMessage;
+use LINE\Clients\MessagingApi\Model\QuickReply;
+use LINE\Clients\MessagingApi\Model\ShowLoadingAnimationRequest;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Exception;
 
 class LineClient
 {
-    private Client $httpClient;
     private array $tokens;
     private array $presetTargetIds;
+    private Client $httpClient;
 
     /**
      * @param array $tokens LINE API access tokens
@@ -25,6 +31,16 @@ class LineClient
         $this->httpClient = new Client();
     }
 
+    private function getApi(string $bot): MessagingApiApi
+    {
+        if (!isset($this->tokens[$bot])) {
+            throw new Exception("Unknown bot: {$bot}");
+        }
+        $config = new Configuration();
+        $config->setAccessToken($this->tokens[$bot]);
+        return new MessagingApiApi($this->httpClient, $config);
+    }
+
     /**
      * Sends a push message.
      */
@@ -34,26 +50,16 @@ class LineClient
         ?string $targetId = null,
         string $message = "",
     ): void {
-        if (!array_key_exists($bot, $this->tokens)) {
-            throw new Exception("Unknown bot: {$bot}");
-        }
-        if (!empty($target) && !array_key_exists($target, $this->presetTargetIds)) {
-            throw new Exception("Unknown target: {$target}");
-        }
-        if (empty($target) && empty($targetId)) {
-            throw new Exception('Please specify $target or $targetId');
-        }
+        $to = $this->resolveTarget($target, $targetId);
+        $api = $this->getApi($bot);
 
-        $body = [
-            "to" => empty($target) ? $targetId : $this->presetTargetIds[$target],
-            "messages" => [
-                [
-                    "type" => "text",
-                    "text" => $message,
-                ],
-            ],
-        ];
-        $this->callApi("https://api.line.me/v2/bot/message/push", $bot, $body);
+        $textMessage = new TextMessage(['type' => 'text', 'text' => $message]);
+        $request = new PushMessageRequest([
+            'to' => $to,
+            'messages' => [$textMessage]
+        ]);
+
+        $api->pushMessage($request);
     }
 
     /**
@@ -63,27 +69,22 @@ class LineClient
         string $bot,
         string $replyToken,
         string $message,
-        ?array $quickReply = null,
+        ?array $quickReplyItems = null,
     ): void {
-        if (!array_key_exists($bot, $this->tokens)) {
-            throw new Exception("Unknown bot: {$bot}");
+        $api = $this->getApi($bot);
+
+        $textMessage = new TextMessage(['type' => 'text', 'text' => $message]);
+        if (!empty($quickReplyItems)) {
+            $quickReply = new QuickReply(['items' => $quickReplyItems]);
+            $textMessage->setQuickReply($quickReply);
         }
 
-        $body = [
-            "replyToken" => $replyToken,
-            "messages" => [
-                [
-                    "type" => "text",
-                    "text" => $message,
-                ],
-            ],
-        ];
+        $request = new ReplyMessageRequest([
+            'replyToken' => $replyToken,
+            'messages' => [$textMessage]
+        ]);
 
-        if (!empty($quickReply)) {
-            $body["messages"][0]["quickReply"]["items"] = $quickReply;
-        }
-
-        $this->callApi("https://api.line.me/v2/bot/message/reply", $bot, $body);
+        $api->replyMessage($request);
     }
 
     /**
@@ -94,48 +95,33 @@ class LineClient
         ?string $target = null,
         ?string $targetId = null,
     ): void {
-        if (!empty($target) && !array_key_exists($target, $this->presetTargetIds)) {
-            throw new Exception("Unknown target: {$target}");
-        }
-        if (empty($target) && empty($targetId)) {
-            throw new Exception('Please specify $target or $targetId');
-        }
+        $chatId = $this->resolveTarget($target, $targetId);
+        $api = $this->getApi($bot);
 
-        $body = [
-            "chatId" => empty($target) ? $targetId : $this->presetTargetIds[$target],
-            "loadingSeconds" => 60,
-        ];
+        $request = new ShowLoadingAnimationRequest([
+            'chatId' => $chatId,
+            'loadingSeconds' => 60
+        ]);
 
         try {
-            $this->callApi("https://api.line.me/v2/bot/chat/loading/start", $bot, $body, [202]);
+            $api->showLoadingAnimation($request);
         } catch (Exception $e) {
-            // Silently fail as per original implementation (might be a group/room)
+            // Silently fail as per original implementation
         }
     }
 
-    /**
-     * Calls LINE API.
-     */
-    private function callApi(string $url, string $bot, array $body, array $allowHttpCodes = [200]): void
+    private function resolveTarget(?string $target, ?string $targetId): string
     {
-        try {
-            $response = $this->httpClient->post($url, [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Authorization' => "Bearer {$this->tokens[$bot]}",
-                ],
-                'json' => $body,
-            ]);
-
-            $statusCode = $response->getStatusCode();
-            if (!in_array($statusCode, $allowHttpCodes)) {
-                throw new Exception(
-                    "Failed to send message [bot: {$bot}]. Http response code: [{$statusCode}]"
-                );
+        if (!empty($target)) {
+            if (!isset($this->presetTargetIds[$target])) {
+                throw new Exception("Unknown target: {$target}");
             }
-        } catch (GuzzleException $e) {
-            throw new Exception("API call failed: " . $e->getMessage(), 0, $e);
+            return $this->presetTargetIds[$target];
         }
+        if (empty($targetId)) {
+            throw new Exception('Please specify $target or $targetId');
+        }
+        return $targetId;
     }
 
     /**

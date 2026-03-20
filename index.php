@@ -13,6 +13,7 @@ use App\Infrastructure\Logger\Logger;
 use App\Infrastructure\Line\LineClient;
 use App\Infrastructure\Gcp\CloudFunctionUtils;
 use App\Infrastructure\Line\LineWebhookMessage;
+use OpenAI;
 use App\Application\ChatApplicationService;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
@@ -45,7 +46,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
 
     $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
     $openaiClient = OpenAI::client($openaiApiKey);
-    $gpt = new App\Infrastructure\Gpt\OpenAiGptClient($openaiClient, "gpt-5.1");
+    $gpt = new App\Infrastructure\Gpt\OpenAiGptClient($openaiClient, "gpt-4o");
     $commandAndTriggerService = new CommandAndTriggerService($gpt);
 
     try {
@@ -54,7 +55,6 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         $webSearchTool = null;
         if ($openaiApiKey !== 'dummy') {
             try {
-                $openaiClient = OpenAI::client($openaiApiKey);
                 $webSearchTool = new App\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
             } catch (\Exception $e) {
                 error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
@@ -121,7 +121,7 @@ function main_event(CloudEventInterface $event): void
 
     $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
     $openaiClient = OpenAI::client($openaiApiKey);
-    $gpt = new App\Infrastructure\Gpt\OpenAiGptClient($openaiClient, "gpt-5.1");
+    $gpt = new App\Infrastructure\Gpt\OpenAiGptClient($openaiClient, "gpt-4o");
     $commandAndTriggerService = new CommandAndTriggerService($gpt);
 
     $webSearchTool = null;
