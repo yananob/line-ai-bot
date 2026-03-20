@@ -28,10 +28,10 @@ jobs:
       with:
         submodules: 'true'
 
-    - name: Set up PHP 8.2
+    - name: Set up PHP 8.3
       uses: shivammathur/setup-php@v2
       with:
-        php-version: "8.2"
+        php-version: "8.3"
         extensions: grpc
 
     - name: Validate composer.json and composer.lock

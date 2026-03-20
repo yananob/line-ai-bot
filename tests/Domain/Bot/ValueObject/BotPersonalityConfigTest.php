@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Bot\ValueObject;
+namespace Tests\Domain\Bot\ValueObject;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Bot\ValueObject\BotPersonalityConfig;
-use MyApp\Domain\Bot\ValueObject\StringList;
+use App\Domain\Bot\ValueObject\BotPersonalityConfig;
+use App\Domain\Bot\ValueObject\StringList;
 
 class BotPersonalityConfigTest extends TestCase
 {

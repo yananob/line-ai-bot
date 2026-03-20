@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Domain\Bot\Trigger;
+namespace App\Domain\Bot\Trigger;
 
 interface Trigger
 {

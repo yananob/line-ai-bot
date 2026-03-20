@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests; // 名前空間を追加
+namespace Tests; // 名前空間を追加
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use MyApp\Infrastructure\Search\OpenAIWebSearchTool as WebSearchTool;
+use App\Infrastructure\Search\OpenAIWebSearchTool as WebSearchTool;
 
 // OpenAI 関連クラス
 use OpenAI\Contracts\ClientContract as OpenAiClientContract;

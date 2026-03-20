@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Exception;
+namespace Tests\Domain\Exception;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Exception\BotNotFoundException;
-use MyApp\Domain\Exception\InvalidWebhookEventException;
-use MyApp\Domain\Exception\DomainException;
+use App\Domain\Exception\BotNotFoundException;
+use App\Domain\Exception\InvalidWebhookEventException;
+use App\Domain\Exception\DomainException;
 
 final class DomainExceptionTest extends TestCase
 {

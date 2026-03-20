@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Conversation;
+namespace Tests\Domain\Conversation;
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Conversation\Conversation;
+use App\Domain\Conversation\Conversation;
 use DateTimeImmutable;
 
 class ConversationTest extends TestCase

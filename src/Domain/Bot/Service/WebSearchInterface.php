@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Domain\Bot\Service;
+namespace App\Domain\Bot\Service;
 
 interface WebSearchInterface
 {

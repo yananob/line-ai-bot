@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Domain\Bot\ValueObject;
+namespace App\Domain\Bot\ValueObject;
 
 enum Command: string
 {

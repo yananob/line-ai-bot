@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MyApp\Tests\Domain\Bot\Trigger; // PSR-4のための調整済み名前空間 (既存)
+namespace Tests\Domain\Bot\Trigger; // PSR-4のための調整済み名前空間 (既存)
 
 use PHPUnit\Framework\TestCase;
-use MyApp\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\Trigger\TimerTrigger;
 use Carbon\Carbon;
-use MyApp\Domain\Bot\Consts;
+use App\Domain\Bot\Consts;
 
 final class TimerTriggerTest extends TestCase
 {
