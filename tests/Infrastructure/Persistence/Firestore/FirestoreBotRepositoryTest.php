@@ -17,9 +17,9 @@ use PHPUnit\Framework\TestCase;
 final class FirestoreBotRepositoryTest extends TestCase
 {
     private FirestoreBotRepository $repository;
-    private $firestoreClientMock;
-    private $rootCollectionMock;
-    private $documentRootMock;
+    private \PHPUnit\Framework\MockObject\MockObject $firestoreClientMock;
+    private \PHPUnit\Framework\MockObject\MockObject $rootCollectionMock;
+    private \PHPUnit\Framework\MockObject\MockObject $documentRootMock;
 
     protected function setUp(): void
     {
