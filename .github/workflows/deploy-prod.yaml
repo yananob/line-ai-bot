@@ -23,7 +23,7 @@ jobs:
         FIREBASE_SERVICE_ACCOUNT
       deploy_http_trigger: true
       deploy_event_trigger: true
-      runtime: 'php84'
+      runtime: 'php83'
       environment_variables: |-
         APP_ENV=production
     secrets:
