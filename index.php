@@ -57,7 +57,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             try {
                 $webSearchTool = new App\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
             } catch (\Exception $e) {
-                error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
+                $logger->log("Failed to initialize WebSearchTool: " . $e->getMessage());
             }
         }
 
@@ -129,7 +129,7 @@ function main_event(CloudEventInterface $event): void
         try {
             $webSearchTool = new App\Infrastructure\Search\OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
         } catch (\Exception $e) {
-            error_log("Failed to initialize WebSearchTool in main_event: " . $e->getMessage());
+            $logger->log("Failed to initialize WebSearchTool in main_event: " . $e->getMessage());
         }
     }
 
