@@ -170,7 +170,7 @@ function main_event(CloudEventInterface $event): void
                 continue;
             }
 
-            $answer = $chatService->handleMessage($trigger->getRequest())->getText();
+            $answer = $chatService->handleTrigger($trigger)->getText();
             $line->sendPush(
                 bot: $chatService->getLineTarget(),
                 targetId: $botUser->getId(),
