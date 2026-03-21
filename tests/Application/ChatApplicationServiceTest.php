@@ -9,6 +9,7 @@ use App\Application\BotResponse;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
+use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
 use PHPUnit\Framework\TestCase;
@@ -90,5 +91,23 @@ final class ChatApplicationServiceTest extends TestCase
     {
         // CFUtils::isTestingEnv() is mocked by environment variable or usually returns true in tests
         $this->assertSame('test', $this->chatService->getLineTarget());
+    }
+
+    public function test_handleTrigger_bypasses_command_judgment(): void
+    {
+        $trigger = new TimerTrigger("today", "12:00", "reminder request");
+
+        // judgeCommand should NOT be called
+        $this->commandAndTriggerServiceMock->expects($this->never())
+            ->method('judgeCommand');
+
+        $this->messageHandlerMock->method('canHandle')->with(Command::Other)->willReturn(true);
+        $this->messageHandlerMock->expects($this->once())
+            ->method('handle')
+            ->with($this->stringContains("reminder request"), $this->bot, Command::Other)
+            ->willReturn(new BotResponse("triggered response"));
+
+        $response = $this->chatService->handleTrigger($trigger);
+        $this->assertSame("triggered response", $response->getText());
     }
 }
