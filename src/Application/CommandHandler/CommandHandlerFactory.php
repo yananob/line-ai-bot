@@ -9,7 +9,7 @@ use App\Domain\Conversation\ConversationRepository;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\Service\WebSearchInterface;
-use yananob\MyTools\Gpt;
+use App\Domain\Bot\Service\GptInterface;
 
 class CommandHandlerFactory
 {
@@ -19,7 +19,7 @@ class CommandHandlerFactory
     public static function createMessageHandlers(
         CommandAndTriggerService $commandAndTriggerService,
         BotRepository $botRepository,
-        Gpt $gpt,
+        GptInterface $gpt,
         ConversationRepository $conversationRepository,
         ChatPromptService $chatPromptService,
         ?WebSearchInterface $webSearchTool

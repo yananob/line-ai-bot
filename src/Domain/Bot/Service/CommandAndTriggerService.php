@@ -2,13 +2,12 @@
 
 namespace App\Domain\Bot\Service;
 
-use yananob\MyTools\Gpt;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Trigger\TimerTrigger;
 
 class CommandAndTriggerService
 {
-    private Gpt $gpt;
+    private GptInterface $gpt;
 
     const PROMPT_JUDGE_COMMAND = <<<EOM
 メッセージが、
@@ -70,7 +69,7 @@ EOM;
 ・依頼内容：お休みと送って
 EOM;
 
-    public function __construct(Gpt $gpt)
+    public function __construct(GptInterface $gpt)
     {
         $this->gpt = $gpt;
     }

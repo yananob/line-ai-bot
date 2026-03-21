@@ -10,7 +10,7 @@ use App\Domain\Bot\Bot;
 use App\Domain\Conversation\ConversationRepository;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\WebSearchInterface;
-use yananob\MyTools\Gpt;
+use App\Domain\Bot\Service\GptInterface;
 use PHPUnit\Framework\TestCase;
 
 final class DefaultChatHandlerTest extends TestCase
@@ -22,7 +22,7 @@ final class DefaultChatHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->gptMock = $this->createMock(Gpt::class);
+        $this->gptMock = $this->createMock(GptInterface::class);
         $this->convRepoMock = $this->createMock(ConversationRepository::class);
         $this->promptService = new ChatPromptService();
         $this->webSearchMock = $this->createMock(WebSearchInterface::class);

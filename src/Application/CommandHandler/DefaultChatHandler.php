@@ -10,12 +10,12 @@ use App\Domain\Conversation\Conversation;
 use App\Domain\Conversation\ConversationRepository;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\WebSearchInterface;
+use App\Domain\Bot\Service\GptInterface;
 use App\Application\BotResponse;
-use yananob\MyTools\Gpt;
 
 class DefaultChatHandler implements CommandHandlerInterface
 {
-    private Gpt $gpt;
+    private GptInterface $gpt;
     private ConversationRepository $conversationRepository;
     private ChatPromptService $chatPromptService;
     private ?WebSearchInterface $webSearchTool;
@@ -28,7 +28,7 @@ Web検索が必要な場合は「はい」、そうでない場合は「いい�
 EOM;
 
     public function __construct(
-        Gpt $gpt,
+        GptInterface $gpt,
         ConversationRepository $conversationRepository,
         ChatPromptService $chatPromptService,
         ?WebSearchInterface $webSearchTool = null
@@ -78,7 +78,6 @@ EOM;
                 $webSearchResults
             ),
             message: $message,
-            options: ["reasoning_effort" => "none"],
         );
     }
 
@@ -87,7 +86,6 @@ EOM;
         $response = trim($this->gpt->getAnswer(
             context: self::PROMPT_JUDGE_WEB_SEARCH,
             message: $message,
-            options: ["reasoning_effort" => "none"],
         ));
         return $response === "はい";
     }

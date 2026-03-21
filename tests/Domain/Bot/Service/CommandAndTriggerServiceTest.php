@@ -8,8 +8,8 @@ use PHPUnit\Framework\TestCase; // 標準的なPHPUnitの名前空間
 use Carbon\Carbon;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Service\CommandAndTriggerService;
+use App\Domain\Bot\Service\GptInterface;
 use App\Domain\Bot\Trigger\TimerTrigger;
-use yananob\MyTools\Gpt; // モック用
 
 final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修飾名を使用
 {
@@ -20,7 +20,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     {
         Carbon::setTestNow(new Carbon("2025/01/01T09:00:00+09:00")); // 日付に敏感なテストがあれば維持
 
-        $this->gptMock = $this->createMock(Gpt::class);
+        $this->gptMock = $this->createMock(GptInterface::class);
         $this->commandAndTriggerService = new CommandAndTriggerService($this->gptMock);
     }
 
