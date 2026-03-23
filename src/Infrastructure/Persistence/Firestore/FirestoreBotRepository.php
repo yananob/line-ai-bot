@@ -119,10 +119,10 @@ class FirestoreBotRepository implements BotRepository
     {
         $botCollection = $this->getBotCollection($bot->getId());
 
-        // Save main config
+        // Save main config (only personal settings, not default ones)
         $configData = [
-            'bot_characteristics' => $bot->getBotCharacteristics()->toArray(),
-            'human_characteristics' => $bot->getHumanCharacteristics()->toArray(),
+            'bot_characteristics' => $bot->getPersonality()->getBotCharacteristics()->toArray(),
+            'human_characteristics' => $bot->getPersonality()->getHumanCharacteristics()->toArray(),
             'requests' => $bot->getConfigRequests(true, false)->toArray(), // Only personal requests
             'line_target' => $bot->getLineTarget(),
         ];

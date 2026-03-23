@@ -13,7 +13,6 @@ use App\Infrastructure\Logger\Logger;
 use App\Infrastructure\Line\LineClient;
 use App\Infrastructure\Gcp\CloudFunctionUtils;
 use App\Infrastructure\Line\LineWebhookMessage;
-use OpenAI;
 use App\Application\ChatApplicationService;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
@@ -100,7 +99,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         bot: $chatService->getLineTarget(),
         message: $botResponse->getText(),
         replyToken: $webhookMessage->getReplyToken(),
-        quickReply: $botResponse->getQuickReply(),
+        quickReplyItems: $botResponse->getQuickReply(),
     );
         
     return new Response(200, $headers, '{"result": "ok"}');

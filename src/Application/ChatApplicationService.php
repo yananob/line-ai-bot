@@ -55,7 +55,7 @@ class ChatApplicationService
     {
         // Prepend a hint to GPT to ensure it understands this is a timer execution.
         // This prevents GPT from responding with "Timer set" again.
-        $message = "【システム：タイマー実行】\n以下のユーザーからの依頼内容を、今まさに実行してください。\n依頼内容：" . $trigger->getRequest();
+        $message = "【システム：タイマー実行】\n以下のユーザーからの依頼内容を、あなたの設定された性格や口調に従って今まさに実行してください。\n依頼内容：" . $trigger->getRequest();
         $command = Command::Other;
 
         foreach ($this->messageHandlers as $handler) {

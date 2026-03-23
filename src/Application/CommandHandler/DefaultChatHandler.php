@@ -47,7 +47,11 @@ EOM;
     public function handle(string $message, Bot $bot, Command $command): BotResponse
     {
         $answer = $this->getAnswer($bot, $message);
-        $this->storeConversations($bot, $message, $answer);
+
+        // Avoid storing system-triggered messages (e.g., timer executions) in conversation history.
+        if (!str_starts_with($message, "【システム：タイマー実行】")) {
+            $this->storeConversations($bot, $message, $answer);
+        }
 
         return new BotResponse($answer);
     }
