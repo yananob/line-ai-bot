@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Tests; // 名前空間を追加
+namespace Tests\Infrastructure\Line;
 
 use App\Domain\Bot\Consts;
 use App\Infrastructure\Line\LineWebhookMessage;
 use App\Domain\Exception\InvalidWebhookEventException;
-use PHPUnit\Framework\TestCase; // TestCaseをuse
+use PHPUnit\Framework\TestCase;
 
-final class LineWebhookMessageTest extends TestCase // TestCaseの完全修飾名を使用 (useしたのでこれでOK)
+final class LineWebhookMessageTest extends TestCase
 {
     // テスト用グループメッセージJSON
     const TEST_GROUP_MESSAGE = <<<EOM

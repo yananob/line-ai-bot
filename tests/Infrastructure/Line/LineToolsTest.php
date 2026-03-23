@@ -2,26 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Tests; // 名前空間を追加
+namespace Tests\Infrastructure\Line;
 
 use App\Domain\Bot\Consts;
-// use App\TimerTrigger; // TimerTriggerはTools::convertTriggersToQuickReply内で型宣言されているが、このファイル内で直接newされていないのでuseは不要かも。ただし、可読性のために残すことも可能。
-// PHPUnitのTestCaseをuseする
-use PHPUnit\Framework\TestCase;
-use App\Domain\Bot\Trigger\TimerTrigger; // TimerTriggerクラスの完全修飾名に変更、またはuse文を追加
+use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Infrastructure\Line\LineTools;
+use PHPUnit\Framework\TestCase;
 
-
-final class ToolsTest extends TestCase // TestCaseの完全修飾名を使用 (useしたのでこれでOK)
+final class LineToolsTest extends TestCase
 {
-    // N分によってトリガーされるタイマー (この定数は現在のテストでは使用されていません)
-    const TIMER_TRIGGERED_BY_N_MINS = 30;
-
-    protected function setUp(): void
-    {
-        // セットアップ処理があればここに記述
-    }
-
     public function test_トリガーをクイックリプライに変換する(): void
     {
         $input = [
@@ -46,7 +35,6 @@ final class ToolsTest extends TestCase // TestCaseの完全修飾名を使用 (u
 
         $triggers = [];
         foreach ($input as $line) {
-            // TimerTriggerのインスタンス化には、App\Domain\Bot\Trigger\TimerTrigger を使用
             $trigger = new TimerTrigger($line[0], $line[1], $line[2]);
             $trigger->setId($line[3]);
             $triggers[] = $trigger;
