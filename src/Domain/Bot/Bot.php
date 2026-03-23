@@ -35,20 +35,22 @@ class Bot
 
     public function getBotCharacteristics(): StringList
     {
-        $personalChars = $this->personality->getBotCharacteristics();
-        if ($personalChars->isEmpty() && $this->defaultBot !== null) {
-            return $this->defaultBot->getBotCharacteristics();
+        $chars = $this->personality->getBotCharacteristics();
+        if ($this->defaultBot !== null) {
+            $defaultChars = $this->defaultBot->getBotCharacteristics();
+            $chars = $defaultChars->merge($chars);
         }
-        return $personalChars;
+        return $chars;
     }
 
     public function getHumanCharacteristics(): StringList
     {
-        $personalChars = $this->personality->getHumanCharacteristics();
-        if ($personalChars->isEmpty() && $this->defaultBot !== null) {
-            return $this->defaultBot->getHumanCharacteristics();
+        $chars = $this->personality->getHumanCharacteristics();
+        if ($this->defaultBot !== null) {
+            $defaultChars = $this->defaultBot->getHumanCharacteristics();
+            $chars = $defaultChars->merge($chars);
         }
-        return $personalChars;
+        return $chars;
     }
 
     public function hasHumanCharacteristics(): bool

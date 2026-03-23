@@ -71,4 +71,24 @@ final class DefaultChatHandlerTest extends TestCase
         $response = $handler->handle("search query", $bot, Command::Other);
         $this->assertSame("Answer with web results", $response->getText());
     }
+
+    public function test_handle_systemTriggerMessageIsNotStored(): void
+    {
+        $handler = new DefaultChatHandler($this->gptMock, $this->convRepoMock, $this->promptService, $this->webSearchMock);
+        $bot = new Bot("test");
+
+        $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
+            if ($context === DefaultChatHandler::PROMPT_JUDGE_WEB_SEARCH) {
+                return "いいえ";
+            }
+            return "Timer action result";
+        });
+
+        // Should NOT call save
+        $this->convRepoMock->expects($this->never())->method('save');
+
+        $systemMessage = "【システム：タイマー実行】\n依頼内容：お昼です";
+        $response = $handler->handle($systemMessage, $bot, Command::Other);
+        $this->assertSame("Timer action result", $response->getText());
+    }
 }

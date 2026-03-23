@@ -30,16 +30,16 @@ final class BotTest extends TestCase
         $this->assertEquals($chars, $this->bot->getBotCharacteristics()->toArray());
     }
 
-    public function test_ボットの特性が設定されておらずデフォルトが提供されている場合にデフォルトを返す(): void
+    public function test_ボットの特性がデフォルトとマージされることを確認する(): void
     {
         $defaultBot = new Bot("defaultBotId");
         $defaultBot->setBotCharacteristics(['デフォルト特性']);
         $botWithDefault = new Bot("botWithDef", $defaultBot);
         $this->assertEquals(['デフォルト特性'], $botWithDefault->getBotCharacteristics()->toArray());
 
-        // 個別設定がある場合はそちらが優先される
+        // 個別設定がある場合はマージされる
         $botWithDefault->setBotCharacteristics(['個別特性']);
-        $this->assertEquals(['個別特性'], $botWithDefault->getBotCharacteristics()->toArray());
+        $this->assertEquals(['デフォルト特性', '個別特性'], $botWithDefault->getBotCharacteristics()->toArray());
     }
 
     public function test_人間の特性を設定および取得する(): void
@@ -56,7 +56,7 @@ final class BotTest extends TestCase
         $this->assertFalse($this->bot->hasHumanCharacteristics());
     }
 
-    public function test_人間の特性が設定されておらずデフォルトが提供されている場合にデフォルトを確認する(): void
+    public function test_人間の特性がデフォルトとマージされることを確認する(): void
     {
         $defaultBot = new Bot("defaultBotId");
         $defaultBot->setHumanCharacteristics(['デフォルト人間特性']);
@@ -65,10 +65,10 @@ final class BotTest extends TestCase
         $this->assertTrue($botWithDefault->hasHumanCharacteristics());
         $this->assertEquals(['デフォルト人間特性'], $botWithDefault->getHumanCharacteristics()->toArray());
 
-        // 個別設定が空でもデフォルトがあればTrue
-        $botWithDefault->setHumanCharacteristics([]);
+        // 個別設定がある場合はマージされる
+        $botWithDefault->setHumanCharacteristics(['個別人間特性']);
         $this->assertTrue($botWithDefault->hasHumanCharacteristics());
-        $this->assertEquals(['デフォルト人間特性'], $botWithDefault->getHumanCharacteristics()->toArray());
+        $this->assertEquals(['デフォルト人間特性', '個別人間特性'], $botWithDefault->getHumanCharacteristics()->toArray());
     }
 
     public function test_設定リクエストを設定および取得する(): void
