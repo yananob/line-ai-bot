@@ -31,7 +31,7 @@ class LineClient
         $this->httpClient = new Client();
     }
 
-    private function getApi(string $bot): MessagingApiApi
+    protected function getApi(string $bot): MessagingApiApi
     {
         if (!isset($this->tokens[$bot])) {
             throw new Exception("Unknown bot: {$bot}");
