@@ -10,6 +10,7 @@ use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\Message;
 use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
 use PHPUnit\Framework\TestCase;
@@ -45,7 +46,9 @@ final class ChatApplicationServiceTest extends TestCase
         $this->messageHandlerMock->method('canHandle')->with(Command::Other)->willReturn(true);
         $this->messageHandlerMock->expects($this->once())
             ->method('handle')
-            ->with("hello", $this->bot, Command::Other)
+            ->with($this->callback(function (Message $message) {
+                return $message->getContent() === "hello" && !$message->isSystem();
+            }), $this->bot, Command::Other)
             ->willReturn(new BotResponse("hi"));
 
         $response = $this->chatService->handleMessage("hello");
@@ -104,7 +107,9 @@ final class ChatApplicationServiceTest extends TestCase
         $this->messageHandlerMock->method('canHandle')->with(Command::Other)->willReturn(true);
         $this->messageHandlerMock->expects($this->once())
             ->method('handle')
-            ->with($this->stringContains("reminder request"), $this->bot, Command::Other)
+            ->with($this->callback(function (Message $message) {
+                return str_contains($message->getContent(), "reminder request") && $message->isSystem();
+            }), $this->bot, Command::Other)
             ->willReturn(new BotResponse("triggered response"));
 
         $response = $this->chatService->handleTrigger($trigger);

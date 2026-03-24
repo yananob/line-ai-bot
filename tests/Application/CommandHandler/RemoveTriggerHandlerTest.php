@@ -8,6 +8,7 @@ use App\Application\CommandHandler\RemoveTriggerHandler;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\Message;
 use PHPUnit\Framework\TestCase;
 
 final class RemoveTriggerHandlerTest extends TestCase
@@ -25,7 +26,8 @@ final class RemoveTriggerHandlerTest extends TestCase
         $bot = new Bot("test");
         $bot->addTrigger(new TimerTrigger("today", "12:00", "test"));
 
-        $response = $handler->handle("stop", $bot, Command::RemoveTrigger);
+        $message = new Message("stop", false);
+        $response = $handler->handle($message, $bot, Command::RemoveTrigger);
         $this->assertSame("どのタイマーを止めますか？", $response->getText());
         $this->assertNotNull($response->getQuickReply());
     }

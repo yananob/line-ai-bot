@@ -10,6 +10,8 @@ use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Infrastructure\Gcp\CloudFunctionUtils;
 use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
+use App\Domain\Bot\ValueObject\Message;
+use App\Domain\Bot\Messages;
 
 class ChatApplicationService
 {
@@ -38,9 +40,10 @@ class ChatApplicationService
         $this->postbackHandlers = $postbackHandlers;
     }
 
-    public function handleMessage(string $message): BotResponse
+    public function handleMessage(string $messageContent): BotResponse
     {
-        $command = $this->commandAndTriggerService->judgeCommand($message);
+        $command = $this->commandAndTriggerService->judgeCommand($messageContent);
+        $message = new Message($messageContent, isSystem: false);
 
         foreach ($this->messageHandlers as $handler) {
             if ($handler->canHandle($command)) {
@@ -55,7 +58,8 @@ class ChatApplicationService
     {
         // Prepend a hint to GPT to ensure it understands this is a timer execution.
         // This prevents GPT from responding with "Timer set" again.
-        $message = "【システム：タイマー実行】\n以下のユーザーからの依頼内容を、あなたの設定された性格や口調に従って今まさに実行してください。\n依頼内容：" . $trigger->getRequest();
+        $messageContent = Messages::SYSTEM_TIMER_INSTRUCTION . $trigger->getRequest();
+        $message = new Message($messageContent, isSystem: true);
         $command = Command::Other;
 
         foreach ($this->messageHandlers as $handler) {
