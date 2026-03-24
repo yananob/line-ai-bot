@@ -12,6 +12,8 @@ use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\WebSearchInterface;
 use App\Domain\Bot\Service\GptInterface;
 use App\Application\BotResponse;
+use App\Domain\Bot\ValueObject\Message;
+use App\Domain\Bot\Messages;
 
 class DefaultChatHandler implements CommandHandlerInterface
 {
@@ -21,11 +23,6 @@ class DefaultChatHandler implements CommandHandlerInterface
     private ?WebSearchInterface $webSearchTool;
 
     const RECENT_CONVERSATIONS_COUNT_FOR_GPT = 10;
-    const PROMPT_JUDGE_WEB_SEARCH = <<<EOM
-あなたはユーザーからのメッセージを分析するアシスタントです。
-ユーザーのメッセージに答えるためにWeb検索が必要かどうかを判断してください。
-Web検索が必要な場合は「はい」、そうでない場合は「いいえ」とだけ答えてください。
-EOM;
 
     public function __construct(
         GptInterface $gpt,
@@ -44,19 +41,19 @@ EOM;
         return $command === Command::Other;
     }
 
-    public function handle(string $message, Bot $bot, Command $command): BotResponse
+    public function handle(Message $message, Bot $bot, Command $command): BotResponse
     {
         $answer = $this->getAnswer($bot, $message);
 
         // Avoid storing system-triggered messages (e.g., timer executions) in conversation history.
-        if (!str_starts_with($message, "【システム：タイマー実行】")) {
-            $this->storeConversations($bot, $message, $answer);
+        if (!$message->isSystem()) {
+            $this->storeConversations($bot, $message->getContent(), $answer);
         }
 
         return new BotResponse($answer);
     }
 
-    private function getAnswer(Bot $bot, string $message): string
+    private function getAnswer(Bot $bot, Message $message): string
     {
         $recentConversations = $this->conversationRepository->findByBotId(
             $bot->getId(),
@@ -64,9 +61,9 @@ EOM;
         );
 
         $webSearchResults = null;
-        if ($this->shouldPerformWebSearch($message)) {
+        if ($this->shouldPerformWebSearch($message->getContent())) {
             if ($this->webSearchTool instanceof WebSearchInterface) {
-                $webSearchResults = $this->webSearchTool->search($message, 5);
+                $webSearchResults = $this->webSearchTool->search($message->getContent(), 5);
             } else {
                 $webSearchResults = "Error: Web search tool is not configured properly or failed to initialize.";
             }
@@ -81,22 +78,22 @@ EOM;
                 $configRequests,
                 $webSearchResults
             ),
-            message: $message,
+            message: $message->getContent(),
         );
     }
 
-    private function shouldPerformWebSearch(string $message): bool
+    private function shouldPerformWebSearch(string $messageContent): bool
     {
         $response = trim($this->gpt->getAnswer(
-            context: self::PROMPT_JUDGE_WEB_SEARCH,
-            message: $message,
+            context: Messages::PROMPT_JUDGE_WEB_SEARCH,
+            message: $messageContent,
         ));
         return $response === "はい";
     }
 
-    private function storeConversations(Bot $bot, string $message, string $answer): void
+    private function storeConversations(Bot $bot, string $messageContent, string $answer): void
     {
-        $humanConversation = new Conversation($bot->getId(), "human", $message);
+        $humanConversation = new Conversation($bot->getId(), "human", $messageContent);
         $this->conversationRepository->save($humanConversation);
 
         $botConversation = new Conversation($bot->getId(), "bot", $answer);

@@ -8,6 +8,7 @@ use App\Application\CommandHandler\HelpHandler;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Messages;
+use App\Domain\Bot\ValueObject\Message;
 use PHPUnit\Framework\TestCase;
 
 final class HelpHandlerTest extends TestCase
@@ -23,7 +24,8 @@ final class HelpHandlerTest extends TestCase
     {
         $handler = new HelpHandler();
         $bot = new Bot("test");
-        $response = $handler->handle("help", $bot, Command::ShowHelp);
+        $message = new Message("help", false);
+        $response = $handler->handle($message, $bot, Command::ShowHelp);
         $this->assertSame(Messages::HELP, $response->getText());
     }
 }

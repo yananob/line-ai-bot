@@ -8,6 +8,7 @@ use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
 use App\Application\BotResponse;
 use App\Domain\Bot\Messages;
+use App\Domain\Bot\ValueObject\Message;
 
 class HelpHandler implements CommandHandlerInterface
 {
@@ -16,7 +17,7 @@ class HelpHandler implements CommandHandlerInterface
         return $command === Command::ShowHelp;
     }
 
-    public function handle(string $message, Bot $bot, Command $command): BotResponse
+    public function handle(Message $message, Bot $bot, Command $command): BotResponse
     {
         return new BotResponse(Messages::HELP);
     }

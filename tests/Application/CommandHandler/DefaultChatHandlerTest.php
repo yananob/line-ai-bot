@@ -11,6 +11,8 @@ use App\Domain\Conversation\ConversationRepository;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\WebSearchInterface;
 use App\Domain\Bot\Service\GptInterface;
+use App\Domain\Bot\ValueObject\Message;
+use App\Domain\Bot\Messages;
 use PHPUnit\Framework\TestCase;
 
 final class DefaultChatHandlerTest extends TestCase
@@ -42,7 +44,7 @@ final class DefaultChatHandlerTest extends TestCase
 
         // Use willReturnCallback to handle the various calls to getAnswer
         $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
-            if ($context === DefaultChatHandler::PROMPT_JUDGE_WEB_SEARCH) {
+            if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
                 return "いいえ";
             }
             return "world";
@@ -50,7 +52,8 @@ final class DefaultChatHandlerTest extends TestCase
 
         $this->convRepoMock->expects($this->exactly(2))->method('save');
 
-        $response = $handler->handle("hello", $bot, Command::Other);
+        $message = new Message("hello", false);
+        $response = $handler->handle($message, $bot, Command::Other);
         $this->assertSame("world", $response->getText());
     }
 
@@ -60,7 +63,7 @@ final class DefaultChatHandlerTest extends TestCase
         $bot = new Bot("test");
 
         $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
-            if ($context === DefaultChatHandler::PROMPT_JUDGE_WEB_SEARCH) {
+            if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
                 return "はい";
             }
             return "Answer with web results";
@@ -68,7 +71,8 @@ final class DefaultChatHandlerTest extends TestCase
 
         $this->webSearchMock->expects($this->once())->method('search')->willReturn("Web info");
 
-        $response = $handler->handle("search query", $bot, Command::Other);
+        $message = new Message("search query", false);
+        $response = $handler->handle($message, $bot, Command::Other);
         $this->assertSame("Answer with web results", $response->getText());
     }
 
@@ -78,7 +82,7 @@ final class DefaultChatHandlerTest extends TestCase
         $bot = new Bot("test");
 
         $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
-            if ($context === DefaultChatHandler::PROMPT_JUDGE_WEB_SEARCH) {
+            if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
                 return "いいえ";
             }
             return "Timer action result";
@@ -87,8 +91,8 @@ final class DefaultChatHandlerTest extends TestCase
         // Should NOT call save
         $this->convRepoMock->expects($this->never())->method('save');
 
-        $systemMessage = "【システム：タイマー実行】\n依頼内容：お昼です";
-        $response = $handler->handle($systemMessage, $bot, Command::Other);
+        $message = new Message("お昼です", true);
+        $response = $handler->handle($message, $bot, Command::Other);
         $this->assertSame("Timer action result", $response->getText());
     }
 }
