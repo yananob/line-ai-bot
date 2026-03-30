@@ -55,6 +55,30 @@ final class ChatApplicationServiceTest extends TestCase
         $this->assertSame("hi", $response->getText());
     }
 
+    public function test_handleMessage_selects_correct_handler_from_multiple(): void
+    {
+        $handler1 = $this->createMock(CommandHandlerInterface::class);
+        $handler1->method('canHandle')->willReturn(false);
+
+        $handler2 = $this->createMock(CommandHandlerInterface::class);
+        $handler2->method('canHandle')->with(Command::ShowHelp)->willReturn(true);
+        $handler2->expects($this->once())
+            ->method('handle')
+            ->willReturn(new BotResponse("help content"));
+
+        $chatService = new ChatApplicationService(
+            $this->bot,
+            $this->commandAndTriggerServiceMock,
+            [$handler1, $handler2],
+            []
+        );
+
+        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::ShowHelp);
+
+        $response = $chatService->handleMessage("help");
+        $this->assertSame("help content", $response->getText());
+    }
+
     public function test_handleMessage_throws_exception_if_no_handler_found(): void
     {
         $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::Other);
