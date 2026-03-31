@@ -30,6 +30,40 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
 
     $container = new Container($isLocal);
+
+    // Routing for Config Editor
+    $path = $request->getUri()->getPath();
+    if (str_starts_with($path, '/config')) {
+        $configService = $container->createConfigApplicationService();
+        if ($path === '/config' || $path === '/config/') {
+            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderIndex());
+        }
+        if ($path === '/config/edit') {
+            $id = $request->getQueryParams()['id'] ?? null;
+            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderEdit($id));
+        }
+        if ($path === '/config/save') {
+            $params = $request->getParsedBody();
+            if (empty($params)) {
+                parse_str($body, $params);
+            }
+            $configService->saveConfig((string)$params['id'], (string)$params['json_content']);
+            return new Response(302, ['Location' => '/config']);
+        }
+        if ($path === '/config/delete') {
+            $params = $request->getParsedBody();
+            if (empty($params)) {
+                parse_str($body, $params);
+            }
+            $configService->deleteConfig((string)$params['id']);
+            return new Response(302, ['Location' => '/config']);
+        }
+    }
+
+    if (empty($body)) {
+        return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
+    }
+
     $webhookMessage = new LineWebhookMessage($body);
 
     try {

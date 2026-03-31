@@ -25,9 +25,18 @@ class Container
     private ?CommandAndTriggerService $commandAndTriggerService = null;
     private ?OpenAIWebSearchTool $webSearchTool = null;
     private ?LineClient $lineClient = null;
+    private ?\App\Domain\Config\ConfigRepository $configRepository = null;
 
     public function __construct(private bool $isLocal)
     {
+    }
+
+    public function getConfigRepository(): \App\Domain\Config\ConfigRepository
+    {
+        if ($this->configRepository === null) {
+            $this->configRepository = new \App\Infrastructure\Persistence\Firestore\FirestoreConfigRepository($this->isLocal);
+        }
+        return $this->configRepository;
     }
 
     public function getBotRepository(): FirestoreBotRepository
@@ -96,6 +105,15 @@ class Container
             $this->lineClient = new LineClient($lineConfig["tokens"], $lineConfig["target_ids"]);
         }
         return $this->lineClient;
+    }
+
+    public function createConfigApplicationService(): \App\Application\Config\ConfigApplicationService
+    {
+        return new \App\Application\Config\ConfigApplicationService(
+            $this->getConfigRepository(),
+            __DIR__ . '/../../../views',
+            __DIR__ . '/../../../cache'
+        );
     }
 
     public function createChatApplicationService(Bot $bot): ChatApplicationService
