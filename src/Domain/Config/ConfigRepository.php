@@ -5,13 +5,22 @@ namespace App\Domain\Config;
 interface ConfigRepository
 {
     /**
-     * @return Config[]
+     * @return string[]
      */
-    public function findAll(): array;
+    public function findAllBotIds(): array;
 
-    public function findById(string $id): ?Config;
+    public function findBotConfig(string $botId): ?array;
 
-    public function save(Config $config): void;
+    public function saveBotConfig(string $botId, array $data): void;
 
-    public function delete(string $id): void;
+    /**
+     * @return array[]
+     */
+    public function findTriggers(string $botId): array;
+
+    public function saveTrigger(string $botId, string $triggerId, array $data): void;
+
+    public function deleteTrigger(string $botId, string $triggerId): void;
+
+    public function deleteBot(string $botId): void;
 }

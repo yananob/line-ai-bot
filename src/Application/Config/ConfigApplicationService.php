@@ -2,7 +2,6 @@
 
 namespace App\Application\Config;
 
-use App\Domain\Config\Config;
 use App\Domain\Config\ConfigRepository;
 use eftec\bladeone\BladeOne;
 
@@ -23,40 +22,55 @@ class ConfigApplicationService
 
     public function renderIndex(): string
     {
-        $configs = $this->configRepository->findAll();
-        return $this->blade->run("config.index", ["configs" => $configs]);
+        $botIds = $this->configRepository->findAllBotIds();
+        return $this->blade->run("config.index", ["botIds" => $botIds]);
     }
 
-    public function renderEdit(?string $id = null): string
+    public function renderEdit(?string $botId = null): string
     {
-        $config = null;
-        if ($id !== null) {
-            $config = $this->configRepository->findById($id);
+        $data = null;
+        $triggers = [];
+        if ($botId !== null) {
+            $data = $this->configRepository->findBotConfig($botId);
+            $triggers = $this->configRepository->findTriggers($botId);
         }
 
-        // If config is null, it means we are creating a new one
-        $dataJson = $config ? json_encode($config->getData(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
+        $dataJson = $data ? json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
 
         return $this->blade->run("config.edit", [
-            "config" => $config,
+            "botId" => $botId,
             "dataJson" => $dataJson,
-            "id" => $id
+            "triggers" => $triggers
         ]);
     }
 
-    public function saveConfig(string $id, string $jsonContent): void
+    public function saveBotConfig(string $botId, string $jsonContent): void
     {
         $data = json_decode($jsonContent, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \InvalidArgumentException("Invalid JSON format: " . json_last_error_msg());
         }
 
-        $config = new Config($id, $data);
-        $this->configRepository->save($config);
+        $this->configRepository->saveBotConfig($botId, $data);
     }
 
-    public function deleteConfig(string $id): void
+    public function saveTrigger(string $botId, string $triggerId, string $jsonContent): void
     {
-        $this->configRepository->delete($id);
+        $data = json_decode($jsonContent, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \InvalidArgumentException("Invalid JSON format: " . json_last_error_msg());
+        }
+
+        $this->configRepository->saveTrigger($botId, $triggerId, $data);
+    }
+
+    public function deleteTrigger(string $botId, string $triggerId): void
+    {
+        $this->configRepository->deleteTrigger($botId, $triggerId);
+    }
+
+    public function deleteBot(string $botId): void
+    {
+        $this->configRepository->deleteBot($botId);
     }
 }

@@ -39,24 +39,41 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             return new Response(200, ['Content-Type' => 'text/html'], $configService->renderIndex());
         }
         if ($path === '/config/edit') {
-            $id = $request->getQueryParams()['id'] ?? null;
-            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderEdit($id));
+            $botId = $request->getQueryParams()['bot_id'] ?? null;
+            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderEdit($botId));
         }
         if ($path === '/config/save') {
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
             }
-            $configService->saveConfig((string)$params['id'], (string)$params['json_content']);
-            return new Response(302, ['Location' => '/config']);
+            $configService->saveBotConfig((string)$params['bot_id'], (string)$params['json_content']);
+            return new Response(302, ['Location' => '/config/edit?bot_id=' . $params['bot_id']]);
         }
         if ($path === '/config/delete') {
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
             }
-            $configService->deleteConfig((string)$params['id']);
+            $configService->deleteBot((string)$params['bot_id']);
             return new Response(302, ['Location' => '/config']);
+        }
+        if ($path === '/config/trigger/save') {
+            $params = $request->getParsedBody();
+            if (empty($params)) {
+                parse_str($body, $params);
+            }
+            $triggerId = $params['trigger_id'] ?: uniqid('trigger_');
+            $configService->saveTrigger((string)$params['bot_id'], (string)$triggerId, (string)$params['trigger_json']);
+            return new Response(302, ['Location' => '/config/edit?bot_id=' . $params['bot_id']]);
+        }
+        if ($path === '/config/trigger/delete') {
+            $params = $request->getParsedBody();
+            if (empty($params)) {
+                parse_str($body, $params);
+            }
+            $configService->deleteTrigger((string)$params['bot_id'], (string)$params['trigger_id']);
+            return new Response(302, ['Location' => '/config/edit?bot_id=' . $params['bot_id']]);
         }
     }
 

@@ -4,7 +4,6 @@ namespace Tests\Infrastructure\Persistence\Firestore;
 
 use PHPUnit\Framework\TestCase;
 use App\Infrastructure\Persistence\Firestore\FirestoreConfigRepository;
-use App\Domain\Config\Config;
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\DocumentReference;
@@ -15,81 +14,54 @@ class FirestoreConfigRepositoryTest extends TestCase
 {
     private $db;
     private $rootCollection;
-    private $configDocument;
-    private $subCollection;
+    private $configsDocument;
+    private $botCollection;
+    private $configDoc;
     private $repository;
 
     protected function setUp(): void
     {
         $this->db = $this->createMock(FirestoreClient::class);
         $this->rootCollection = $this->createMock(CollectionReference::class);
-        $this->configDocument = $this->createMock(DocumentReference::class);
-        $this->subCollection = $this->createMock(CollectionReference::class);
+        $this->configsDocument = $this->createMock(DocumentReference::class);
+        $this->botCollection = $this->createMock(CollectionReference::class);
+        $this->configDoc = $this->createMock(DocumentReference::class);
 
         $this->db->method('collection')->with('ai-bot-test')->willReturn($this->rootCollection);
-        $this->rootCollection->method('document')->with('config')->willReturn($this->configDocument);
-        $this->configDocument->method('collection')->with('config')->willReturn($this->subCollection);
+        $this->rootCollection->method('document')->with('configs')->willReturn($this->configsDocument);
+        $this->configsDocument->method('collection')->willReturn($this->botCollection);
+        $this->botCollection->method('document')->with('config')->willReturn($this->configDoc);
 
         $this->repository = new FirestoreConfigRepository(true, $this->db);
     }
 
-    public function testFindAll(): void
+    public function testFindAllBotIds(): void
     {
-        $doc1 = $this->createMock(DocumentSnapshot::class);
-        $doc1->method('exists')->willReturn(true);
-        $doc1->method('id')->willReturn('id1');
-        $doc1->method('data')->willReturn(['foo' => 'bar']);
+        $this->configsDocument->method('collections')->willReturn([$this->botCollection]);
+        $this->botCollection->method('id')->willReturn('bot-1');
 
-        $querySnapshot = $this->createMock(QuerySnapshot::class);
-        $querySnapshot->method('getIterator')->willReturn(new \ArrayIterator([$doc1]));
+        $results = $this->repository->findAllBotIds();
 
-        $this->subCollection->method('documents')->willReturn($querySnapshot);
-
-        $results = $this->repository->findAll();
-
-        $this->assertCount(1, $results);
-        $this->assertInstanceOf(Config::class, $results[0]);
-        $this->assertEquals('id1', $results[0]->getId());
-        $this->assertEquals(['foo' => 'bar'], $results[0]->getData());
+        $this->assertEquals(['bot-1'], $results);
     }
 
-    public function testFindById(): void
+    public function testFindBotConfig(): void
     {
-        $docRef = $this->createMock(DocumentReference::class);
         $snapshot = $this->createMock(DocumentSnapshot::class);
-
-        $this->subCollection->method('document')->with('id1')->willReturn($docRef);
-        $docRef->method('snapshot')->willReturn($snapshot);
+        $this->configDoc->method('snapshot')->willReturn($snapshot);
         $snapshot->method('exists')->willReturn(true);
         $snapshot->method('data')->willReturn(['foo' => 'bar']);
 
-        $result = $this->repository->findById('id1');
+        $result = $this->repository->findBotConfig('bot-1');
 
-        $this->assertNotNull($result);
-        $this->assertEquals('id1', $result->getId());
-        $this->assertEquals(['foo' => 'bar'], $result->getData());
+        $this->assertEquals(['foo' => 'bar'], $result);
     }
 
-    public function testSave(): void
+    public function testSaveBotConfig(): void
     {
-        $docRef = $this->createMock(DocumentReference::class);
-        $this->subCollection->method('document')->with('id1')->willReturn($docRef);
-
         $data = ['foo' => 'bar'];
-        $config = new Config('id1', $data);
+        $this->configDoc->expects($this->once())->method('set')->with($data);
 
-        $docRef->expects($this->once())->method('set')->with($data);
-
-        $this->repository->save($config);
-    }
-
-    public function testDelete(): void
-    {
-        $docRef = $this->createMock(DocumentReference::class);
-        $this->subCollection->method('document')->with('id1')->willReturn($docRef);
-
-        $docRef->expects($this->once())->method('delete');
-
-        $this->repository->delete('id1');
+        $this->repository->saveBotConfig('bot-1', $data);
     }
 }
