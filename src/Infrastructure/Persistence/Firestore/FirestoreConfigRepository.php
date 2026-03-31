@@ -6,21 +6,21 @@ use App\Domain\Config\Config;
 use App\Domain\Config\ConfigRepository;
 use Google\Cloud\Firestore\FirestoreClient;
 
-class FirestoreConfigRepository implements ConfigRepository
+class FirestoreConfigRepository extends AbstractFirestoreRepository implements ConfigRepository
 {
-    private FirestoreClient $db;
-    private string $collectionName;
+    private \Google\Cloud\Firestore\CollectionReference $configCollection;
 
     public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
     {
-        // Use 'config' as specified in the issue.
-        $this->collectionName = $isTest ? "config-test" : "config";
-        $this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);
+        parent::__construct($isTest, $db);
+        // The root should be common (e.g. /ai-bot or /ai-bot-test).
+        // Under that, we have a 'config' document, which has a 'config' subcollection for CRUD entries.
+        $this->configCollection = $this->db->collection($this->collectionName)->document('config')->collection('config');
     }
 
     public function findAll(): array
     {
-        $documents = $this->db->collection($this->collectionName)->documents();
+        $documents = $this->configCollection->documents();
         $configs = [];
         foreach ($documents as $doc) {
             if ($doc->exists()) {
@@ -32,7 +32,7 @@ class FirestoreConfigRepository implements ConfigRepository
 
     public function findById(string $id): ?Config
     {
-        $snapshot = $this->db->collection($this->collectionName)->document($id)->snapshot();
+        $snapshot = $this->configCollection->document($id)->snapshot();
         if (!$snapshot->exists()) {
             return null;
         }
@@ -41,11 +41,11 @@ class FirestoreConfigRepository implements ConfigRepository
 
     public function save(Config $config): void
     {
-        $this->db->collection($this->collectionName)->document($config->getId())->set($config->getData());
+        $this->configCollection->document($config->getId())->set($config->getData());
     }
 
     public function delete(string $id): void
     {
-        $this->db->collection($this->collectionName)->document($id)->delete();
+        $this->configCollection->document($id)->delete();
     }
 }

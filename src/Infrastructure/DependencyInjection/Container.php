@@ -109,10 +109,12 @@ class Container
 
     public function createConfigApplicationService(): \App\Application\Config\ConfigApplicationService
     {
+        // Use /tmp for GCF compatibility as the filesystem is read-only.
+        $cachePath = sys_get_temp_dir() . '/bladeone_cache';
         return new \App\Application\Config\ConfigApplicationService(
             $this->getConfigRepository(),
             __DIR__ . '/../../../views',
-            __DIR__ . '/../../../cache'
+            $cachePath
         );
     }
 

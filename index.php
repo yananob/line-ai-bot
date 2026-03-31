@@ -24,7 +24,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $logger->logSplitter();
     $logger->log("headers: " . json_encode($request->getHeaders()));
     $body = $request->getBody()->getContents();
-    $logger->log("body: " . $body);
+    $logger->log("body length: " . strlen($body));
 
     $isLocal = CloudFunctionUtils::isLocalHttp($request);
     $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");

@@ -11,15 +11,11 @@ use App\Domain\Conversation\ConversationRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 
-class FirestoreConversationRepository implements ConversationRepository
+class FirestoreConversationRepository extends AbstractFirestoreRepository implements ConversationRepository
 {
-    private FirestoreClient $db;
-    private string $collectionName;
-
     public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
     {
-        $this->collectionName = $isTest ? "ai-bot-test" : "ai-bot";
-        $this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);
+        parent::__construct($isTest, $db);
     }
 
     private function getBotConversationsCollection(string $botId): CollectionReference
