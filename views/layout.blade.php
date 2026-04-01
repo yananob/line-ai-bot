@@ -12,11 +12,11 @@
 <body>
     <nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4 fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/config">Config Editor</a>
+            <a class="navbar-brand" href="{{ $basePath }}/config">Config Editor</a>
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav me-auto mb-2 mb-md-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="/config">Home</a>
+                        <a class="nav-link" href="{{ $basePath }}/config">Home</a>
                     </li>
                 </ul>
             </div>

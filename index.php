@@ -32,48 +32,55 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     $container = new Container($isLocal);
 
     // Routing for Config Editor
+    $appPath = CloudFunctionUtils::getFunctionName();
+    $basePath = $isLocal ? '' : '/' . $appPath;
     $path = $request->getUri()->getPath();
-    if (str_starts_with($path, '/config')) {
+    $configPrefix = $basePath . '/config';
+
+    if (str_starts_with($path, $configPrefix)) {
         $configService = $container->createConfigApplicationService();
-        if ($path === '/config' || $path === '/config/') {
+        $configService->setBasePath($basePath);
+        $subPath = substr($path, strlen($configPrefix));
+
+        if ($subPath === '' || $subPath === '/') {
             return new Response(200, ['Content-Type' => 'text/html'], $configService->renderIndex());
         }
-        if ($path === '/config/edit') {
+        if ($subPath === '/edit') {
             $botId = $request->getQueryParams()['bot_id'] ?? null;
             return new Response(200, ['Content-Type' => 'text/html'], $configService->renderEdit($botId));
         }
-        if ($path === '/config/save') {
+        if ($subPath === '/save') {
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
             }
             $configService->saveBotConfig((string)$params['bot_id'], (string)$params['json_content']);
-            return new Response(302, ['Location' => '/config/edit?bot_id=' . $params['bot_id']]);
+            return new Response(302, ['Location' => $configPrefix . '/edit?bot_id=' . $params['bot_id']]);
         }
-        if ($path === '/config/delete') {
+        if ($subPath === '/delete') {
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
             }
             $configService->deleteBot((string)$params['bot_id']);
-            return new Response(302, ['Location' => '/config']);
+            return new Response(302, ['Location' => $configPrefix]);
         }
-        if ($path === '/config/trigger/save') {
+        if ($subPath === '/trigger/save') {
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
             }
             $triggerId = $params['trigger_id'] ?: uniqid('trigger_');
             $configService->saveTrigger((string)$params['bot_id'], (string)$triggerId, (string)$params['trigger_json']);
-            return new Response(302, ['Location' => '/config/edit?bot_id=' . $params['bot_id']]);
+            return new Response(302, ['Location' => $configPrefix . '/edit?bot_id=' . $params['bot_id']]);
         }
-        if ($path === '/config/trigger/delete') {
+        if ($subPath === '/trigger/delete') {
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
             }
             $configService->deleteTrigger((string)$params['bot_id'], (string)$params['trigger_id']);
-            return new Response(302, ['Location' => '/config/edit?bot_id=' . $params['bot_id']]);
+            return new Response(302, ['Location' => $configPrefix . '/edit?bot_id=' . $params['bot_id']]);
         }
     }
 

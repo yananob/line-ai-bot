@@ -45,20 +45,20 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
         $bot->setLineTarget($data['line_target'] ?? '');
 
         // Load triggers
-        $triggersCollection = $this->getBotCollection($botId)->document('triggers')->collection('triggers');
-        $triggerDocuments = $triggersCollection->documents();
+        $triggersSnapshot = $this->getBotCollection($botId)->document('triggers')->snapshot();
         $triggers = [];
-        foreach ($triggerDocuments as $triggerDoc) {
-            if (!$triggerDoc->exists()) continue;
-            $tData = $triggerDoc->data();
-            // Assuming TimerTrigger for now, this would need to be more flexible
-            if (isset($tData['event']) && $tData['event'] === 'timer') {
-                $dateForTrigger = (string)($tData['date'] ?? '');
-                $timeForTrigger = (string)($tData['time'] ?? '');
-                $request = (string)($tData['request'] ?? '');
-                $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $request);
-                $trigger->setId($triggerDoc->id()); // Use Firestore document ID as trigger ID
-                $triggers[$trigger->getId()] = $trigger;
+        if ($triggersSnapshot->exists()) {
+            $tDataList = $triggersSnapshot->data()['triggers'] ?? [];
+            foreach ($tDataList as $id => $tData) {
+                // Assuming TimerTrigger for now, this would need to be more flexible
+                if (isset($tData['event']) && $tData['event'] === 'timer') {
+                    $dateForTrigger = (string)($tData['date'] ?? '');
+                    $timeForTrigger = (string)($tData['time'] ?? '');
+                    $request = (string)($tData['request'] ?? '');
+                    $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $request);
+                    $trigger->setId((string)$id);
+                    $triggers[$trigger->getId()] = $trigger;
+                }
             }
         }
         $bot->setTriggers($triggers);
@@ -126,23 +126,11 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
         $botCollection->document('config')->set($configData);
 
         // Save triggers
-        $triggersSubCollection = $botCollection->document('triggers')->collection('triggers');
-        
-        // Simple strategy: delete existing triggers and re-add.
-        $existingTriggers = $triggersSubCollection->documents();
-        foreach ($existingTriggers as $doc) {
-            $doc->reference()->delete();
-        }
-
+        $triggerDataList = [];
         foreach ($bot->getTriggers() as $trigger) {
-            $triggerData = $trigger->toArray();
-            if ($trigger->getId()) {
-                $triggersSubCollection->document($trigger->getId())->set($triggerData);
-            } else {
-                $newDocRef = $triggersSubCollection->add($triggerData);
-                $trigger->setId($newDocRef->id());
-            }
+            $triggerDataList[$trigger->getId() ?: uniqid('trigger_')] = $trigger->toArray();
         }
+        $botCollection->document('triggers')->set(['triggers' => $triggerDataList]);
     }
 
     public function getAllUserBots(): array

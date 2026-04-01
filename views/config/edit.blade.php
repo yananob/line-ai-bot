@@ -10,7 +10,7 @@
 <div class="card mb-4">
     <div class="card-header">Main Config</div>
     <div class="card-body">
-        <form action="/config/save" method="POST">
+        <form action="{{ $basePath }}/config/save" method="POST">
             <div class="mb-3">
                 <label for="bot_id" class="form-label">Bot ID</label>
                 <input type="text" class="form-control" id="bot_id" name="bot_id" value="{{ $botId ?: '' }}" {{ $botId ? 'readonly' : '' }} required>
@@ -50,7 +50,7 @@
                                 data-id="{{ $tid }}"
                                 data-json="{{ json_encode($tdata, JSON_UNESCAPED_UNICODE) }}"
                                 data-bs-toggle="modal" data-bs-target="#triggerModal">Edit</button>
-                            <form action="/config/trigger/delete" method="POST" style="display:inline-block;" onsubmit="return confirm('Delete Trigger?');">
+                            <form action="{{ $basePath }}/config/trigger/delete" method="POST" style="display:inline-block;" onsubmit="return confirm('Delete Trigger?');">
                                 <input type="hidden" name="bot_id" value="{{ $botId }}">
                                 <input type="hidden" name="trigger_id" value="{{ $tid }}">
                                 <button type="submit" class="btn btn-xs btn-danger">Delete</button>
@@ -68,7 +68,7 @@
 <div class="modal fade" id="triggerModal" tabindex="-1" aria-labelledby="triggerModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="/config/trigger/save" method="POST">
+            <form action="{{ $basePath }}/config/trigger/save" method="POST">
                 <div class="modal-header">
                     <h5 class="modal-title" id="triggerModalLabel">Trigger Editor</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -117,6 +117,6 @@
 @endif
 
 <div class="mt-4">
-    <a href="/config" class="btn btn-secondary">Back to List</a>
+    <a href="{{ $basePath }}/config" class="btn btn-secondary">Back to List</a>
 </div>
 @endsection

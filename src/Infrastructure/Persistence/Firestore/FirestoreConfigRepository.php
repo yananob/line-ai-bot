@@ -45,40 +45,38 @@ class FirestoreConfigRepository extends AbstractFirestoreRepository implements C
 
     public function findTriggers(string $botId): array
     {
-        $triggersCollection = $this->getBotCollection($botId)->document('triggers')->collection('triggers');
-        $documents = $triggersCollection->documents();
-        $triggers = [];
-        foreach ($documents as $doc) {
-            if ($doc->exists()) {
-                $triggers[$doc->id()] = $doc->data();
-            }
+        $snapshot = $this->getBotCollection($botId)->document('triggers')->snapshot();
+        if ($snapshot->exists()) {
+            return $snapshot->data()['triggers'] ?? [];
         }
-        return $triggers;
+        return [];
     }
 
     public function saveTrigger(string $botId, string $triggerId, array $data): void
     {
-        $triggersCollection = $this->getBotCollection($botId)->document('triggers')->collection('triggers');
-        $triggersCollection->document($triggerId)->set($data);
+        $docRef = $this->getBotCollection($botId)->document('triggers');
+        $snapshot = $docRef->snapshot();
+        $triggers = $snapshot->exists() ? ($snapshot->data()['triggers'] ?? []) : [];
+        $triggers[$triggerId] = $data;
+        $docRef->set(['triggers' => $triggers]);
     }
 
     public function deleteTrigger(string $botId, string $triggerId): void
     {
-        $triggersCollection = $this->getBotCollection($botId)->document('triggers')->collection('triggers');
-        $triggersCollection->document($triggerId)->delete();
+        $docRef = $this->getBotCollection($botId)->document('triggers');
+        $snapshot = $docRef->snapshot();
+        if ($snapshot->exists()) {
+            $triggers = $snapshot->data()['triggers'] ?? [];
+            if (isset($triggers[$triggerId])) {
+                unset($triggers[$triggerId]);
+                $docRef->set(['triggers' => $triggers]);
+            }
+        }
     }
 
     public function deleteBot(string $botId): void
     {
-        // Recursively deleting in Firestore is complex if not using CLI or a specific library.
-        // For simplicity, we at least delete 'config' document.
-        // Triggers might need to be deleted one by one or by deleting the collection.
         $this->getBotCollection($botId)->document('config')->delete();
-
-        $triggers = $this->findTriggers($botId);
-        foreach ($triggers as $id => $data) {
-            $this->deleteTrigger($botId, $id);
-        }
         $this->getBotCollection($botId)->document('triggers')->delete();
     }
 }

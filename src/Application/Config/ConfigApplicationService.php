@@ -8,6 +8,7 @@ use eftec\bladeone\BladeOne;
 class ConfigApplicationService
 {
     private BladeOne $blade;
+    private string $basePath = '';
 
     public function __construct(
         private ConfigRepository $configRepository,
@@ -20,10 +21,18 @@ class ConfigApplicationService
         $this->blade = new BladeOne($viewsPath, $cachePath, BladeOne::MODE_AUTO);
     }
 
+    public function setBasePath(string $basePath): void
+    {
+        $this->basePath = $basePath;
+    }
+
     public function renderIndex(): string
     {
         $botIds = $this->configRepository->findAllBotIds();
-        return $this->blade->run("config.index", ["botIds" => $botIds]);
+        return $this->blade->run("config.index", [
+            "botIds" => $botIds,
+            "basePath" => $this->basePath
+        ]);
     }
 
     public function renderEdit(?string $botId = null): string
@@ -40,7 +49,8 @@ class ConfigApplicationService
         return $this->blade->run("config.edit", [
             "botId" => $botId,
             "dataJson" => $dataJson,
-            "triggers" => $triggers
+            "triggers" => $triggers,
+            "basePath" => $this->basePath
         ]);
     }
 
