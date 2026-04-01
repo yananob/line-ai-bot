@@ -33,24 +33,31 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->repository = new FirestoreBotRepository(isTest: true, db: $this->firestoreClientMock);
     }
 
-    private function createBotMocks(?iterable $triggerDocuments = null): array
+    private function createBotMocks(?array $triggersData = null): array
     {
         $botCollMock = $this->createMock(CollectionReference::class);
         $configDocMock = $this->createMock(DocumentReference::class);
-        $snapshotMock = $this->createMock(DocumentSnapshot::class);
+        $configSnapshotMock = $this->createMock(DocumentSnapshot::class);
         $triggersDocMock = $this->createMock(DocumentReference::class);
-        $triggersCollMock = $this->createMock(CollectionReference::class);
+        $triggersSnapshotMock = $this->createMock(DocumentSnapshot::class);
 
         $botCollMock->method('document')->willReturnCallback(function($id) use ($configDocMock, $triggersDocMock) {
             if ($id === 'config') return $configDocMock;
             if ($id === 'triggers') return $triggersDocMock;
             return null;
         });
-        $configDocMock->method('snapshot')->willReturn($snapshotMock);
-        $triggersDocMock->method('collection')->with('triggers')->willReturn($triggersCollMock);
-        $triggersCollMock->method('documents')->willReturn($triggerDocuments ?? new \ArrayObject([]));
 
-        return [$botCollMock, $configDocMock, $snapshotMock, $triggersDocMock, $triggersCollMock];
+        $configDocMock->method('snapshot')->willReturn($configSnapshotMock);
+
+        $triggersDocMock->method('snapshot')->willReturn($triggersSnapshotMock);
+        if ($triggersData !== null) {
+            $triggersSnapshotMock->method('exists')->willReturn(true);
+            $triggersSnapshotMock->method('data')->willReturn(['triggers' => $triggersData]);
+        } else {
+            $triggersSnapshotMock->method('exists')->willReturn(false);
+        }
+
+        return [$botCollMock, $configDocMock, $configSnapshotMock, $triggersDocMock, $triggersSnapshotMock];
     }
 
     public function test_findDefaultが成功する(): void
@@ -125,17 +132,16 @@ final class FirestoreBotRepositoryTest extends TestCase
                 $snapshotMock->method('exists')->willReturn(true);
                 $snapshotMock->method('data')->willReturn(['bot_characteristics' => ['default-char']]);
             } else {
-                $triggerDocMock = $this->createMock(DocumentSnapshot::class);
-                $triggerDocMock->method('exists')->willReturn(true);
-                $triggerDocMock->method('id')->willReturn('trigger-id-123');
-                $triggerDocMock->method('data')->willReturn([
-                    'event' => 'timer',
-                    'date' => 'today',
-                    'time' => '12:00',
-                    'request' => 'テストリクエスト'
-                ]);
+                $triggerData = [
+                    'trigger-id-123' => [
+                        'event' => 'timer',
+                        'date' => 'today',
+                        'time' => '12:00',
+                        'request' => 'テストリクエスト'
+                    ]
+                ];
 
-                [$botCollMock, $configDocMock, $snapshotMock, $triggersDocMock, $triggersCollMock] = $this->createBotMocks(new \ArrayObject([$triggerDocMock]));
+                [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks($triggerData);
                 $snapshotMock->method('exists')->willReturn(true);
                 $snapshotMock->method('data')->willReturn(['bot_characteristics' => ['test-char']]);
             }
