@@ -21,35 +21,17 @@ FunctionsFramework::http('main_http', 'main_http');
 function main_http(ServerRequestInterface $request): ResponseInterface
 {
     $logger = new Logger(CloudFunctionUtils::getFunctionName());
-    $logger->logSplitter();
-    $logger->log("headers: " . json_encode($request->getHeaders()));
-    $body = $request->getBody()->getContents();
-    $logger->log("body length: " . strlen($body));
-
-    $isLocal = CloudFunctionUtils::isLocalHttp($request);
-    $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
-
-    $container = new Container($isLocal);
-
-    // Routing for Config Editor
-    $appPath = CloudFunctionUtils::getFunctionName();
-    $basePath = $isLocal ? '' : '/' . $appPath;
     $path = $request->getUri()->getPath();
 
-    // GCF might strip the function name from the path depending on how it's called.
-    // Try to match both with and without the function name prefix.
-    $subPath = null;
-    $matchedBasePath = '';
-    if (str_starts_with($path, $basePath . '/config')) {
-        $subPath = substr($path, strlen($basePath . '/config'));
-        $matchedBasePath = $basePath;
-    } elseif (str_starts_with($path, '/config')) {
-        $subPath = substr($path, strlen('/config'));
-        $matchedBasePath = '';
-    }
-
-    if ($subPath !== null) {
+    // Routing for Config Editor
+    // Detect "/config" regardless of service name prefix (GCF behavior varies).
+    if (($configPos = stripos($path, '/config')) !== false) {
+        $isLocal = CloudFunctionUtils::isLocalHttp($request);
+        $container = new Container($isLocal);
         $configService = $container->createConfigApplicationService();
+
+        $matchedBasePath = substr($path, 0, $configPos);
+        $subPath = substr($path, $configPos + strlen('/config'));
         $configService->setBasePath($matchedBasePath);
 
         if ($subPath === '' || $subPath === '/') {
@@ -60,6 +42,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             return new Response(200, ['Content-Type' => 'text/html'], $configService->renderEdit($botId));
         }
         if ($subPath === '/save') {
+            $body = (string)$request->getBody();
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
@@ -68,6 +51,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             return new Response(302, ['Location' => $matchedBasePath . '/config/edit?bot_id=' . $params['bot_id']]);
         }
         if ($subPath === '/delete') {
+            $body = (string)$request->getBody();
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
@@ -76,6 +60,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             return new Response(302, ['Location' => $matchedBasePath . '/config']);
         }
         if ($subPath === '/trigger/save') {
+            $body = (string)$request->getBody();
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
@@ -85,6 +70,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             return new Response(302, ['Location' => $matchedBasePath . '/config/edit?bot_id=' . $params['bot_id']]);
         }
         if ($subPath === '/trigger/delete') {
+            $body = (string)$request->getBody();
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
@@ -92,12 +78,17 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             $configService->deleteTrigger((string)$params['bot_id'], (string)$params['trigger_id']);
             return new Response(302, ['Location' => $matchedBasePath . '/config/edit?bot_id=' . $params['bot_id']]);
         }
+
+        return new Response(404, [], 'Not Found');
     }
 
-    if (empty($body)) {
+    $body = (string)$request->getBody();
+    if ($request->getMethod() !== 'POST' || trim($body) === '') {
         return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
     }
 
+    $isLocal = CloudFunctionUtils::isLocalHttp($request);
+    $container = new Container($isLocal);
     $webhookMessage = new LineWebhookMessage($body);
 
     try {
