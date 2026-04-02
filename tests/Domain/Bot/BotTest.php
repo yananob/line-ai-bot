@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Bot\ValueObject\StringList;
+use App\Domain\Exception\TriggerNotFoundException;
 
 final class BotTest extends TestCase
 {
@@ -158,7 +159,8 @@ final class BotTest extends TestCase
         $trigger1 = new TimerTrigger("today", "10:00", "リクエスト1");
         $this->bot->addTrigger($trigger1);
         $this->assertCount(1, $this->bot->getTriggers());
+
+        $this->expectException(TriggerNotFoundException::class);
         $this->bot->deleteTriggerById("存在しないID");
-        $this->assertCount(1, $this->bot->getTriggers());
     }
 }

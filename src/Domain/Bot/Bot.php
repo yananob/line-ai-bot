@@ -4,6 +4,7 @@ namespace App\Domain\Bot;
 
 use App\Domain\Bot\Trigger\Trigger;
 use App\Domain\Bot\ValueObject\StringList;
+use App\Domain\Exception\TriggerNotFoundException;
 use App\Domain\Bot\ValueObject\BotPersonalityConfig;
 
 class Bot
@@ -99,9 +100,10 @@ class Bot
 
     public function deleteTriggerById(string $id): void
     {
-        if (isset($this->triggers[$id])) {
-            unset($this->triggers[$id]);
+        if (!isset($this->triggers[$id])) {
+            throw new TriggerNotFoundException("Trigger with ID '{$id}' not found.");
         }
+        unset($this->triggers[$id]);
     }
 
     public function setPersonality(BotPersonalityConfig $personality): void

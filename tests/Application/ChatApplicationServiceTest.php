@@ -6,6 +6,7 @@ namespace Tests\Application;
 
 use App\Application\ChatApplicationService;
 use App\Application\BotResponse;
+use App\Domain\Exception\HandlerNotFoundException;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
@@ -84,7 +85,7 @@ final class ChatApplicationServiceTest extends TestCase
         $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::Other);
         $this->messageHandlerMock->method('canHandle')->willReturn(false);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(HandlerNotFoundException::class);
         $this->expectExceptionMessage("No handler found for command: 9");
 
         $this->chatService->handleMessage("hello");
@@ -108,7 +109,7 @@ final class ChatApplicationServiceTest extends TestCase
         $data = "command=unknown";
         $this->postbackHandlerMock->method('canHandle')->willReturn(false);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(HandlerNotFoundException::class);
         $this->expectExceptionMessage("Unsupported postback command: unknown");
 
         $this->chatService->handlePostback($data);

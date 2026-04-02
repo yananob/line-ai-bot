@@ -69,7 +69,7 @@ class FirestoreBotRepository implements BotRepository
         return $bot;
     }
 
-    public function findById(string $id): ?Bot
+    public function findById(string $id): Bot
     {
         if ($id === 'default') { // Default bot should be fetched by findDefault
             error_log("Warning: Attempted to find default bot using findById. Use findDefault() instead.");
@@ -80,8 +80,7 @@ class FirestoreBotRepository implements BotRepository
         $configSnapshot = $botCollection->document('config')->snapshot();
 
         if (!$configSnapshot->exists()) {
-            error_log("Bot with ID '{$id}' not found.");
-            return null;
+            throw new BotNotFoundException("Bot with ID '{$id}' not found.");
         }
 
         // 各Botは、自身のconfig + defaultで動作する
@@ -93,13 +92,12 @@ class FirestoreBotRepository implements BotRepository
 
     public function findOrDefault(string $id): Bot
     {
-        $bot = $this->findById($id);
-        if ($bot !== null) {
-            return $bot;
+        try {
+            return $this->findById($id);
+        } catch (BotNotFoundException $e) {
+            $defaultBotConfig = $this->findDefault();
+            return new Bot($id, $defaultBotConfig);
         }
-
-        $defaultBotConfig = $this->findDefault();
-        return new Bot($id, $defaultBotConfig);
     }
 
     public function findDefault(): Bot
@@ -156,9 +154,12 @@ class FirestoreBotRepository implements BotRepository
         foreach ($botIdCollections as $botCollection) {
             $botId = $botCollection->id();
             if ($botId !== 'default') {
-                $bot = $this->findById($botId);
-                if ($bot !== null) {
-                    $userBots[] = $bot;
+                try {
+                    $userBots[] = $this->findById($botId);
+                } catch (BotNotFoundException $e) {
+                    // This case might not happen if the collection exists,
+                    // but it's safer to catch it.
+                    error_log("Bot with ID '{$botId}' collection exists but config document is missing.");
                 }
             }
         }
