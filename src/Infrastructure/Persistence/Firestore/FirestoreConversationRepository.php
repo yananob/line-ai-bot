@@ -13,9 +13,9 @@ use DateTimeZone;
 
 class FirestoreConversationRepository extends AbstractFirestoreRepository implements ConversationRepository
 {
-    public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
+    public function __construct(?FirestoreClient $db = null)
     {
-        parent::__construct($isTest, $db);
+        parent::__construct($db);
     }
 
     private function getBotConversationsCollection(string $botId): CollectionReference

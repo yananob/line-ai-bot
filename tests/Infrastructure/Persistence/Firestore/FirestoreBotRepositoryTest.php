@@ -30,7 +30,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->firestoreClientMock->method('collection')->willReturn($this->rootCollectionMock);
         $this->rootCollectionMock->method('document')->with('configs')->willReturn($this->documentRootMock);
 
-        $this->repository = new FirestoreBotRepository(isTest: true, db: $this->firestoreClientMock);
+        $this->repository = new FirestoreBotRepository($this->firestoreClientMock);
     }
 
     private function createBotMocks(?array $triggersData = null): array

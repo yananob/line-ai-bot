@@ -34,7 +34,7 @@ class Container
     public function getConfigRepository(): \App\Domain\Config\ConfigRepository
     {
         if ($this->configRepository === null) {
-            $this->configRepository = new \App\Infrastructure\Persistence\Firestore\FirestoreConfigRepository($this->isLocal);
+            $this->configRepository = new \App\Infrastructure\Persistence\Firestore\FirestoreConfigRepository();
         }
         return $this->configRepository;
     }
@@ -42,7 +42,7 @@ class Container
     public function getBotRepository(): FirestoreBotRepository
     {
         if ($this->botRepository === null) {
-            $this->botRepository = new FirestoreBotRepository($this->isLocal);
+            $this->botRepository = new FirestoreBotRepository();
         }
         return $this->botRepository;
     }
@@ -50,7 +50,7 @@ class Container
     public function getConversationRepository(): FirestoreConversationRepository
     {
         if ($this->conversationRepository === null) {
-            $this->conversationRepository = new FirestoreConversationRepository($this->isLocal);
+            $this->conversationRepository = new FirestoreConversationRepository();
         }
         return $this->conversationRepository;
     }

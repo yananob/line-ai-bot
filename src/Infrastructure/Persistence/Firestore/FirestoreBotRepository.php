@@ -16,9 +16,9 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
 {
     private DocumentReference $documentRoot; // e.g., /ai-bots/{bot_id}/configs/
 
-    public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
+    public function __construct(?FirestoreClient $db = null)
     {
-        parent::__construct($isTest, $db);
+        parent::__construct($db);
         // This documentRoot points to the 'configs' document within the main collection.
         // e.g. /ai-bot/configs or /ai-bot-test/configs
         // Individual bot data will be subcollections under this.

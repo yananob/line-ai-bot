@@ -9,7 +9,7 @@ abstract class AbstractFirestoreRepository
     protected FirestoreClient $db;
     protected string $collectionName;
 
-    public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
+    public function __construct(?FirestoreClient $db = null)
     {
         $this->collectionName = \App\AppConfig::getFirestoreRootCollection();
         $this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);

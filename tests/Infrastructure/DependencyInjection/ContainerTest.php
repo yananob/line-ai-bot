@@ -41,8 +41,8 @@ final class ContainerTest extends TestCase
         $firestoreClientMock->method('collection')->willReturn($collectionMock);
         $collectionMock->method('document')->willReturn($documentMock);
 
-        $botRepo = new FirestoreBotRepository(true, $firestoreClientMock);
-        $convRepo = new FirestoreConversationRepository(true, $firestoreClientMock);
+        $botRepo = new FirestoreBotRepository($firestoreClientMock);
+        $convRepo = new FirestoreConversationRepository($firestoreClientMock);
 
         $reflection = new ReflectionClass($this->container);
 
