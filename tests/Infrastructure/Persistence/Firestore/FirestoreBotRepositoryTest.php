@@ -158,7 +158,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->assertEquals('テストリクエスト', $triggers['trigger-id-123']->getRequest());
     }
 
-    public function test_findByIdが存在しないボットに対してNullを返す(): void
+    public function test_findByIdThrowsExceptionWhenNotFound(): void
     {
         $botId = 'non-existent-bot';
 
@@ -173,8 +173,8 @@ final class FirestoreBotRepositoryTest extends TestCase
             return $botCollMock;
         });
 
-        $bot = $this->repository->findById($botId);
-        $this->assertNull($bot);
+        $this->expectException(BotNotFoundException::class);
+        $this->repository->findById($botId);
     }
 
     public function test_getAllUserBotsが成功する(): void

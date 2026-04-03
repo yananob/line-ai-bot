@@ -2,7 +2,6 @@
 
 namespace App\Application;
 
-use Exception;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\ValueObject\Command;
@@ -12,6 +11,7 @@ use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
 use App\Domain\Bot\ValueObject\Message;
 use App\Domain\Bot\Messages;
+use App\Domain\Exception\HandlerNotFoundException;
 
 class ChatApplicationService
 {
@@ -51,7 +51,7 @@ class ChatApplicationService
             }
         }
 
-        throw new Exception("No handler found for command: " . $command->value);
+        throw new HandlerNotFoundException("No handler found for command: " . $command->value);
     }
 
     public function handleTrigger(TimerTrigger $trigger): BotResponse
@@ -68,7 +68,7 @@ class ChatApplicationService
             }
         }
 
-        throw new Exception("No handler found for command: " . $command->value);
+        throw new HandlerNotFoundException("No handler found for command: " . $command->value);
     }
 
     public function handlePostback(string $data): BotResponse
@@ -82,7 +82,7 @@ class ChatApplicationService
             }
         }
 
-        throw new Exception("Unsupported postback command: " . $command);
+        throw new HandlerNotFoundException("Unsupported postback command: " . $command);
     }
 
     public function getLineTarget(): string
