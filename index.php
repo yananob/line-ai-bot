@@ -26,8 +26,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
     // Routing for Config Editor
     // Detect "/config" regardless of service name prefix (GCF behavior varies).
     if (($configPos = stripos($path, '/config')) !== false) {
-        $isLocal = CloudFunctionUtils::isLocalHttp($request);
-        $container = new Container($isLocal);
+        $container = new Container();
         $configService = $container->createConfigApplicationService();
 
         $basePath = \App\AppConfig::getBasePath();
@@ -87,8 +86,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
     }
 
-    $isLocal = CloudFunctionUtils::isLocalHttp($request);
-    $container = new Container($isLocal);
+    $container = new Container();
     $webhookMessage = new LineWebhookMessage($body);
 
     try {
@@ -128,10 +126,7 @@ function main_event(CloudEventInterface $event): void
 {
     $logger = new Logger(CloudFunctionUtils::getFunctionName());
     $logger->logSplitter();
-    $isLocal = CloudFunctionUtils::isLocalEvent($event);
-    $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
-
-    $container = new Container($isLocal);
+    $container = new Container();
     $line = $container->getLineClient();
     $botRepository = $container->getBotRepository();
 

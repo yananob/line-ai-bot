@@ -27,7 +27,7 @@ class Container
     private ?LineClient $lineClient = null;
     private ?\App\Domain\Config\ConfigRepository $configRepository = null;
 
-    public function __construct(private bool $isLocal)
+    public function __construct()
     {
     }
 

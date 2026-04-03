@@ -31,7 +31,7 @@ final class ContainerTest extends TestCase
         putenv("OPENAI_KEY_LINE_AI_BOT=dummy-key");
         putenv('LINE_TOKENS_N_TARGETS={"tokens": {"test": "token"}, "target_ids": {"test": "id"}}');
 
-        $this->container = new Container(true); // isLocal = true for testing
+        $this->container = new Container();
 
         // Mock Firestore dependencies to avoid gRPC error
         $firestoreClientMock = $this->createMock(FirestoreClient::class);
