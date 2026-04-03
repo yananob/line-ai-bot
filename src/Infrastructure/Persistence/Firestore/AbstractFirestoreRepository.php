@@ -11,7 +11,7 @@ abstract class AbstractFirestoreRepository
 
     public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
     {
-        $this->collectionName = $isTest ? "ai-bot-test" : "ai-bot";
+        $this->collectionName = \App\AppConfig::getFirestoreRootCollection();
         $this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);
     }
 }

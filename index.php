@@ -30,9 +30,9 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         $container = new Container($isLocal);
         $configService = $container->createConfigApplicationService();
 
-        $matchedBasePath = substr($path, 0, $configPos);
+        $basePath = \App\AppConfig::getBasePath();
         $subPath = substr($path, $configPos + strlen('/config'));
-        $configService->setBasePath($matchedBasePath);
+        $configService->setBasePath($basePath);
 
         if ($subPath === '' || $subPath === '/') {
             return new Response(200, ['Content-Type' => 'text/html'], $configService->renderIndex());
@@ -48,7 +48,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
                 parse_str($body, $params);
             }
             $configService->saveBotConfig((string)$params['bot_id'], (string)$params['json_content']);
-            return new Response(302, ['Location' => $matchedBasePath . '/config/edit?bot_id=' . $params['bot_id']]);
+            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
         }
         if ($subPath === '/delete') {
             $body = (string)$request->getBody();
@@ -57,7 +57,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
                 parse_str($body, $params);
             }
             $configService->deleteBot((string)$params['bot_id']);
-            return new Response(302, ['Location' => $matchedBasePath . '/config']);
+            return new Response(302, ['Location' => $basePath . '/config']);
         }
         if ($subPath === '/trigger/save') {
             $body = (string)$request->getBody();
@@ -67,7 +67,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             }
             $triggerId = $params['trigger_id'] ?: uniqid('trigger_');
             $configService->saveTrigger((string)$params['bot_id'], (string)$triggerId, (string)$params['trigger_json']);
-            return new Response(302, ['Location' => $matchedBasePath . '/config/edit?bot_id=' . $params['bot_id']]);
+            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
         }
         if ($subPath === '/trigger/delete') {
             $body = (string)$request->getBody();
@@ -76,7 +76,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
                 parse_str($body, $params);
             }
             $configService->deleteTrigger((string)$params['bot_id'], (string)$params['trigger_id']);
-            return new Response(302, ['Location' => $matchedBasePath . '/config/edit?bot_id=' . $params['bot_id']]);
+            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
         }
 
         return new Response(404, [], 'Not Found');
