@@ -12,16 +12,13 @@ use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Bot\Trigger\Trigger;
 use App\Domain\Exception\BotNotFoundException;
 
-class FirestoreBotRepository implements BotRepository
+class FirestoreBotRepository extends AbstractFirestoreRepository implements BotRepository
 {
-    private FirestoreClient $db;
-    private string $collectionName;
     private DocumentReference $documentRoot; // e.g., /ai-bots/{bot_id}/configs/
 
-    public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
+    public function __construct(?FirestoreClient $db = null)
     {
-        $this->collectionName = $isTest ? "ai-bot-test" : "ai-bot";
-        $this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);
+        parent::__construct($db);
         // This documentRoot points to the 'configs' document within the main collection.
         // e.g. /ai-bot/configs or /ai-bot-test/configs
         // Individual bot data will be subcollections under this.
@@ -48,20 +45,20 @@ class FirestoreBotRepository implements BotRepository
         $bot->setLineTarget($data['line_target'] ?? '');
 
         // Load triggers
-        $triggersCollection = $this->getBotCollection($botId)->document('triggers')->collection('triggers');
-        $triggerDocuments = $triggersCollection->documents();
+        $triggersSnapshot = $this->getBotCollection($botId)->document('triggers')->snapshot();
         $triggers = [];
-        foreach ($triggerDocuments as $triggerDoc) {
-            if (!$triggerDoc->exists()) continue;
-            $tData = $triggerDoc->data();
-            // Assuming TimerTrigger for now, this would need to be more flexible
-            if (isset($tData['event']) && $tData['event'] === 'timer') {
-                $dateForTrigger = (string)($tData['date'] ?? '');
-                $timeForTrigger = (string)($tData['time'] ?? '');
-                $request = (string)($tData['request'] ?? '');
-                $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $request);
-                $trigger->setId($triggerDoc->id()); // Use Firestore document ID as trigger ID
-                $triggers[$trigger->getId()] = $trigger;
+        if ($triggersSnapshot->exists()) {
+            $tDataList = $triggersSnapshot->data()['triggers'] ?? [];
+            foreach ($tDataList as $id => $tData) {
+                // Assuming TimerTrigger for now, this would need to be more flexible
+                if (isset($tData['event']) && $tData['event'] === 'timer') {
+                    $dateForTrigger = (string)($tData['date'] ?? '');
+                    $timeForTrigger = (string)($tData['time'] ?? '');
+                    $request = (string)($tData['request'] ?? '');
+                    $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $request);
+                    $trigger->setId((string)$id);
+                    $triggers[$trigger->getId()] = $trigger;
+                }
             }
         }
         $bot->setTriggers($triggers);
@@ -129,23 +126,11 @@ class FirestoreBotRepository implements BotRepository
         $botCollection->document('config')->set($configData);
 
         // Save triggers
-        $triggersSubCollection = $botCollection->document('triggers')->collection('triggers');
-        
-        // Simple strategy: delete existing triggers and re-add.
-        $existingTriggers = $triggersSubCollection->documents();
-        foreach ($existingTriggers as $doc) {
-            $doc->reference()->delete();
-        }
-
+        $triggerDataList = [];
         foreach ($bot->getTriggers() as $trigger) {
-            $triggerData = $trigger->toArray();
-            if ($trigger->getId()) {
-                $triggersSubCollection->document($trigger->getId())->set($triggerData);
-            } else {
-                $newDocRef = $triggersSubCollection->add($triggerData);
-                $trigger->setId($newDocRef->id());
-            }
+            $triggerDataList[$trigger->getId() ?: uniqid('trigger_')] = $trigger->toArray();
         }
+        $botCollection->document('triggers')->set(['triggers' => $triggerDataList]);
     }
 
     public function getAllUserBots(): array

@@ -21,15 +21,72 @@ FunctionsFramework::http('main_http', 'main_http');
 function main_http(ServerRequestInterface $request): ResponseInterface
 {
     $logger = new Logger(CloudFunctionUtils::getFunctionName());
-    $logger->logSplitter();
-    $logger->log("headers: " . json_encode($request->getHeaders()));
-    $body = $request->getBody()->getContents();
-    $logger->log("body: " . $body);
+    $path = $request->getUri()->getPath();
 
-    $isLocal = CloudFunctionUtils::isLocalHttp($request);
-    $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
+    // Routing for Config Editor
+    // Detect "/config" regardless of service name prefix (GCF behavior varies).
+    if (($configPos = stripos($path, '/config')) !== false) {
+        $container = new Container();
+        $configService = $container->createConfigApplicationService();
 
-    $container = new Container($isLocal);
+        $basePath = \App\AppConfig::getBasePath();
+        $subPath = substr($path, $configPos + strlen('/config'));
+        $configService->setBasePath($basePath);
+
+        if ($subPath === '' || $subPath === '/') {
+            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderIndex());
+        }
+        if ($subPath === '/edit') {
+            $botId = $request->getQueryParams()['bot_id'] ?? null;
+            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderEdit($botId));
+        }
+        if ($subPath === '/save') {
+            $body = (string)$request->getBody();
+            $params = $request->getParsedBody();
+            if (empty($params)) {
+                parse_str($body, $params);
+            }
+            $configService->saveBotConfig((string)$params['bot_id'], (string)$params['json_content']);
+            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
+        }
+        if ($subPath === '/delete') {
+            $body = (string)$request->getBody();
+            $params = $request->getParsedBody();
+            if (empty($params)) {
+                parse_str($body, $params);
+            }
+            $configService->deleteBot((string)$params['bot_id']);
+            return new Response(302, ['Location' => $basePath . '/config']);
+        }
+        if ($subPath === '/trigger/save') {
+            $body = (string)$request->getBody();
+            $params = $request->getParsedBody();
+            if (empty($params)) {
+                parse_str($body, $params);
+            }
+            $triggerId = $params['trigger_id'] ?: uniqid('trigger_');
+            $configService->saveTrigger((string)$params['bot_id'], (string)$triggerId, (string)$params['trigger_json']);
+            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
+        }
+        if ($subPath === '/trigger/delete') {
+            $body = (string)$request->getBody();
+            $params = $request->getParsedBody();
+            if (empty($params)) {
+                parse_str($body, $params);
+            }
+            $configService->deleteTrigger((string)$params['bot_id'], (string)$params['trigger_id']);
+            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
+        }
+
+        return new Response(404, [], 'Not Found');
+    }
+
+    $body = (string)$request->getBody();
+    if ($request->getMethod() !== 'POST' || trim($body) === '') {
+        return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
+    }
+
+    $container = new Container();
     $webhookMessage = new LineWebhookMessage($body);
 
     try {
@@ -69,10 +126,7 @@ function main_event(CloudEventInterface $event): void
 {
     $logger = new Logger(CloudFunctionUtils::getFunctionName());
     $logger->logSplitter();
-    $isLocal = CloudFunctionUtils::isLocalEvent($event);
-    $logger->log("Running as " . ($isLocal ? "local" : "cloud") . " mode");
-
-    $container = new Container($isLocal);
+    $container = new Container();
     $line = $container->getLineClient();
     $botRepository = $container->getBotRepository();
 

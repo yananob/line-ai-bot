@@ -25,15 +25,24 @@ class Container
     private ?CommandAndTriggerService $commandAndTriggerService = null;
     private ?OpenAIWebSearchTool $webSearchTool = null;
     private ?LineClient $lineClient = null;
+    private ?\App\Domain\Config\ConfigRepository $configRepository = null;
 
-    public function __construct(private bool $isLocal)
+    public function __construct()
     {
+    }
+
+    public function getConfigRepository(): \App\Domain\Config\ConfigRepository
+    {
+        if ($this->configRepository === null) {
+            $this->configRepository = new \App\Infrastructure\Persistence\Firestore\FirestoreConfigRepository();
+        }
+        return $this->configRepository;
     }
 
     public function getBotRepository(): FirestoreBotRepository
     {
         if ($this->botRepository === null) {
-            $this->botRepository = new FirestoreBotRepository($this->isLocal);
+            $this->botRepository = new FirestoreBotRepository();
         }
         return $this->botRepository;
     }
@@ -41,7 +50,7 @@ class Container
     public function getConversationRepository(): FirestoreConversationRepository
     {
         if ($this->conversationRepository === null) {
-            $this->conversationRepository = new FirestoreConversationRepository($this->isLocal);
+            $this->conversationRepository = new FirestoreConversationRepository();
         }
         return $this->conversationRepository;
     }
@@ -96,6 +105,17 @@ class Container
             $this->lineClient = new LineClient($lineConfig["tokens"], $lineConfig["target_ids"]);
         }
         return $this->lineClient;
+    }
+
+    public function createConfigApplicationService(): \App\Application\Config\ConfigApplicationService
+    {
+        // Use /tmp for GCF compatibility as the filesystem is read-only.
+        $cachePath = sys_get_temp_dir() . '/bladeone_cache';
+        return new \App\Application\Config\ConfigApplicationService(
+            $this->getConfigRepository(),
+            __DIR__ . '/../../../views',
+            $cachePath
+        );
     }
 
     public function createChatApplicationService(Bot $bot): ChatApplicationService

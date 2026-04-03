@@ -13,7 +13,8 @@
         "monolog/monolog": "^3.0",
         "linecorp/line-bot-sdk": "^9.0",
         "symfony/clock": "^7.0",
-        "symfony/translation": "^7.0"
+        "symfony/translation": "^7.0",
+        "eftec/bladeone": "^4.19"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.3",
