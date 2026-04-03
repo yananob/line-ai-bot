@@ -37,40 +37,58 @@ class ConfigApplicationService
 
     public function renderEdit(?string $botId = null): string
     {
-        $data = null;
-        $triggers = [];
+        $data = [];
         if ($botId !== null) {
-            $data = $this->configRepository->findBotConfig($botId);
-            $triggers = $this->configRepository->findTriggers($botId);
+            $data = $this->configRepository->findBotConfig($botId) ?? [];
         }
 
-        $dataJson = $data ? json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
+        $botChars = implode("\n", $data['bot_characteristics'] ?? []);
+        $humanChars = implode("\n", $data['human_characteristics'] ?? []);
+        $requests = implode("\n", $data['requests'] ?? []);
+        $lineTarget = $data['line_target'] ?? '';
 
         return $this->blade->run("config.edit", [
             "botId" => $botId,
-            "dataJson" => $dataJson,
+            "botChars" => $botChars,
+            "humanChars" => $humanChars,
+            "requests" => $requests,
+            "lineTarget" => $lineTarget,
+            "basePath" => $this->basePath
+        ]);
+    }
+
+    public function renderTriggers(string $botId): string
+    {
+        $triggers = $this->configRepository->findTriggers($botId);
+        return $this->blade->run("config.triggers", [
+            "botId" => $botId,
             "triggers" => $triggers,
             "basePath" => $this->basePath
         ]);
     }
 
-    public function saveBotConfig(string $botId, string $jsonContent): void
+    public function renderTriggerEdit(string $botId, ?string $triggerId = null): string
     {
-        $data = json_decode($jsonContent, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \InvalidArgumentException("Invalid JSON format: " . json_last_error_msg());
+        $trigger = null;
+        if ($triggerId !== null) {
+            $trigger = $this->configRepository->findTrigger($botId, $triggerId);
         }
 
+        return $this->blade->run("config.trigger_edit", [
+            "botId" => $botId,
+            "triggerId" => $triggerId,
+            "trigger" => $trigger,
+            "basePath" => $this->basePath
+        ]);
+    }
+
+    public function saveBotConfig(string $botId, array $data): void
+    {
         $this->configRepository->saveBotConfig($botId, $data);
     }
 
-    public function saveTrigger(string $botId, string $triggerId, string $jsonContent): void
+    public function saveTrigger(string $botId, string $triggerId, array $data): void
     {
-        $data = json_decode($jsonContent, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \InvalidArgumentException("Invalid JSON format: " . json_last_error_msg());
-        }
-
         $this->configRepository->saveTrigger($botId, $triggerId, $data);
     }
 
