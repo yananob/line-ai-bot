@@ -16,19 +16,58 @@
                 <input type="text" class="form-control" id="bot_id" name="bot_id" value="{{ $botId ?: '' }}" {{ $botId ? 'readonly' : '' }} required>
             </div>
 
-            <div class="mb-3">
-                <label for="bot_characteristics" class="form-label">Bot Characteristics (one per line)</label>
-                <textarea class="form-control" id="bot_characteristics" name="bot_characteristics" rows="5">{{ $botChars }}</textarea>
+            <div class="mb-4">
+                <label class="form-label d-block">Bot Characteristics</label>
+                <div id="bot_characteristics_container">
+                    @forelse($botChars as $char)
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="bot_characteristics[]" value="{{ $char }}">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @empty
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="bot_characteristics[]" value="">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @endforelse
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary add-item" data-container="bot_characteristics_container" data-name="bot_characteristics[]">Add Item</button>
             </div>
 
-            <div class="mb-3">
-                <label for="human_characteristics" class="form-label">Human Characteristics (one per line)</label>
-                <textarea class="form-control" id="human_characteristics" name="human_characteristics" rows="5">{{ $humanChars }}</textarea>
+            <div class="mb-4">
+                <label class="form-label d-block">Human Characteristics</label>
+                <div id="human_characteristics_container">
+                    @forelse($humanChars as $char)
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="human_characteristics[]" value="{{ $char }}">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @empty
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="human_characteristics[]" value="">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @endforelse
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary add-item" data-container="human_characteristics_container" data-name="human_characteristics[]">Add Item</button>
             </div>
 
-            <div class="mb-3">
-                <label for="requests" class="form-label">Requests (one per line)</label>
-                <textarea class="form-control" id="requests" name="requests" rows="5">{{ $requests }}</textarea>
+            <div class="mb-4">
+                <label class="form-label d-block">Requests</label>
+                <div id="requests_container">
+                    @forelse($requests as $req)
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="requests[]" value="{{ $req }}">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @empty
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="requests[]" value="">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @endforelse
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary add-item" data-container="requests_container" data-name="requests[]">Add Item</button>
             </div>
 
             <div class="mb-3">
@@ -37,9 +76,6 @@
             </div>
 
             <button type="submit" class="btn btn-primary">Save Config</button>
-            @if($botId)
-            <a href="{{ $basePath }}/config/triggers?bot_id={{ $botId }}" class="btn btn-outline-info">Manage Triggers</a>
-            @endif
         </form>
     </div>
 </div>
@@ -47,4 +83,34 @@
 <div class="mt-4">
     <a href="{{ $basePath }}/config" class="btn btn-secondary">Back to List</a>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.add-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const containerId = btn.getAttribute('data-container');
+                const name = btn.getAttribute('data-name');
+                const container = document.getElementById(containerId);
+                const div = document.createElement('div');
+                div.className = 'input-group mb-2';
+                div.innerHTML = `
+                    <input type="text" class="form-control" name="${name}" value="">
+                    <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-item')) {
+                const container = e.target.closest('.input-group').parentElement;
+                if (container.querySelectorAll('.input-group').length > 1) {
+                    e.target.closest('.input-group').remove();
+                } else {
+                    e.target.closest('.input-group').querySelector('input').value = '';
+                }
+            }
+        });
+    });
+</script>
 @endsection

@@ -47,7 +47,6 @@
 </div>
 
 <div class="mt-4">
-    <a href="{{ $basePath }}/config/edit?bot_id={{ $botId }}" class="btn btn-secondary">Back to Config</a>
-    <a href="{{ $basePath }}/config" class="btn btn-outline-secondary">Back to List</a>
+    <a href="{{ $basePath }}/config" class="btn btn-secondary">Back to List</a>
 </div>
 @endsection

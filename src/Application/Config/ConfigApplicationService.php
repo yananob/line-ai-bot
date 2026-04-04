@@ -42,9 +42,9 @@ class ConfigApplicationService
             $data = $this->configRepository->findBotConfig($botId) ?? [];
         }
 
-        $botChars = implode("\n", $data['bot_characteristics'] ?? []);
-        $humanChars = implode("\n", $data['human_characteristics'] ?? []);
-        $requests = implode("\n", $data['requests'] ?? []);
+        $botChars = $data['bot_characteristics'] ?? [];
+        $humanChars = $data['human_characteristics'] ?? [];
+        $requests = $data['requests'] ?? [];
         $lineTarget = $data['line_target'] ?? '';
 
         return $this->blade->run("config.edit", [
