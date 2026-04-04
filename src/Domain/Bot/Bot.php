@@ -10,6 +10,7 @@ use App\Domain\Bot\ValueObject\BotPersonalityConfig;
 class Bot
 {
     private string $id;
+    private string $name = '';
     private BotPersonalityConfig $personality;
     private StringList $configRequests;
     private string $lineTarget = '';
@@ -27,6 +28,16 @@ class Bot
     public function getId(): string
     {
         return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): void
+    {
+        $this->name = $name;
     }
 
     public function getPersonality(): BotPersonalityConfig

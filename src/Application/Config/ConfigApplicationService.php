@@ -28,9 +28,9 @@ class ConfigApplicationService
 
     public function renderIndex(): string
     {
-        $botIds = $this->configRepository->findAllBotIds();
+        $bots = $this->configRepository->findAllConfigs();
         return $this->blade->run("config.index", [
-            "botIds" => $botIds,
+            "bots" => $bots,
             "basePath" => $this->basePath
         ]);
     }
@@ -42,6 +42,7 @@ class ConfigApplicationService
             $data = $this->configRepository->findBotConfig($botId) ?? [];
         }
 
+        $botName = $data['bot_name'] ?? '';
         $botChars = $data['bot_characteristics'] ?? [];
         $humanChars = $data['human_characteristics'] ?? [];
         $requests = $data['requests'] ?? [];
@@ -49,6 +50,7 @@ class ConfigApplicationService
 
         return $this->blade->run("config.edit", [
             "botId" => $botId,
+            "botName" => $botName,
             "botChars" => $botChars,
             "humanChars" => $humanChars,
             "requests" => $requests,
@@ -59,9 +61,12 @@ class ConfigApplicationService
 
     public function renderTriggers(string $botId): string
     {
+        $data = $this->configRepository->findBotConfig($botId) ?? [];
+        $botName = $data['bot_name'] ?? '';
         $triggers = $this->configRepository->findTriggers($botId);
         return $this->blade->run("config.triggers", [
             "botId" => $botId,
+            "botName" => $botName,
             "triggers" => $triggers,
             "basePath" => $this->basePath
         ]);
@@ -69,6 +74,8 @@ class ConfigApplicationService
 
     public function renderTriggerEdit(string $botId, ?string $triggerId = null): string
     {
+        $data = $this->configRepository->findBotConfig($botId) ?? [];
+        $botName = $data['bot_name'] ?? '';
         $trigger = null;
         if ($triggerId !== null) {
             $trigger = $this->configRepository->findTrigger($botId, $triggerId);
@@ -76,6 +83,7 @@ class ConfigApplicationService
 
         return $this->blade->run("config.trigger_edit", [
             "botId" => $botId,
+            "botName" => $botName,
             "triggerId" => $triggerId,
             "trigger" => $trigger,
             "basePath" => $this->basePath

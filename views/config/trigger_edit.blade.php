@@ -1,20 +1,17 @@
 @extends('layout')
 
-@section('title', ($triggerId ? 'Edit' : 'Add') . ' Trigger for ' . $botId)
+@section('title', ($triggerId ? 'Edit' : 'Add') . ' Trigger for ' . ($botName ?: $botId))
 
 @section('content')
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">{{ $triggerId ? 'Edit Trigger: ' . $triggerId : 'Add New Trigger' }} (Bot: {{ $botId }})</h1>
+    <h1 class="h2">{{ $triggerId ? 'Edit Trigger' : 'Add New Trigger' }} (Bot: {{ $botName ?: $botId }})</h1>
 </div>
 
 <div class="card mb-4">
     <div class="card-body">
         <form action="{{ $basePath }}/config/trigger/save" method="POST">
             <input type="hidden" name="bot_id" value="{{ $botId }}">
-            <div class="mb-3">
-                <label for="trigger_id" class="form-label">Trigger ID</label>
-                <input type="text" class="form-control" id="trigger_id" name="trigger_id" value="{{ $triggerId ?: '' }}" {{ $triggerId ? 'readonly' : '' }} placeholder="Leave empty for auto-generation">
-            </div>
+            <input type="hidden" name="trigger_id" value="{{ $triggerId ?: '' }}">
 
             <div class="mb-3">
                 <label for="event" class="form-label">Event Type</label>

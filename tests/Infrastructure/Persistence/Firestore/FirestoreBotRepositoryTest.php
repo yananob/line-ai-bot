@@ -71,7 +71,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         return [$botCollMock, $configDocMock, $configSnapshotMock, $triggersDocMock, $triggersSubCollMock];
     }
 
-    public function test_findDefaultが成功する(): void
+    public function test_findDefault_success(): void
     {
         $botId = 'default';
         [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
@@ -79,6 +79,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->documentRootMock->method('collection')->with($botId)->willReturn($botCollMock);
         $snapshotMock->method('exists')->willReturn(true);
         $snapshotMock->method('data')->willReturn([
+            'bot_name' => 'Default Bot',
             'bot_characteristics' => ['char1'],
             'human_characteristics' => ['hchar1'],
             'requests' => ['req1'],
@@ -89,6 +90,7 @@ final class FirestoreBotRepositoryTest extends TestCase
 
         $this->assertInstanceOf(Bot::class, $bot);
         $this->assertEquals($botId, $bot->getId());
+        $this->assertEquals('Default Bot', $bot->getName());
     }
 
     public function test_findDefaultThrowsExceptionWhenNotFound(): void
@@ -105,7 +107,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->repository->findDefault();
     }
 
-    public function test_findByIdが成功しデフォルトと個別設定がマージされる(): void
+    public function test_findById_success_and_merges_with_default(): void
     {
         $botId = 'test-bot';
 
@@ -127,7 +129,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->assertEquals(['default-char', 'test-char'], $bot->getBotCharacteristics()->toArray());
     }
 
-    public function test_findByIdがトリガーをロードする(): void
+    public function test_findById_loads_triggers(): void
     {
         $botId = 'test-bot';
 
@@ -188,7 +190,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->repository->findById($botId);
     }
 
-    public function test_getAllUserBotsが成功する(): void
+    public function test_getAllUserBots_success(): void
     {
         $botCollMock1 = $this->createMock(CollectionReference::class);
         $botCollMock1->method('id')->willReturn('user-bot-1');
@@ -212,20 +214,21 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->assertEquals('user-bot-1', $bots[0]->getId());
     }
 
-    public function test_saveが成功し個別設定のみ保存される(): void
+    public function test_save_success_and_saves_only_personal_settings(): void
     {
         $defaultBot = new Bot('default');
         $defaultBot->setBotCharacteristics(['default-char']);
 
         $bot = new Bot('test-bot', $defaultBot);
+        $bot->setName('Personal Name');
         $bot->setBotCharacteristics(['personal-char']);
 
         [$botCollMock, $configDocMock] = $this->createBotMocks();
 
         $this->documentRootMock->method('collection')->with('test-bot')->willReturn($botCollMock);
         $configDocMock->expects($this->once())->method('set')->with($this->callback(function($data) {
-            // Should only contain 'personal-char', not 'default-char'
-            return $data['bot_characteristics'] === ['personal-char'];
+            // Should contain 'Personal Name' and only 'personal-char', not 'default-char'
+            return $data['bot_name'] === 'Personal Name' && $data['bot_characteristics'] === ['personal-char'];
         }));
 
         $this->repository->save($bot);
