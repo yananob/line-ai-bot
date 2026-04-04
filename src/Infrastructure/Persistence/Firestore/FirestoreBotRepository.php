@@ -39,6 +39,7 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
         $bot = new Bot($botId, $defaultBotConfig);
         $data = $configSnapshot->data();
 
+        $bot->setName($data['bot_name'] ?? '');
         $bot->setBotCharacteristics($data['bot_characteristics'] ?? []);
         $bot->setHumanCharacteristics($data['human_characteristics'] ?? []);
         $bot->setConfigRequests($data['requests'] ?? []);
@@ -115,6 +116,7 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
 
         // Save main config (only personal settings, not default ones)
         $configData = [
+            'bot_name' => $bot->getName(),
             'bot_characteristics' => $bot->getPersonality()->getBotCharacteristics()->toArray(),
             'human_characteristics' => $bot->getPersonality()->getHumanCharacteristics()->toArray(),
             'requests' => $bot->getConfigRequests(true, false)->toArray(), // Only personal requests

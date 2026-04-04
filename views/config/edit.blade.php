@@ -4,16 +4,17 @@
 
 @section('content')
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">{{ $botId ? 'Edit Bot: ' . $botId : 'Add New Bot' }}</h1>
+    <h1 class="h2">{{ $botId ? 'Edit Bot: ' . ($botName ?: $botId) : 'Add New Bot' }}</h1>
 </div>
 
 <div class="card mb-4">
     <div class="card-header">Main Config</div>
     <div class="card-body">
         <form action="{{ $basePath }}/config/save" method="POST">
+            <input type="hidden" name="bot_id" value="{{ $botId ?: '' }}">
             <div class="mb-3">
-                <label for="bot_id" class="form-label">Bot ID</label>
-                <input type="text" class="form-control" id="bot_id" name="bot_id" value="{{ $botId ?: '' }}" {{ $botId ? 'readonly' : '' }} required>
+                <label for="bot_name" class="form-label">Bot Name</label>
+                <input type="text" class="form-control" id="bot_name" name="bot_name" value="{{ $botName ?: '' }}" required>
             </div>
 
             <div class="mb-4">

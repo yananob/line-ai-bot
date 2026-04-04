@@ -1,10 +1,10 @@
 @extends('layout')
 
-@section('title', 'Triggers for ' . $botId)
+@section('title', 'Triggers for ' . ($botName ?: $botId))
 
 @section('content')
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Triggers for: {{ $botId }}</h1>
+    <h1 class="h2">Triggers for: {{ $botName ?: $botId }}</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="{{ $basePath }}/config/trigger/edit?bot_id={{ $botId }}" class="btn btn-sm btn-outline-success">Add New Trigger</a>
     </div>
@@ -16,7 +16,6 @@
             <table class="table table-striped table-sm">
                 <thead>
                     <tr>
-                        <th scope="col">Trigger ID</th>
                         <th scope="col">Event</th>
                         <th scope="col">Schedule</th>
                         <th scope="col">Request</th>
@@ -26,7 +25,6 @@
                 <tbody>
                     @foreach($triggers as $tid => $tdata)
                     <tr>
-                        <td>{{ $tid }}</td>
                         <td>{{ $tdata['event'] ?? '' }}</td>
                         <td>{{ $tdata['date'] ?? '' }} {{ $tdata['time'] ?? '' }}</td>
                         <td><code>{{ $tdata['request'] ?? '' }}</code></td>

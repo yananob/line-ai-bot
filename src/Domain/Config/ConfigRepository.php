@@ -9,6 +9,11 @@ interface ConfigRepository
      */
     public function findAllBotIds(): array;
 
+    /**
+     * @return array[] botId => configData
+     */
+    public function findAllConfigs(): array;
+
     public function findBotConfig(string $botId): ?array;
 
     public function saveBotConfig(string $botId, array $data): void;

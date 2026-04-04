@@ -32,6 +32,22 @@ class FirestoreConfigRepository extends AbstractFirestoreRepository implements C
         return $botIds;
     }
 
+    public function findAllConfigs(): array
+    {
+        $botIdCollections = $this->documentRoot->collections();
+        $configs = [];
+        foreach ($botIdCollections as $botCollection) {
+            $botId = $botCollection->id();
+            $snapshot = $botCollection->document('config')->snapshot();
+            if ($snapshot->exists()) {
+                $configs[$botId] = $snapshot->data();
+            } else {
+                $configs[$botId] = [];
+            }
+        }
+        return $configs;
+    }
+
     public function findBotConfig(string $botId): ?array
     {
         $snapshot = $this->getBotCollection($botId)->document('config')->snapshot();
