@@ -48,9 +48,9 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             }
             $botId = (string)$params['bot_id'];
             $data = [
-                'bot_characteristics' => array_filter(array_map('trim', (array)($params['bot_characteristics'] ?? [])), 'strlen'),
-                'human_characteristics' => array_filter(array_map('trim', (array)($params['human_characteristics'] ?? [])), 'strlen'),
-                'requests' => array_filter(array_map('trim', (array)($params['requests'] ?? [])), 'strlen'),
+                'bot_characteristics' => array_filter(array_map('trim', (array)($params['bot_characteristics'] ?? [])), fn($v) => $v !== ''),
+                'human_characteristics' => array_filter(array_map('trim', (array)($params['human_characteristics'] ?? [])), fn($v) => $v !== ''),
+                'requests' => array_filter(array_map('trim', (array)($params['requests'] ?? [])), fn($v) => $v !== ''),
                 'line_target' => (string)($params['line_target'] ?? ''),
             ];
             $configService->saveBotConfig($botId, $data);
