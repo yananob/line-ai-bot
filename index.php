@@ -46,8 +46,9 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             if (empty($params)) {
                 parse_str($body, $params);
             }
-            $botId = (string)$params['bot_id'];
+            $botId = $params['bot_id'] ?: uniqid('bot_');
             $data = [
+                'bot_name' => (string)($params['bot_name'] ?? ''),
                 'bot_characteristics' => array_filter(array_map('trim', (array)($params['bot_characteristics'] ?? [])), fn($v) => $v !== ''),
                 'human_characteristics' => array_filter(array_map('trim', (array)($params['human_characteristics'] ?? [])), fn($v) => $v !== ''),
                 'requests' => array_filter(array_map('trim', (array)($params['requests'] ?? [])), fn($v) => $v !== ''),
