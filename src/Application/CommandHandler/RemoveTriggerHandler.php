@@ -9,6 +9,7 @@ use App\Domain\Bot\Bot;
 use App\Application\BotResponse;
 use App\Domain\Bot\Consts;
 use App\Infrastructure\Line\LineTools;
+use App\Domain\Bot\ValueObject\Message;
 
 class RemoveTriggerHandler implements CommandHandlerInterface
 {
@@ -17,7 +18,7 @@ class RemoveTriggerHandler implements CommandHandlerInterface
         return $command === Command::RemoveTrigger;
     }
 
-    public function handle(string $message, Bot $bot, Command $command): BotResponse
+    public function handle(Message $message, Bot $bot, Command $command): BotResponse
     {
         $answer = "どのタイマーを止めますか？";
         $quickReply = LineTools::convertTriggersToQuickReply(Consts::CMD_REMOVE_TRIGGER, $bot->getTriggers());

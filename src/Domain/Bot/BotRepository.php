@@ -8,9 +8,10 @@ interface BotRepository
      * Finds a Bot by its ID.
      *
      * @param string $id The ID of the Bot to find.
-     * @return Bot|null The Bot object if found, otherwise null.
+     * @return Bot The Bot object.
+     * @throws \App\Domain\Exception\BotNotFoundException If the Bot is not found.
      */
-    public function findById(string $id): ?Bot;
+    public function findById(string $id): Bot;
 
     /**
      * Finds a Bot by its ID, or returns a new Bot instance with the default settings if not found.

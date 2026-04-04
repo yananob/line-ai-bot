@@ -10,6 +10,7 @@ use App\Domain\Bot\Bot;
 use App\Domain\Bot\BotRepository;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\Message;
 use PHPUnit\Framework\TestCase;
 
 final class AddTriggerHandlerTest extends TestCase
@@ -37,7 +38,8 @@ final class AddTriggerHandlerTest extends TestCase
         $cmdServiceMock->method('generateOneTimeTrigger')->willReturn($trigger);
         $repoMock->expects($this->once())->method('save')->with($bot);
 
-        $response = $handler->handle("today 12:00 test", $bot, Command::AddOneTimeTrigger);
+        $message = new Message("today 12:00 test", false);
+        $response = $handler->handle($message, $bot, Command::AddOneTimeTrigger);
         $this->assertSame("タイマーを追加しました：" . $trigger, $response->getText());
         $this->assertCount(1, $bot->getTriggers());
     }
@@ -54,7 +56,8 @@ final class AddTriggerHandlerTest extends TestCase
         $cmdServiceMock->method('generateDailyTrigger')->willReturn($trigger);
         $repoMock->expects($this->once())->method('save')->with($bot);
 
-        $response = $handler->handle("everyday 12:00 test", $bot, Command::AddDailyTrigger);
+        $message = new Message("everyday 12:00 test", false);
+        $response = $handler->handle($message, $bot, Command::AddDailyTrigger);
         $this->assertSame("タイマーを追加しました：" . $trigger, $response->getText());
         $this->assertCount(1, $bot->getTriggers());
     }

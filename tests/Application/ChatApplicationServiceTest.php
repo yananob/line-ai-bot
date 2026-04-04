@@ -6,10 +6,12 @@ namespace Tests\Application;
 
 use App\Application\ChatApplicationService;
 use App\Application\BotResponse;
+use App\Domain\Exception\HandlerNotFoundException;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\Message;
 use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
 use PHPUnit\Framework\TestCase;
@@ -45,11 +47,37 @@ final class ChatApplicationServiceTest extends TestCase
         $this->messageHandlerMock->method('canHandle')->with(Command::Other)->willReturn(true);
         $this->messageHandlerMock->expects($this->once())
             ->method('handle')
-            ->with("hello", $this->bot, Command::Other)
+            ->with($this->callback(function (Message $message) {
+                return $message->getContent() === "hello" && !$message->isSystem();
+            }), $this->bot, Command::Other)
             ->willReturn(new BotResponse("hi"));
 
         $response = $this->chatService->handleMessage("hello");
         $this->assertSame("hi", $response->getText());
+    }
+
+    public function test_handleMessage_selects_correct_handler_from_multiple(): void
+    {
+        $handler1 = $this->createMock(CommandHandlerInterface::class);
+        $handler1->method('canHandle')->willReturn(false);
+
+        $handler2 = $this->createMock(CommandHandlerInterface::class);
+        $handler2->method('canHandle')->with(Command::ShowHelp)->willReturn(true);
+        $handler2->expects($this->once())
+            ->method('handle')
+            ->willReturn(new BotResponse("help content"));
+
+        $chatService = new ChatApplicationService(
+            $this->bot,
+            $this->commandAndTriggerServiceMock,
+            [$handler1, $handler2],
+            []
+        );
+
+        $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::ShowHelp);
+
+        $response = $chatService->handleMessage("help");
+        $this->assertSame("help content", $response->getText());
     }
 
     public function test_handleMessage_throws_exception_if_no_handler_found(): void
@@ -57,7 +85,7 @@ final class ChatApplicationServiceTest extends TestCase
         $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::Other);
         $this->messageHandlerMock->method('canHandle')->willReturn(false);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(HandlerNotFoundException::class);
         $this->expectExceptionMessage("No handler found for command: 9");
 
         $this->chatService->handleMessage("hello");
@@ -81,7 +109,7 @@ final class ChatApplicationServiceTest extends TestCase
         $data = "command=unknown";
         $this->postbackHandlerMock->method('canHandle')->willReturn(false);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(HandlerNotFoundException::class);
         $this->expectExceptionMessage("Unsupported postback command: unknown");
 
         $this->chatService->handlePostback($data);
@@ -104,7 +132,9 @@ final class ChatApplicationServiceTest extends TestCase
         $this->messageHandlerMock->method('canHandle')->with(Command::Other)->willReturn(true);
         $this->messageHandlerMock->expects($this->once())
             ->method('handle')
-            ->with($this->stringContains("reminder request"), $this->bot, Command::Other)
+            ->with($this->callback(function (Message $message) {
+                return str_contains($message->getContent(), "reminder request") && $message->isSystem();
+            }), $this->bot, Command::Other)
             ->willReturn(new BotResponse("triggered response"));
 
         $response = $this->chatService->handleTrigger($trigger);

@@ -12,16 +12,13 @@ use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Bot\Trigger\Trigger;
 use App\Domain\Exception\BotNotFoundException;
 
-class FirestoreBotRepository implements BotRepository
+class FirestoreBotRepository extends AbstractFirestoreRepository implements BotRepository
 {
-    private FirestoreClient $db;
-    private string $collectionName;
     private DocumentReference $documentRoot; // e.g., /ai-bots/{bot_id}/configs/
 
-    public function __construct(bool $isTest = true, ?FirestoreClient $db = null)
+    public function __construct(?FirestoreClient $db = null)
     {
-        $this->collectionName = $isTest ? "ai-bot-test" : "ai-bot";
-        $this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);
+        parent::__construct($db);
         // This documentRoot points to the 'configs' document within the main collection.
         // e.g. /ai-bot/configs or /ai-bot-test/configs
         // Individual bot data will be subcollections under this.
@@ -48,19 +45,18 @@ class FirestoreBotRepository implements BotRepository
         $bot->setLineTarget($data['line_target'] ?? '');
 
         // Load triggers
-        $triggersCollection = $this->getBotCollection($botId)->document('triggers')->collection('triggers');
-        $triggerDocuments = $triggersCollection->documents();
+        $triggerDocs = $this->getBotCollection($botId)->document('triggers')->collection('triggers')->documents();
         $triggers = [];
-        foreach ($triggerDocuments as $triggerDoc) {
-            if (!$triggerDoc->exists()) continue;
-            $tData = $triggerDoc->data();
+        foreach ($triggerDocs as $doc) {
+            $id = $doc->id();
+            $tData = $doc->data();
             // Assuming TimerTrigger for now, this would need to be more flexible
             if (isset($tData['event']) && $tData['event'] === 'timer') {
                 $dateForTrigger = (string)($tData['date'] ?? '');
                 $timeForTrigger = (string)($tData['time'] ?? '');
                 $request = (string)($tData['request'] ?? '');
                 $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $request);
-                $trigger->setId($triggerDoc->id()); // Use Firestore document ID as trigger ID
+                $trigger->setId((string)$id);
                 $triggers[$trigger->getId()] = $trigger;
             }
         }
@@ -69,7 +65,7 @@ class FirestoreBotRepository implements BotRepository
         return $bot;
     }
 
-    public function findById(string $id): ?Bot
+    public function findById(string $id): Bot
     {
         if ($id === 'default') { // Default bot should be fetched by findDefault
             error_log("Warning: Attempted to find default bot using findById. Use findDefault() instead.");
@@ -80,8 +76,7 @@ class FirestoreBotRepository implements BotRepository
         $configSnapshot = $botCollection->document('config')->snapshot();
 
         if (!$configSnapshot->exists()) {
-            error_log("Bot with ID '{$id}' not found.");
-            return null;
+            throw new BotNotFoundException("Bot with ID '{$id}' not found.");
         }
 
         // 各Botは、自身のconfig + defaultで動作する
@@ -93,13 +88,12 @@ class FirestoreBotRepository implements BotRepository
 
     public function findOrDefault(string $id): Bot
     {
-        $bot = $this->findById($id);
-        if ($bot !== null) {
-            return $bot;
+        try {
+            return $this->findById($id);
+        } catch (BotNotFoundException $e) {
+            $defaultBotConfig = $this->findDefault();
+            return new Bot($id, $defaultBotConfig);
         }
-
-        $defaultBotConfig = $this->findDefault();
-        return new Bot($id, $defaultBotConfig);
     }
 
     public function findDefault(): Bot
@@ -129,22 +123,10 @@ class FirestoreBotRepository implements BotRepository
         $botCollection->document('config')->set($configData);
 
         // Save triggers
-        $triggersSubCollection = $botCollection->document('triggers')->collection('triggers');
-        
-        // Simple strategy: delete existing triggers and re-add.
-        $existingTriggers = $triggersSubCollection->documents();
-        foreach ($existingTriggers as $doc) {
-            $doc->reference()->delete();
-        }
-
+        $triggersCollection = $botCollection->document('triggers')->collection('triggers');
         foreach ($bot->getTriggers() as $trigger) {
-            $triggerData = $trigger->toArray();
-            if ($trigger->getId()) {
-                $triggersSubCollection->document($trigger->getId())->set($triggerData);
-            } else {
-                $newDocRef = $triggersSubCollection->add($triggerData);
-                $trigger->setId($newDocRef->id());
-            }
+            $triggerId = $trigger->getId() ?: uniqid('trigger_');
+            $triggersCollection->document($triggerId)->set($trigger->toArray());
         }
     }
 
@@ -156,9 +138,12 @@ class FirestoreBotRepository implements BotRepository
         foreach ($botIdCollections as $botCollection) {
             $botId = $botCollection->id();
             if ($botId !== 'default') {
-                $bot = $this->findById($botId);
-                if ($bot !== null) {
-                    $userBots[] = $bot;
+                try {
+                    $userBots[] = $this->findById($botId);
+                } catch (BotNotFoundException $e) {
+                    // This case might not happen if the collection exists,
+                    // but it's safer to catch it.
+                    error_log("Bot with ID '{$botId}' collection exists but config document is missing.");
                 }
             }
         }

@@ -43,7 +43,7 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
         $this->conversationsDocRefMock->method('collection')
             ->willReturn($this->botConversationsCollRefMock); // '{botId}' サブコレクションを返す
 
-        $this->repository = new FirestoreConversationRepository(isTest: true, db: $this->firestoreClientMock);
+        $this->repository = new FirestoreConversationRepository(db: $this->firestoreClientMock);
     }
 
     public function test_botIdによる会話取得が成功する(): void
