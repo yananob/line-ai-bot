@@ -45,20 +45,19 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
         $bot->setLineTarget($data['line_target'] ?? '');
 
         // Load triggers
-        $triggersSnapshot = $this->getBotCollection($botId)->document('triggers')->snapshot();
+        $triggerDocs = $this->getBotCollection($botId)->document('triggers')->collection('triggers')->documents();
         $triggers = [];
-        if ($triggersSnapshot->exists()) {
-            $tDataList = $triggersSnapshot->data()['triggers'] ?? [];
-            foreach ($tDataList as $id => $tData) {
-                // Assuming TimerTrigger for now, this would need to be more flexible
-                if (isset($tData['event']) && $tData['event'] === 'timer') {
-                    $dateForTrigger = (string)($tData['date'] ?? '');
-                    $timeForTrigger = (string)($tData['time'] ?? '');
-                    $request = (string)($tData['request'] ?? '');
-                    $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $request);
-                    $trigger->setId((string)$id);
-                    $triggers[$trigger->getId()] = $trigger;
-                }
+        foreach ($triggerDocs as $doc) {
+            $id = $doc->id();
+            $tData = $doc->data();
+            // Assuming TimerTrigger for now, this would need to be more flexible
+            if (isset($tData['event']) && $tData['event'] === 'timer') {
+                $dateForTrigger = (string)($tData['date'] ?? '');
+                $timeForTrigger = (string)($tData['time'] ?? '');
+                $request = (string)($tData['request'] ?? '');
+                $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $request);
+                $trigger->setId((string)$id);
+                $triggers[$trigger->getId()] = $trigger;
             }
         }
         $bot->setTriggers($triggers);
@@ -124,11 +123,11 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
         $botCollection->document('config')->set($configData);
 
         // Save triggers
-        $triggerDataList = [];
+        $triggersCollection = $botCollection->document('triggers')->collection('triggers');
         foreach ($bot->getTriggers() as $trigger) {
-            $triggerDataList[$trigger->getId() ?: uniqid('trigger_')] = $trigger->toArray();
+            $triggerId = $trigger->getId() ?: uniqid('trigger_');
+            $triggersCollection->document($triggerId)->set($trigger->toArray());
         }
-        $botCollection->document('triggers')->set(['triggers' => $triggerDataList]);
     }
 
     public function getAllUserBots(): array

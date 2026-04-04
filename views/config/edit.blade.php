@@ -15,108 +15,102 @@
                 <label for="bot_id" class="form-label">Bot ID</label>
                 <input type="text" class="form-control" id="bot_id" name="bot_id" value="{{ $botId ?: '' }}" {{ $botId ? 'readonly' : '' }} required>
             </div>
-            <div class="mb-3">
-                <label for="json_content" class="form-label">Config (JSON)</label>
-                <textarea class="form-control" id="json_content" name="json_content" rows="10" required>{{ $dataJson }}</textarea>
+
+            <div class="mb-4">
+                <label class="form-label d-block">Bot Characteristics</label>
+                <div id="bot_characteristics_container">
+                    @forelse($botChars as $char)
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="bot_characteristics[]" value="{{ $char }}">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @empty
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="bot_characteristics[]" value="">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @endforelse
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary add-item" data-container="bot_characteristics_container" data-name="bot_characteristics[]">Add Item</button>
             </div>
+
+            <div class="mb-4">
+                <label class="form-label d-block">Human Characteristics</label>
+                <div id="human_characteristics_container">
+                    @forelse($humanChars as $char)
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="human_characteristics[]" value="{{ $char }}">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @empty
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="human_characteristics[]" value="">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @endforelse
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary add-item" data-container="human_characteristics_container" data-name="human_characteristics[]">Add Item</button>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label d-block">Requests</label>
+                <div id="requests_container">
+                    @forelse($requests as $req)
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="requests[]" value="{{ $req }}">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @empty
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="requests[]" value="">
+                        <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                    </div>
+                    @endforelse
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary add-item" data-container="requests_container" data-name="requests[]">Add Item</button>
+            </div>
+
+            <div class="mb-3">
+                <label for="line_target" class="form-label">LINE Target</label>
+                <input type="text" class="form-control" id="line_target" name="line_target" value="{{ $lineTarget }}">
+            </div>
+
             <button type="submit" class="btn btn-primary">Save Config</button>
         </form>
     </div>
 </div>
 
-@if($botId)
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Triggers</span>
-        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#triggerModal">Add Trigger</button>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-sm">
-                <thead>
-                    <tr>
-                        <th scope="col">Trigger ID</th>
-                        <th scope="col">Data (JSON)</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($triggers as $tid => $tdata)
-                    <tr>
-                        <td>{{ $tid }}</td>
-                        <td><code>{{ json_encode($tdata, JSON_UNESCAPED_UNICODE) }}</code></td>
-                        <td>
-                            <button type="button" class="btn btn-xs btn-primary edit-trigger"
-                                data-id="{{ $tid }}"
-                                data-json="{{ json_encode($tdata, JSON_UNESCAPED_UNICODE) }}"
-                                data-bs-toggle="modal" data-bs-target="#triggerModal">Edit</button>
-                            <form action="{{ $basePath }}/config/trigger/delete" method="POST" style="display:inline-block;" onsubmit="return confirm('Delete Trigger?');">
-                                <input type="hidden" name="bot_id" value="{{ $botId }}">
-                                <input type="hidden" name="trigger_id" value="{{ $tid }}">
-                                <button type="submit" class="btn btn-xs btn-danger">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Modal -->
-<div class="modal fade" id="triggerModal" tabindex="-1" aria-labelledby="triggerModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ $basePath }}/config/trigger/save" method="POST">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="triggerModalLabel">Trigger Editor</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="bot_id" value="{{ $botId }}">
-                    <div class="mb-3">
-                        <label for="trigger_id" class="form-label">Trigger ID</label>
-                        <input type="text" class="form-control" id="trigger_id" name="trigger_id" placeholder="leave empty to auto-generate">
-                    </div>
-                    <div class="mb-3">
-                        <label for="trigger_json" class="form-label">Trigger Data (JSON)</label>
-                        <textarea class="form-control" id="trigger_json" name="trigger_json" rows="5" required>{"event": "timer", "date": "", "time": "", "request": ""}</textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Trigger</button>
-                </div>
-            </form>
-        </div>
-    </div>
+<div class="mt-4">
+    <a href="{{ $basePath }}/config" class="btn btn-secondary">Back to List</a>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const triggerModal = document.getElementById('triggerModal');
-        const triggerIdInput = document.getElementById('trigger_id');
-        const triggerJsonInput = document.getElementById('trigger_json');
-
-        document.querySelectorAll('.edit-trigger').forEach(button => {
-            button.addEventListener('click', () => {
-                triggerIdInput.value = button.getAttribute('data-id');
-                triggerIdInput.setAttribute('readonly', 'true');
-                triggerJsonInput.value = button.getAttribute('data-json');
+        document.querySelectorAll('.add-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const containerId = btn.getAttribute('data-container');
+                const name = btn.getAttribute('data-name');
+                const container = document.getElementById(containerId);
+                const div = document.createElement('div');
+                div.className = 'input-group mb-2';
+                div.innerHTML = `
+                    <input type="text" class="form-control" name="${name}" value="">
+                    <button class="btn btn-outline-danger remove-item" type="button">Remove</button>
+                `;
+                container.appendChild(div);
             });
         });
 
-        triggerModal.addEventListener('hidden.bs.modal', () => {
-            triggerIdInput.value = '';
-            triggerIdInput.removeAttribute('readonly');
-            triggerJsonInput.value = '{"event": "timer", "date": "", "time": "", "request": ""}';
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-item')) {
+                const container = e.target.closest('.input-group').parentElement;
+                if (container.querySelectorAll('.input-group').length > 1) {
+                    e.target.closest('.input-group').remove();
+                } else {
+                    e.target.closest('.input-group').querySelector('input').value = '';
+                }
+            }
         });
     });
 </script>
-@endif
-
-<div class="mt-4">
-    <a href="{{ $basePath }}/config" class="btn btn-secondary">Back to List</a>
-</div>
 @endsection

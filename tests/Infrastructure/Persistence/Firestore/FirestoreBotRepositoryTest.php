@@ -39,7 +39,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $configDocMock = $this->createMock(DocumentReference::class);
         $configSnapshotMock = $this->createMock(DocumentSnapshot::class);
         $triggersDocMock = $this->createMock(DocumentReference::class);
-        $triggersSnapshotMock = $this->createMock(DocumentSnapshot::class);
+        $triggersSubCollMock = $this->createMock(CollectionReference::class);
 
         $botCollMock->method('document')->willReturnCallback(function($id) use ($configDocMock, $triggersDocMock) {
             if ($id === 'config') return $configDocMock;
@@ -49,15 +49,26 @@ final class FirestoreBotRepositoryTest extends TestCase
 
         $configDocMock->method('snapshot')->willReturn($configSnapshotMock);
 
-        $triggersDocMock->method('snapshot')->willReturn($triggersSnapshotMock);
+        $triggersDocMock->method('collection')->with('triggers')->willReturn($triggersSubCollMock);
+
         if ($triggersData !== null) {
-            $triggersSnapshotMock->method('exists')->willReturn(true);
-            $triggersSnapshotMock->method('data')->willReturn(['triggers' => $triggersData]);
+            $docs = [];
+            foreach ($triggersData as $tid => $tdata) {
+                $docMock = $this->createMock(DocumentSnapshot::class);
+                $docMock->method('id')->willReturn($tid);
+                $docMock->method('data')->willReturn($tdata);
+                $docs[] = $docMock;
+
+                // For individual save
+                $docRefMock = $this->createMock(DocumentReference::class);
+                $triggersSubCollMock->method('document')->with($tid)->willReturn($docRefMock);
+            }
+            $triggersSubCollMock->method('documents')->willReturn($docs);
         } else {
-            $triggersSnapshotMock->method('exists')->willReturn(false);
+            $triggersSubCollMock->method('documents')->willReturn([]);
         }
 
-        return [$botCollMock, $configDocMock, $configSnapshotMock, $triggersDocMock, $triggersSnapshotMock];
+        return [$botCollMock, $configDocMock, $configSnapshotMock, $triggersDocMock, $triggersSubCollMock];
     }
 
     public function test_findDefaultが成功する(): void

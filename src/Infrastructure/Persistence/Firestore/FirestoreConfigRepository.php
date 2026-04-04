@@ -45,38 +45,39 @@ class FirestoreConfigRepository extends AbstractFirestoreRepository implements C
 
     public function findTriggers(string $botId): array
     {
-        $snapshot = $this->getBotCollection($botId)->document('triggers')->snapshot();
-        if ($snapshot->exists()) {
-            return $snapshot->data()['triggers'] ?? [];
+        $triggers = [];
+        $documents = $this->getBotCollection($botId)->document('triggers')->collection('triggers')->documents();
+        foreach ($documents as $doc) {
+            $triggers[$doc->id()] = $doc->data();
         }
-        return [];
+        return $triggers;
+    }
+
+    public function findTrigger(string $botId, string $triggerId): ?array
+    {
+        $snapshot = $this->getBotCollection($botId)->document('triggers')->collection('triggers')->document($triggerId)->snapshot();
+        return $snapshot->exists() ? $snapshot->data() : null;
     }
 
     public function saveTrigger(string $botId, string $triggerId, array $data): void
     {
-        $docRef = $this->getBotCollection($botId)->document('triggers');
-        $snapshot = $docRef->snapshot();
-        $triggers = $snapshot->exists() ? ($snapshot->data()['triggers'] ?? []) : [];
-        $triggers[$triggerId] = $data;
-        $docRef->set(['triggers' => $triggers]);
+        $this->getBotCollection($botId)->document('triggers')->collection('triggers')->document($triggerId)->set($data);
     }
 
     public function deleteTrigger(string $botId, string $triggerId): void
     {
-        $docRef = $this->getBotCollection($botId)->document('triggers');
-        $snapshot = $docRef->snapshot();
-        if ($snapshot->exists()) {
-            $triggers = $snapshot->data()['triggers'] ?? [];
-            if (isset($triggers[$triggerId])) {
-                unset($triggers[$triggerId]);
-                $docRef->set(['triggers' => $triggers]);
-            }
-        }
+        $this->getBotCollection($botId)->document('triggers')->collection('triggers')->document($triggerId)->delete();
     }
 
     public function deleteBot(string $botId): void
     {
         $this->getBotCollection($botId)->document('config')->delete();
+
+        // Delete all triggers in the sub-collection
+        $triggerDocs = $this->getBotCollection($botId)->document('triggers')->collection('triggers')->documents();
+        foreach ($triggerDocs as $doc) {
+            $doc->reference()->delete();
+        }
         $this->getBotCollection($botId)->document('triggers')->delete();
     }
 }

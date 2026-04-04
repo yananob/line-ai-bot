@@ -18,6 +18,8 @@ interface ConfigRepository
      */
     public function findTriggers(string $botId): array;
 
+    public function findTrigger(string $botId, string $triggerId): ?array;
+
     public function saveTrigger(string $botId, string $triggerId, array $data): void;
 
     public function deleteTrigger(string $botId, string $triggerId): void;

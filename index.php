@@ -46,8 +46,15 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             if (empty($params)) {
                 parse_str($body, $params);
             }
-            $configService->saveBotConfig((string)$params['bot_id'], (string)$params['json_content']);
-            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
+            $botId = (string)$params['bot_id'];
+            $data = [
+                'bot_characteristics' => array_filter(array_map('trim', (array)($params['bot_characteristics'] ?? [])), fn($v) => $v !== ''),
+                'human_characteristics' => array_filter(array_map('trim', (array)($params['human_characteristics'] ?? [])), fn($v) => $v !== ''),
+                'requests' => array_filter(array_map('trim', (array)($params['requests'] ?? [])), fn($v) => $v !== ''),
+                'line_target' => (string)($params['line_target'] ?? ''),
+            ];
+            $configService->saveBotConfig($botId, $data);
+            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $botId]);
         }
         if ($subPath === '/delete') {
             $body = (string)$request->getBody();
@@ -58,15 +65,37 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             $configService->deleteBot((string)$params['bot_id']);
             return new Response(302, ['Location' => $basePath . '/config']);
         }
+        if ($subPath === '/triggers') {
+            $botId = $request->getQueryParams()['bot_id'] ?? null;
+            if (!$botId) {
+                return new Response(302, ['Location' => $basePath . '/config']);
+            }
+            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderTriggers($botId));
+        }
+        if ($subPath === '/trigger/edit') {
+            $botId = $request->getQueryParams()['bot_id'] ?? null;
+            $triggerId = $request->getQueryParams()['trigger_id'] ?? null;
+            if (!$botId) {
+                return new Response(302, ['Location' => $basePath . '/config']);
+            }
+            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderTriggerEdit($botId, $triggerId));
+        }
         if ($subPath === '/trigger/save') {
             $body = (string)$request->getBody();
             $params = $request->getParsedBody();
             if (empty($params)) {
                 parse_str($body, $params);
             }
+            $botId = (string)$params['bot_id'];
             $triggerId = $params['trigger_id'] ?: uniqid('trigger_');
-            $configService->saveTrigger((string)$params['bot_id'], (string)$triggerId, (string)$params['trigger_json']);
-            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
+            $data = [
+                'event' => (string)($params['event'] ?? 'timer'),
+                'date' => (string)($params['date'] ?? ''),
+                'time' => (string)($params['time'] ?? ''),
+                'request' => (string)($params['request'] ?? ''),
+            ];
+            $configService->saveTrigger($botId, $triggerId, $data);
+            return new Response(302, ['Location' => $basePath . '/config/triggers?bot_id=' . $botId]);
         }
         if ($subPath === '/trigger/delete') {
             $body = (string)$request->getBody();
@@ -74,8 +103,9 @@ function main_http(ServerRequestInterface $request): ResponseInterface
             if (empty($params)) {
                 parse_str($body, $params);
             }
-            $configService->deleteTrigger((string)$params['bot_id'], (string)$params['trigger_id']);
-            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $params['bot_id']]);
+            $botId = (string)$params['bot_id'];
+            $configService->deleteTrigger($botId, (string)$params['trigger_id']);
+            return new Response(302, ['Location' => $basePath . '/config/triggers?bot_id=' . $botId]);
         }
 
         return new Response(404, [], 'Not Found');
