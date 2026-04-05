@@ -6,16 +6,19 @@ namespace App\Infrastructure\Gpt;
 
 use App\Domain\Bot\Service\GptInterface;
 use OpenAI\Contracts\ClientContract;
+use App\Infrastructure\Logger\Logger;
 
 class OpenAiGptClient implements GptInterface
 {
     private ClientContract $client;
     private string $model;
+    private ?Logger $logger;
 
-    public function __construct(ClientContract $client, string $model)
+    public function __construct(ClientContract $client, string $model, ?Logger $logger = null)
     {
         $this->client = $client;
         $this->model = $model;
+        $this->logger = $logger;
     }
 
     public function getAnswer(string $context, string $message, array $options = []): string
@@ -36,8 +39,17 @@ class OpenAiGptClient implements GptInterface
 
         $payload = array_merge($payload, $options);
 
-        $response = $this->client->chat()->create($payload);
+        if ($this->logger) {
+            $this->logger->log("OpenAI Request Payload: " . json_encode($payload, JSON_UNESCAPED_UNICODE));
+        }
 
-        return $response->choices[0]->message->content;
+        $response = $this->client->chat()->create($payload);
+        $answer = $response->choices[0]->message->content;
+
+        if ($this->logger) {
+            $this->logger->log("OpenAI Response: " . $answer);
+        }
+
+        return $answer;
     }
 }
