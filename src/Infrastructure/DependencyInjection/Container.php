@@ -10,6 +10,8 @@ use App\Domain\Bot\Bot;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Infrastructure\Gpt\OpenAiGptClient;
+use App\Infrastructure\Logger\Logger;
+use App\Infrastructure\Gcp\CloudFunctionUtils;
 use App\Infrastructure\Line\LineClient;
 use App\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use App\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
@@ -26,6 +28,7 @@ class Container
     private ?OpenAIWebSearchTool $webSearchTool = null;
     private ?LineClient $lineClient = null;
     private ?\App\Domain\Config\ConfigRepository $configRepository = null;
+    private ?Logger $logger = null;
 
     public function __construct()
     {
@@ -68,7 +71,7 @@ class Container
         if ($this->gptClient === null) {
             $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
             $openaiClient = OpenAI::client($openaiApiKey);
-            $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-4o");
+            $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-4o", $this->getLogger());
         }
         return $this->gptClient;
     }
@@ -107,6 +110,14 @@ class Container
         return $this->lineClient;
     }
 
+    public function getLogger(): Logger
+    {
+        if ($this->logger === null) {
+            $this->logger = new Logger(CloudFunctionUtils::getFunctionName());
+        }
+        return $this->logger;
+    }
+
     public function createConfigApplicationService(): \App\Application\Config\ConfigApplicationService
     {
         // Use /tmp for GCF compatibility as the filesystem is read-only.
@@ -134,7 +145,8 @@ class Container
             $bot,
             $this->getCommandAndTriggerService(),
             $messageHandlers,
-            $postbackHandlers
+            $postbackHandlers,
+            $this->getLogger()
         );
     }
 }

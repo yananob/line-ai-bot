@@ -12,6 +12,7 @@ use App\Application\CommandHandler\PostbackHandlerInterface;
 use App\Domain\Bot\ValueObject\Message;
 use App\Domain\Bot\Messages;
 use App\Domain\Exception\HandlerNotFoundException;
+use App\Infrastructure\Logger\Logger;
 
 class ChatApplicationService
 {
@@ -21,28 +22,35 @@ class ChatApplicationService
     private array $messageHandlers;
     /** @var PostbackHandlerInterface[] */
     private array $postbackHandlers;
+    private ?Logger $logger;
 
     /**
      * @param Bot $bot
      * @param CommandAndTriggerService $commandAndTriggerService
      * @param CommandHandlerInterface[] $messageHandlers
      * @param PostbackHandlerInterface[] $postbackHandlers
+     * @param Logger|null $logger
      */
     public function __construct(
         Bot $bot,
         CommandAndTriggerService $commandAndTriggerService,
         array $messageHandlers = [],
-        array $postbackHandlers = []
+        array $postbackHandlers = [],
+        ?Logger $logger = null
     ) {
         $this->bot = $bot;
         $this->commandAndTriggerService = $commandAndTriggerService;
         $this->messageHandlers = $messageHandlers;
         $this->postbackHandlers = $postbackHandlers;
+        $this->logger = $logger;
     }
 
     public function handleMessage(string $messageContent): BotResponse
     {
         $command = $this->commandAndTriggerService->judgeCommand($messageContent);
+        if ($this->logger) {
+            $this->logger->log("Judged Command: " . $command->value);
+        }
         $message = new Message($messageContent, isSystem: false);
 
         foreach ($this->messageHandlers as $handler) {

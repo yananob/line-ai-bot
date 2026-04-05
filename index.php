@@ -20,13 +20,13 @@ const TIMER_TRIGGERED_BY_N_MINS = 10;
 FunctionsFramework::http('main_http', 'main_http');
 function main_http(ServerRequestInterface $request): ResponseInterface
 {
-    $logger = new Logger(CloudFunctionUtils::getFunctionName());
+    $container = new Container();
+    $logger = $container->getLogger();
     $path = $request->getUri()->getPath();
 
     // Routing for Config Editor
     // Detect "/config" regardless of service name prefix (GCF behavior varies).
     if (($configPos = stripos($path, '/config')) !== false) {
-        $container = new Container();
         $configService = $container->createConfigApplicationService();
 
         $basePath = \App\AppConfig::getBasePath();
@@ -117,7 +117,7 @@ function main_http(ServerRequestInterface $request): ResponseInterface
         return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
     }
 
-    $container = new Container();
+    $logger->log("Received HTTP Webhook Body: " . $body);
     $webhookMessage = new LineWebhookMessage($body);
 
     try {
@@ -155,9 +155,9 @@ function main_http(ServerRequestInterface $request): ResponseInterface
 FunctionsFramework::cloudEvent('main_event', 'main_event');
 function main_event(CloudEventInterface $event): void
 {
-    $logger = new Logger(CloudFunctionUtils::getFunctionName());
-    $logger->logSplitter();
     $container = new Container();
+    $logger = $container->getLogger();
+    $logger->logSplitter();
     $line = $container->getLineClient();
     $botRepository = $container->getBotRepository();
 
@@ -175,6 +175,14 @@ function main_event(CloudEventInterface $event): void
             if (!$trigger->shouldRunNow(TIMER_TRIGGERED_BY_N_MINS)) {
                 continue;
             }
+
+            $logger->log(sprintf(
+                "Executing Trigger for bot %s: Date=%s, Time=%s, Request=%s",
+                $botUser->getId(),
+                $trigger->getDate(),
+                $trigger->getTime(),
+                $trigger->getRequest()
+            ));
 
             try {
                 $chatService = $container->createChatApplicationService($botUser);
