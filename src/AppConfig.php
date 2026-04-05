@@ -9,7 +9,6 @@ namespace App;
  * 環境は`APP_ENV`環境変数によって決定されます。
  *
  * サポートされる環境: 'production', 'test', 'development'。
- * `APP_ENV`が設定されていない場合、デフォルトは'development'です。
  */
 class AppConfig
 {
@@ -17,10 +16,15 @@ class AppConfig
      * 現在のアプリケーション環境を取得します。
      *
      * @return string 現在の環境 ('production', 'test', または 'development')。
+     * @throws \RuntimeException APP_ENV環境変数が設定されていない場合。
      */
     public static function getEnvironment(): string
     {
-        return getenv('APP_ENV') ?: 'development';
+        $env = getenv('APP_ENV');
+        if ($env === false || $env === '') {
+            throw new \RuntimeException('APP_ENV environment variable is not set.');
+        }
+        return $env;
     }
 
     /**
@@ -61,34 +65,6 @@ class AppConfig
 
         // development (local)
         return '';
-    }
-
-    /**
-     * LINEメッセージ配信のターゲットとなるユーザー/グループIDを取得します。
-     *
-     * @return string LINEターゲットID。
-     */
-    public static function getLineDeliverTarget(): string
-    {
-        return match (self::getEnvironment()) {
-            'production' => 'ai-bot',
-            'test' => 'nobu',
-            default => 'nobu',
-        };
-    }
-
-    /**
-     * 静的ファイルのベースURLを取得します。
-     *
-     * @return string ベースURL。
-     */
-    public static function getStaticBaseUrl(): string
-    {
-        return match (self::getEnvironment()) {
-            'production' => 'https://storage.googleapis.com/line-ai-bot-static',
-            'test' => 'https://storage.googleapis.com/line-ai-bot-static/test',
-            default => '/public',
-        };
     }
 
     /**
