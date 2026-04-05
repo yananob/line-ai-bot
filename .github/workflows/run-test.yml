@@ -72,5 +72,7 @@ jobs:
         echo $DECODED_BASE64 | base64 --decode > configs/gpt.json
 
     - name: Test with phpunit
+      env:
+        APP_ENV: test
       run: |
         bash tests/run_tests.sh
