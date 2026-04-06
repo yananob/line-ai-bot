@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 final class ConfigTest extends TestCase
 {
-    public function test_it_stores_id_and_data(): void
+    public function test_IDとデータを保持する(): void
     {
         $data = ['key' => 'value'];
         $config = new Config('bot_123', $data);
@@ -18,7 +18,7 @@ final class ConfigTest extends TestCase
         $this->assertSame($data, $config->getData());
     }
 
-    public function test_it_can_update_data(): void
+    public function test_データを更新できる(): void
     {
         $config = new Config('bot_123', ['old' => 'data']);
         $newData = ['new' => 'data'];

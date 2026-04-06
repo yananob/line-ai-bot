@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 final class MessageTest extends TestCase
 {
-    public function test_it_stores_content_and_is_system_flag(): void
+    public function test_内容とシステムフラグを保持する(): void
     {
         $message = new Message("Hello world", false);
         $this->assertSame("Hello world", $message->getContent());
@@ -20,13 +20,13 @@ final class MessageTest extends TestCase
         $this->assertTrue($systemMessage->isSystem());
     }
 
-    public function test_is_system_defaults_to_false(): void
+    public function test_システムフラグのデフォルト値がfalseであることを確認する(): void
     {
         $message = new Message("Default message");
         $this->assertFalse($message->isSystem());
     }
 
-    public function test_it_can_be_converted_to_string(): void
+    public function test_文字列に変換できる(): void
     {
         $message = new Message("Hello");
         $this->assertSame("Hello", (string)$message);

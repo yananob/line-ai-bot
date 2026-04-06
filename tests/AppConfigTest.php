@@ -33,7 +33,7 @@ final class AppConfigTest extends TestCase
         }
     }
 
-    public function test_getEnvironment_returns_value_from_env(): void
+    public function test_getEnvironmentは環境変数から値を取得する(): void
     {
         putenv('APP_ENV=production');
         $this->assertSame('production', AppConfig::getEnvironment());
@@ -42,7 +42,7 @@ final class AppConfigTest extends TestCase
         $this->assertSame('test', AppConfig::getEnvironment());
     }
 
-    public function test_getEnvironment_throws_exception_if_not_set(): void
+    public function test_getEnvironmentは環境変数が設定されていない場合に例外を投げる(): void
     {
         putenv('APP_ENV'); // Unset
         $this->expectException(\RuntimeException::class);
@@ -50,7 +50,7 @@ final class AppConfigTest extends TestCase
         AppConfig::getEnvironment();
     }
 
-    public function test_getFirestoreRootCollection_returns_correct_value(): void
+    public function test_getFirestoreRootCollectionは正しい値を返す(): void
     {
         putenv('APP_ENV=production');
         $this->assertSame('ai-bot', AppConfig::getFirestoreRootCollection());
@@ -62,7 +62,7 @@ final class AppConfigTest extends TestCase
         $this->assertSame('ai-bot-test', AppConfig::getFirestoreRootCollection());
     }
 
-    public function test_getBasePath_returns_correct_value(): void
+    public function test_getBasePathは正しい値を返す(): void
     {
         putenv('APP_ENV=production');
         $this->assertSame('/line-ai-bot', AppConfig::getBasePath());
@@ -78,7 +78,7 @@ final class AppConfigTest extends TestCase
         $this->assertSame('', AppConfig::getBasePath());
     }
 
-    public function test_isDevelopment_returns_true_only_in_development(): void
+    public function test_isDevelopmentはdevelopmentの場合のみtrueを返す(): void
     {
         putenv('APP_ENV=development');
         $this->assertTrue(AppConfig::isDevelopment());
@@ -87,7 +87,7 @@ final class AppConfigTest extends TestCase
         $this->assertFalse(AppConfig::isDevelopment());
     }
 
-    public function test_isTest_returns_true_only_in_test(): void
+    public function test_isTestはtestの場合のみtrueを返す(): void
     {
         putenv('APP_ENV=test');
         $this->assertTrue(AppConfig::isTest());
@@ -96,7 +96,7 @@ final class AppConfigTest extends TestCase
         $this->assertFalse(AppConfig::isTest());
     }
 
-    public function test_getFunctionName_returns_k_service(): void
+    public function test_getFunctionNameはK_SERVICEを返す(): void
     {
         putenv('K_SERVICE=hello-func');
         $this->assertSame('hello-func', AppConfig::getFunctionName());

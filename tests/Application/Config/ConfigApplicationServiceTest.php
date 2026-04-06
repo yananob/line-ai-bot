@@ -28,7 +28,7 @@ final class ConfigApplicationServiceTest extends TestCase
         );
     }
 
-    public function test_renderIndex_calls_repository_and_returns_string(): void
+    public function test_renderIndexはリポジトリを呼び出しHTMLを返す(): void
     {
         $this->repositoryMock->expects($this->once())
             ->method('findAllConfigs')
@@ -39,7 +39,7 @@ final class ConfigApplicationServiceTest extends TestCase
         $this->assertStringContainsString('Bot 1', $html);
     }
 
-    public function test_renderEdit_calls_repository_when_botId_provided(): void
+    public function test_renderEditはbotIdが指定された場合にリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $this->repositoryMock->expects($this->once())
@@ -52,7 +52,7 @@ final class ConfigApplicationServiceTest extends TestCase
         $this->assertStringContainsString('Test Bot', $html);
     }
 
-    public function test_renderTriggers_calls_repository(): void
+    public function test_renderTriggersはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $this->repositoryMock->expects($this->once())
@@ -69,7 +69,7 @@ final class ConfigApplicationServiceTest extends TestCase
         $this->assertStringContainsString('Hello', $html);
     }
 
-    public function test_renderTriggerEdit_calls_repository(): void
+    public function test_renderTriggerEditはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $triggerId = 'trigger-1';
@@ -87,7 +87,7 @@ final class ConfigApplicationServiceTest extends TestCase
         $this->assertStringContainsString('Hello', $html);
     }
 
-    public function test_saveBotConfig_calls_repository(): void
+    public function test_saveBotConfigはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $data = ['bot_name' => 'New Name'];
@@ -98,7 +98,7 @@ final class ConfigApplicationServiceTest extends TestCase
         $this->service->saveBotConfig($botId, $data);
     }
 
-    public function test_saveTrigger_calls_repository(): void
+    public function test_saveTriggerはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $triggerId = 'trigger-1';
@@ -110,7 +110,7 @@ final class ConfigApplicationServiceTest extends TestCase
         $this->service->saveTrigger($botId, $triggerId, $data);
     }
 
-    public function test_deleteTrigger_calls_repository(): void
+    public function test_deleteTriggerはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $triggerId = 'trigger-1';
@@ -121,7 +121,7 @@ final class ConfigApplicationServiceTest extends TestCase
         $this->service->deleteTrigger($botId, $triggerId);
     }
 
-    public function test_deleteBot_calls_repository(): void
+    public function test_deleteBotはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $this->repositoryMock->expects($this->once())
