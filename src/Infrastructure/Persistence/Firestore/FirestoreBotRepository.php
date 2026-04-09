@@ -124,12 +124,36 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
         ];
         $botCollection->document('config')->set($configData);
 
-        // Save triggers
+        // Synchronize triggers
         $triggersCollection = $botCollection->document('triggers')->collection('triggers');
+        $existingTriggerDocs = $triggersCollection->documents();
+        $currentTriggerIds = array_keys($bot->getTriggers());
+
+        // Delete triggers that are no longer in the Bot aggregate
+        foreach ($existingTriggerDocs as $doc) {
+            if (!in_array($doc->id(), $currentTriggerIds, true)) {
+                $doc->reference()->delete();
+            }
+        }
+
+        // Save or update triggers
         foreach ($bot->getTriggers() as $trigger) {
             $triggerId = $trigger->getId() ?: uniqid('trigger_');
             $triggersCollection->document($triggerId)->set($trigger->toArray());
         }
+    }
+
+    public function delete(string $id): void
+    {
+        $botCollection = $this->getBotCollection($id);
+        $botCollection->document('config')->delete();
+
+        // Delete all triggers in the sub-collection
+        $triggerDocs = $botCollection->document('triggers')->collection('triggers')->documents();
+        foreach ($triggerDocs as $doc) {
+            $doc->reference()->delete();
+        }
+        $botCollection->document('triggers')->delete();
     }
 
     public function getAllUserBots(): array

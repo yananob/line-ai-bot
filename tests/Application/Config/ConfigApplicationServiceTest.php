@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Application\Config;
 
 use App\Application\Config\ConfigApplicationService;
-use App\Domain\Config\ConfigRepository;
+use App\Domain\Bot\Bot;
+use App\Domain\Bot\BotRepository;
+use App\Domain\Bot\Trigger\TimerTrigger;
 use PHPUnit\Framework\TestCase;
 
 final class ConfigApplicationServiceTest extends TestCase
@@ -17,7 +19,7 @@ final class ConfigApplicationServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->repositoryMock = $this->createMock(ConfigRepository::class);
+        $this->repositoryMock = $this->createMock(BotRepository::class);
         $this->viewsPath = __DIR__ . '/../../../views';
         $this->cachePath = '/tmp/bladeone_cache_test';
 
@@ -30,9 +32,12 @@ final class ConfigApplicationServiceTest extends TestCase
 
     public function test_renderIndexはリポジトリを呼び出しHTMLを返す(): void
     {
+        $bot = new Bot('bot_1');
+        $bot->setName('Bot 1');
+
         $this->repositoryMock->expects($this->once())
-            ->method('findAllConfigs')
-            ->willReturn(['bot_1' => ['bot_name' => 'Bot 1']]);
+            ->method('getAllUserBots')
+            ->willReturn([$bot]);
 
         $html = $this->service->renderIndex();
         $this->assertIsString($html);
@@ -42,10 +47,13 @@ final class ConfigApplicationServiceTest extends TestCase
     public function test_renderEditはbotIdが指定された場合にリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
+        $bot = new Bot($botId);
+        $bot->setName('Test Bot');
+
         $this->repositoryMock->expects($this->once())
-            ->method('findBotConfig')
+            ->method('findById')
             ->with($botId)
-            ->willReturn(['bot_name' => 'Test Bot']);
+            ->willReturn($bot);
 
         $html = $this->service->renderEdit($botId);
         $this->assertIsString($html);
@@ -55,13 +63,15 @@ final class ConfigApplicationServiceTest extends TestCase
     public function test_renderTriggersはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
+        $bot = new Bot($botId);
+        $bot->setName('Test Bot');
+        $trigger = new TimerTrigger('today', '12:00', 'Hello');
+        $bot->setTrigger('trigger_1', $trigger);
+
         $this->repositoryMock->expects($this->once())
-            ->method('findBotConfig')
-            ->willReturn(['bot_name' => 'Test Bot']);
-        $this->repositoryMock->expects($this->once())
-            ->method('findTriggers')
+            ->method('findById')
             ->with($botId)
-            ->willReturn([['id' => 'trigger_1', 'request' => 'Hello']]);
+            ->willReturn($bot);
 
         $html = $this->service->renderTriggers($botId);
         $this->assertIsString($html);
@@ -73,13 +83,15 @@ final class ConfigApplicationServiceTest extends TestCase
     {
         $botId = 'test-bot';
         $triggerId = 'trigger-1';
+        $bot = new Bot($botId);
+        $bot->setName('Test Bot');
+        $trigger = new TimerTrigger('today', '12:00', 'Hello');
+        $bot->setTrigger($triggerId, $trigger);
+
         $this->repositoryMock->expects($this->once())
-            ->method('findBotConfig')
-            ->willReturn(['bot_name' => 'Test Bot']);
-        $this->repositoryMock->expects($this->once())
-            ->method('findTrigger')
-            ->with($botId, $triggerId)
-            ->willReturn(['id' => $triggerId, 'request' => 'Hello']);
+            ->method('findById')
+            ->with($botId)
+            ->willReturn($bot);
 
         $html = $this->service->renderTriggerEdit($botId, $triggerId);
         $this->assertIsString($html);
@@ -91,9 +103,18 @@ final class ConfigApplicationServiceTest extends TestCase
     {
         $botId = 'test-bot';
         $data = ['bot_name' => 'New Name'];
+        $bot = new Bot($botId);
+
         $this->repositoryMock->expects($this->once())
-            ->method('saveBotConfig')
-            ->with($botId, $data);
+            ->method('findOrDefault')
+            ->with($botId)
+            ->willReturn($bot);
+
+        $this->repositoryMock->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function($savedBot) use ($botId) {
+                return $savedBot->getId() === $botId && $savedBot->getName() === 'New Name';
+            }));
 
         $this->service->saveBotConfig($botId, $data);
     }
@@ -102,30 +123,48 @@ final class ConfigApplicationServiceTest extends TestCase
     {
         $botId = 'test-bot';
         $triggerId = 'trigger-1';
-        $data = ['request' => 'New Trigger'];
+        $data = ['request' => 'New Trigger', 'date' => 'today', 'time' => '12:00'];
+        $bot = new Bot($botId);
+
         $this->repositoryMock->expects($this->once())
-            ->method('saveTrigger')
-            ->with($botId, $triggerId, $data);
+            ->method('findById')
+            ->with($botId)
+            ->willReturn($bot);
+
+        $this->repositoryMock->expects($this->once())
+            ->method('save')
+            ->with($bot);
 
         $this->service->saveTrigger($botId, $triggerId, $data);
+        $this->assertEquals('New Trigger', $bot->getTriggerById($triggerId)->getRequest());
     }
 
     public function test_deleteTriggerはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $triggerId = 'trigger-1';
+        $bot = new Bot($botId);
+        $trigger = new TimerTrigger('today', '12:00', 'Hello');
+        $bot->setTrigger($triggerId, $trigger);
+
         $this->repositoryMock->expects($this->once())
-            ->method('deleteTrigger')
-            ->with($botId, $triggerId);
+            ->method('findById')
+            ->with($botId)
+            ->willReturn($bot);
+
+        $this->repositoryMock->expects($this->once())
+            ->method('save')
+            ->with($bot);
 
         $this->service->deleteTrigger($botId, $triggerId);
+        $this->assertNull($bot->getTriggerById($triggerId));
     }
 
     public function test_deleteBotはリポジトリを呼び出す(): void
     {
         $botId = 'test-bot';
         $this->repositoryMock->expects($this->once())
-            ->method('deleteBot')
+            ->method('delete')
             ->with($botId);
 
         $this->service->deleteBot($botId);
