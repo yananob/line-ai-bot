@@ -101,6 +101,11 @@ class Bot
         return $this->triggers;
     }
 
+    public function getTriggerById(string $id): ?Trigger
+    {
+        return $this->triggers[$id] ?? null;
+    }
+
     public function addTrigger(Trigger $trigger): string
     {
         $triggerId = uniqid('trigger_', true);
@@ -151,5 +156,11 @@ class Bot
     public function setTriggers(array $triggers): void
     {
         $this->triggers = $triggers;
+    }
+
+    public function setTrigger(string $id, Trigger $trigger): void
+    {
+        $trigger->setId($id);
+        $this->triggers[$id] = $trigger;
     }
 }
