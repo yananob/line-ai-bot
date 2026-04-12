@@ -27,19 +27,10 @@ class Container
     private ?CommandAndTriggerService $commandAndTriggerService = null;
     private ?OpenAIWebSearchTool $webSearchTool = null;
     private ?LineClient $lineClient = null;
-    private ?\App\Domain\Config\ConfigRepository $configRepository = null;
     private ?Logger $logger = null;
 
     public function __construct()
     {
-    }
-
-    public function getConfigRepository(): \App\Domain\Config\ConfigRepository
-    {
-        if ($this->configRepository === null) {
-            $this->configRepository = new \App\Infrastructure\Persistence\Firestore\FirestoreConfigRepository();
-        }
-        return $this->configRepository;
     }
 
     public function getBotRepository(): FirestoreBotRepository
@@ -123,7 +114,7 @@ class Container
         // Use /tmp for GCF compatibility as the filesystem is read-only.
         $cachePath = sys_get_temp_dir() . '/bladeone_cache';
         return new \App\Application\Config\ConfigApplicationService(
-            $this->getConfigRepository(),
+            $this->getBotRepository(),
             __DIR__ . '/../../../views',
             $cachePath
         );

@@ -43,4 +43,12 @@ interface BotRepository
      * @return Bot[] An array of Bot objects.
      */
     public function getAllUserBots(): array;
+
+    /**
+     * Deletes a Bot and its associated data.
+     *
+     * @param string $id The ID of the Bot to delete.
+     * @return void
+     */
+    public function delete(string $id): void;
 }

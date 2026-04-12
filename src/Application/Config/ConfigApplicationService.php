@@ -2,7 +2,8 @@
 
 namespace App\Application\Config;
 
-use App\Domain\Config\ConfigRepository;
+use App\Domain\Bot\BotRepository;
+use App\Domain\Bot\Trigger\TimerTrigger;
 use eftec\bladeone\BladeOne;
 
 class ConfigApplicationService
@@ -11,7 +12,7 @@ class ConfigApplicationService
     private string $basePath = '';
 
     public function __construct(
-        private ConfigRepository $configRepository,
+        private BotRepository $botRepository,
         string $viewsPath,
         string $cachePath
     ) {
@@ -28,25 +29,51 @@ class ConfigApplicationService
 
     public function renderIndex(): string
     {
-        $bots = $this->configRepository->findAllConfigs();
+        $botConfigs = [];
+        foreach ($this->botRepository->getAllUserBots() as $bot) {
+            $botConfigs[$bot->getId()] = [
+                'bot_name' => $bot->getName(),
+            ];
+        }
+        // Also include default bot
+        try {
+            $defaultBot = $this->botRepository->findDefault();
+            $botConfigs['default'] = [
+                'bot_name' => $defaultBot->getName() ?: 'default',
+            ];
+        } catch (\Exception $e) {
+            // Default might not exist yet
+        }
+
         return $this->blade->run("config.index", [
-            "bots" => $bots,
+            "bots" => $botConfigs,
             "basePath" => $this->basePath
         ]);
     }
 
     public function renderEdit(?string $botId = null): string
     {
-        $data = [];
-        if ($botId !== null) {
-            $data = $this->configRepository->findBotConfig($botId) ?? [];
-        }
+        $botName = '';
+        $botChars = [];
+        $humanChars = [];
+        $requests = [];
+        $lineTarget = '';
 
-        $botName = $data['bot_name'] ?? '';
-        $botChars = $data['bot_characteristics'] ?? [];
-        $humanChars = $data['human_characteristics'] ?? [];
-        $requests = $data['requests'] ?? [];
-        $lineTarget = $data['line_target'] ?? '';
+        if ($botId !== null) {
+            try {
+                $bot = ($botId === 'default')
+                    ? $this->botRepository->findDefault()
+                    : $this->botRepository->findById($botId);
+
+                $botName = $bot->getName();
+                $botChars = $bot->getPersonality()->getBotCharacteristics()->toArray();
+                $humanChars = $bot->getPersonality()->getHumanCharacteristics()->toArray();
+                $requests = $bot->getConfigRequests(true, false)->toArray();
+                $lineTarget = $bot->getLineTarget();
+            } catch (\Exception $e) {
+                // Bot not found, use defaults
+            }
+        }
 
         return $this->blade->run("config.edit", [
             "botId" => $botId,
@@ -61,52 +88,84 @@ class ConfigApplicationService
 
     public function renderTriggers(string $botId): string
     {
-        $data = $this->configRepository->findBotConfig($botId) ?? [];
-        $botName = $data['bot_name'] ?? '';
-        $triggers = $this->configRepository->findTriggers($botId);
+        $bot = ($botId === 'default')
+            ? $this->botRepository->findDefault()
+            : $this->botRepository->findById($botId);
+
+        $triggersData = [];
+        foreach ($bot->getTriggers() as $trigger) {
+            $triggersData[$trigger->getId()] = $trigger->toArray();
+        }
+
         return $this->blade->run("config.triggers", [
             "botId" => $botId,
-            "botName" => $botName,
-            "triggers" => $triggers,
+            "botName" => $bot->getName(),
+            "triggers" => $triggersData,
             "basePath" => $this->basePath
         ]);
     }
 
     public function renderTriggerEdit(string $botId, ?string $triggerId = null): string
     {
-        $data = $this->configRepository->findBotConfig($botId) ?? [];
-        $botName = $data['bot_name'] ?? '';
-        $trigger = null;
+        $bot = ($botId === 'default')
+            ? $this->botRepository->findDefault()
+            : $this->botRepository->findById($botId);
+
+        $triggerData = null;
         if ($triggerId !== null) {
-            $trigger = $this->configRepository->findTrigger($botId, $triggerId);
+            $trigger = $bot->getTriggerById($triggerId);
+            if ($trigger) {
+                $triggerData = $trigger->toArray();
+            }
         }
 
         return $this->blade->run("config.trigger_edit", [
             "botId" => $botId,
-            "botName" => $botName,
+            "botName" => $bot->getName(),
             "triggerId" => $triggerId,
-            "trigger" => $trigger,
+            "trigger" => $triggerData,
             "basePath" => $this->basePath
         ]);
     }
 
     public function saveBotConfig(string $botId, array $data): void
     {
-        $this->configRepository->saveBotConfig($botId, $data);
+        $bot = $this->botRepository->findOrDefault($botId);
+        $bot->setName($data['bot_name'] ?? '');
+        $bot->setBotCharacteristics($data['bot_characteristics'] ?? []);
+        $bot->setHumanCharacteristics($data['human_characteristics'] ?? []);
+        $bot->setConfigRequests($data['requests'] ?? []);
+        $bot->setLineTarget($data['line_target'] ?? '');
+        $this->botRepository->save($bot);
     }
 
     public function saveTrigger(string $botId, string $triggerId, array $data): void
     {
-        $this->configRepository->saveTrigger($botId, $triggerId, $data);
+        $bot = ($botId === 'default')
+            ? $this->botRepository->findDefault()
+            : $this->botRepository->findById($botId);
+
+        $trigger = new TimerTrigger(
+            (string)($data['date'] ?? ''),
+            (string)($data['time'] ?? ''),
+            (string)($data['request'] ?? '')
+        );
+        $bot->setTrigger($triggerId, $trigger);
+        $this->botRepository->save($bot);
     }
 
     public function deleteTrigger(string $botId, string $triggerId): void
     {
-        $this->configRepository->deleteTrigger($botId, $triggerId);
+        $bot = ($botId === 'default')
+            ? $this->botRepository->findDefault()
+            : $this->botRepository->findById($botId);
+
+        $bot->deleteTriggerById($triggerId);
+        $this->botRepository->save($bot);
     }
 
     public function deleteBot(string $botId): void
     {
-        $this->configRepository->deleteBot($botId);
+        $this->botRepository->delete($botId);
     }
 }
