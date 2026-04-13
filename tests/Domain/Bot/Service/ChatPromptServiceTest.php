@@ -64,4 +64,39 @@ class ChatPromptServiceTest extends TestCase
         $this->assertStringNotContainsString("【Web検索結果】", $context);
         $this->assertStringContainsString("【依頼事項の前提】", $context);
     }
+
+    public function test_generateContext_excludes_empty_sections(): void
+    {
+        $bot = new Bot("bot-789");
+        $bot->setBotCharacteristics([]);
+        $bot->setHumanCharacteristics([]);
+
+        $conversations = [];
+        $requests = new StringList([]);
+        $webSearchResults = null;
+
+        $context = $this->service->generateContext($bot, $conversations, $requests, $webSearchResults);
+
+        // Sections that should be excluded when empty
+        $this->assertStringNotContainsString("【話し相手の情報】", $context);
+        $this->assertStringNotContainsString("【最近の会話内容】", $context);
+        $this->assertStringNotContainsString("【Web検索結果】", $context);
+
+        // bot characteristics and requests are formatted by StringList, which might return empty string or specific format
+        // ChatPromptService logic for characteristics and requests currently doesn't remove the section title
+        $this->assertStringContainsString("【チャットボット（あなた）の情報】", $context);
+        $this->assertStringContainsString("【依頼事項の前提】", $context);
+    }
+
+    public function test_generateContext_includes_web_search_results_when_provided(): void
+    {
+        $bot = new Bot("bot-abc");
+        $requests = new StringList([]);
+        $webSearchResults = "This is a search result.";
+
+        $context = $this->service->generateContext($bot, [], $requests, $webSearchResults);
+
+        $this->assertStringContainsString("【Web検索結果】", $context);
+        $this->assertStringContainsString("This is a search result.", $context);
+    }
 }
