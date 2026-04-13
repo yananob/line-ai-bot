@@ -75,6 +75,12 @@ final class TriggerScheduleTest extends TestCase
         $this->assertEquals('08:30', $schedule->getResolvedTime());
     }
 
+    public function test_文字列変換(): void
+    {
+        $schedule = new TriggerSchedule('2025-01-01', '12:00');
+        $this->assertEquals('2025/01/01 12:00', (string)$schedule);
+    }
+
     /**
      * @dataProvider provideShouldRunNowData
      */

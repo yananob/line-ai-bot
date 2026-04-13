@@ -37,9 +37,11 @@ final class CommandHandlerFactoryTest extends TestCase
 
         $this->assertIsArray($handlers);
         $this->assertCount(4, $handlers);
-        foreach ($handlers as $handler) {
-            $this->assertInstanceOf(CommandHandlerInterface::class, $handler);
-        }
+
+        $this->assertInstanceOf(\App\Application\CommandHandler\HelpHandler::class, $handlers[0]);
+        $this->assertInstanceOf(\App\Application\CommandHandler\AddTriggerHandler::class, $handlers[1]);
+        $this->assertInstanceOf(\App\Application\CommandHandler\RemoveTriggerHandler::class, $handlers[2]);
+        $this->assertInstanceOf(\App\Application\CommandHandler\DefaultChatHandler::class, $handlers[3]);
     }
 
     public function test_createPostbackHandlers_returns_expected_handlers(): void
