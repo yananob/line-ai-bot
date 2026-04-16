@@ -12,6 +12,8 @@ use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Infrastructure\Gpt\OpenAiGptClient;
 use App\Infrastructure\Logger\Logger;
 use App\Infrastructure\Gcp\CloudFunctionUtils;
+use App\Infrastructure\Http\BotConfigController;
+use App\Infrastructure\Http\LineWebhookController;
 use App\Infrastructure\Line\LineClient;
 use App\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use App\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
@@ -138,6 +140,21 @@ class Container
             $messageHandlers,
             $postbackHandlers,
             $this->getLogger()
+        );
+    }
+
+    public function createBotConfigController(): BotConfigController
+    {
+        return new BotConfigController($this->createConfigApplicationService());
+    }
+
+    public function createLineWebhookController(): LineWebhookController
+    {
+        return new LineWebhookController(
+            $this->getBotRepository(),
+            $this->getLineClient(),
+            $this->getLogger(),
+            $this
         );
     }
 }

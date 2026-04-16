@@ -8,10 +8,6 @@ use Google\CloudFunctions\FunctionsFramework;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use CloudEvents\V1\CloudEventInterface;
-use GuzzleHttp\Psr7\Response;
-use App\Infrastructure\Logger\Logger;
-use App\Infrastructure\Gcp\CloudFunctionUtils;
-use App\Infrastructure\Line\LineWebhookMessage;
 use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Infrastructure\DependencyInjection\Container;
 
@@ -21,135 +17,15 @@ FunctionsFramework::http('main_http', 'main_http');
 function main_http(ServerRequestInterface $request): ResponseInterface
 {
     $container = new Container();
-    $logger = $container->getLogger();
     $path = $request->getUri()->getPath();
 
     // Routing for Config Editor
-    // Detect "/config" regardless of service name prefix (GCF behavior varies).
-    if (($configPos = stripos($path, '/config')) !== false) {
-        $configService = $container->createConfigApplicationService();
-
-        $basePath = \App\AppConfig::getBasePath();
-        $subPath = substr($path, $configPos + strlen('/config'));
-        $configService->setBasePath($basePath);
-
-        if ($subPath === '' || $subPath === '/') {
-            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderIndex());
-        }
-        if ($subPath === '/edit') {
-            $botId = $request->getQueryParams()['bot_id'] ?? null;
-            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderEdit($botId));
-        }
-        if ($subPath === '/save') {
-            $body = (string)$request->getBody();
-            $params = $request->getParsedBody();
-            if (empty($params)) {
-                parse_str($body, $params);
-            }
-            $botId = $params['bot_id'] ?: uniqid('bot_');
-            $data = [
-                'bot_name' => (string)($params['bot_name'] ?? ''),
-                'bot_characteristics' => array_filter(array_map('trim', (array)($params['bot_characteristics'] ?? [])), fn($v) => $v !== ''),
-                'human_characteristics' => array_filter(array_map('trim', (array)($params['human_characteristics'] ?? [])), fn($v) => $v !== ''),
-                'requests' => array_filter(array_map('trim', (array)($params['requests'] ?? [])), fn($v) => $v !== ''),
-                'line_target' => (string)($params['line_target'] ?? ''),
-            ];
-            $configService->saveBotConfig($botId, $data);
-            return new Response(302, ['Location' => $basePath . '/config/edit?bot_id=' . $botId]);
-        }
-        if ($subPath === '/delete') {
-            $body = (string)$request->getBody();
-            $params = $request->getParsedBody();
-            if (empty($params)) {
-                parse_str($body, $params);
-            }
-            $configService->deleteBot((string)$params['bot_id']);
-            return new Response(302, ['Location' => $basePath . '/config']);
-        }
-        if ($subPath === '/triggers') {
-            $botId = $request->getQueryParams()['bot_id'] ?? null;
-            if (!$botId) {
-                return new Response(302, ['Location' => $basePath . '/config']);
-            }
-            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderTriggers($botId));
-        }
-        if ($subPath === '/trigger/edit') {
-            $botId = $request->getQueryParams()['bot_id'] ?? null;
-            $triggerId = $request->getQueryParams()['trigger_id'] ?? null;
-            if (!$botId) {
-                return new Response(302, ['Location' => $basePath . '/config']);
-            }
-            return new Response(200, ['Content-Type' => 'text/html'], $configService->renderTriggerEdit($botId, $triggerId));
-        }
-        if ($subPath === '/trigger/save') {
-            $body = (string)$request->getBody();
-            $params = $request->getParsedBody();
-            if (empty($params)) {
-                parse_str($body, $params);
-            }
-            $botId = (string)$params['bot_id'];
-            $triggerId = $params['trigger_id'] ?: uniqid('trigger_');
-            $data = [
-                'event' => (string)($params['event'] ?? 'timer'),
-                'date' => (string)($params['date'] ?? ''),
-                'time' => (string)($params['time'] ?? ''),
-                'request' => (string)($params['request'] ?? ''),
-            ];
-            $configService->saveTrigger($botId, $triggerId, $data);
-            return new Response(302, ['Location' => $basePath . '/config/triggers?bot_id=' . $botId]);
-        }
-        if ($subPath === '/trigger/delete') {
-            $body = (string)$request->getBody();
-            $params = $request->getParsedBody();
-            if (empty($params)) {
-                parse_str($body, $params);
-            }
-            $botId = (string)$params['bot_id'];
-            $configService->deleteTrigger($botId, (string)$params['trigger_id']);
-            return new Response(302, ['Location' => $basePath . '/config/triggers?bot_id=' . $botId]);
-        }
-
-        return new Response(404, [], 'Not Found');
+    if (stripos($path, '/config') !== false) {
+        return $container->createBotConfigController()->handle($request);
     }
 
-    $body = (string)$request->getBody();
-    if ($request->getMethod() !== 'POST' || trim($body) === '') {
-        return new Response(200, ['Content-Type' => 'text/plain'], 'OK');
-    }
-
-    $logger->log("Received HTTP Webhook Body: " . $body);
-    $webhookMessage = new LineWebhookMessage($body);
-
-    try {
-        $bot = $container->getBotRepository()->findOrDefault($webhookMessage->getTargetId());
-        $chatService = $container->createChatApplicationService($bot);
-    } catch (\Exception $e) {
-        $logger->log("Failed to initialize ChatApplicationService for target {$webhookMessage->getTargetId()}: " . $e->getMessage());
-        return new Response(500, ['Content-Type' => 'application/json'], '{"result": "error", "message": "Bot initialization failed."}');
-    }
-
-    $line = $container->getLineClient();
-    $line->showLoading(
-        bot: $chatService->getLineTarget(),
-        targetId: $webhookMessage->getTargetId(),
-    );
-
-    if ($webhookMessage->getType() === LineWebhookMessage::TYPE_MESSAGE) {
-        $botResponse = $chatService->handleMessage($webhookMessage->getMessage());
-    } elseif ($webhookMessage->getType() === LineWebhookMessage::TYPE_POSTBACK) {
-        $botResponse = $chatService->handlePostback($webhookMessage->getPostbackData());
-    } else {
-        throw new \Exception("Unsupported message type: " . $webhookMessage->getType());
-    }
-
-    $line->sendReply(
-        bot: $chatService->getLineTarget(),
-        message: $botResponse->getText(),
-        replyToken: $webhookMessage->getReplyToken(),
-        quickReplyItems: $botResponse->getQuickReply(),
-    );
-        
-    return new Response(200, ['Content-Type' => 'application/json'], '{"result": "ok"}');
+    // Default: LINE Webhook
+    return $container->createLineWebhookController()->handle($request);
 }
 
 FunctionsFramework::cloudEvent('main_event', 'main_event');
