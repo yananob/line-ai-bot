@@ -24,6 +24,12 @@ final class BotTest extends TestCase
         $this->assertEquals("testBotId", $this->bot->getId());
     }
 
+    public function test_ボットの名前を設定および取得する(): void
+    {
+        $this->bot->setName("テストボット");
+        $this->assertEquals("テストボット", $this->bot->getName());
+    }
+
     public function test_ボットの特性を設定および取得する(): void
     {
         $chars = ["特性1", "特性2"];
@@ -130,9 +136,33 @@ final class BotTest extends TestCase
         $this->assertSame($trigger1, $triggersArray[0]);
         $this->assertEquals($triggerId1, $trigger1->getId());
 
+        // IDで取得
+        $this->assertSame($trigger1, $this->bot->getTriggerById($triggerId1));
+
         $trigger2 = new TimerTrigger("everyday", "12:00", "リクエスト2");
         $this->bot->addTrigger($trigger2);
         $this->assertCount(2, $this->bot->getTriggers());
+    }
+
+    public function test_トリガーを一括設定する(): void
+    {
+        $trigger1 = new TimerTrigger("today", "10:00", "リクエスト1");
+        $trigger2 = new TimerTrigger("tomorrow", "11:00", "リクエスト2");
+        $triggers = ['id1' => $trigger1, 'id2' => $trigger2];
+
+        $this->bot->setTriggers($triggers);
+        $this->assertCount(2, $this->bot->getTriggers());
+        $this->assertSame($trigger1, $this->bot->getTriggerById('id1'));
+        $this->assertSame($trigger2, $this->bot->getTriggerById('id2'));
+    }
+
+    public function test_特定のトリガーを設定する(): void
+    {
+        $trigger = new TimerTrigger("today", "10:00", "リクエスト1");
+        $this->bot->setTrigger('fixed_id', $trigger);
+
+        $this->assertSame($trigger, $this->bot->getTriggerById('fixed_id'));
+        $this->assertEquals('fixed_id', $trigger->getId());
     }
 
     public function test_トリガーを削除する(): void

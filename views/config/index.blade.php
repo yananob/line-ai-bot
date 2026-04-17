@@ -25,6 +25,7 @@
                 <td>
                     <a href="{{ $basePath }}/config/edit?bot_id={{ $botId }}" class="btn btn-xs btn-primary">Edit Config</a>
                     <a href="{{ $basePath }}/config/triggers?bot_id={{ $botId }}" class="btn btn-xs btn-outline-info">Triggers</a>
+                    <a href="{{ $basePath }}/config/logs?bot_id={{ $botId }}" class="btn btn-xs btn-outline-secondary">Logs</a>
                     <form action="{{ $basePath }}/config/delete" method="POST" style="display:inline-block;" onsubmit="return confirm('Delete Bot {{ $botData['bot_name'] ?? $botId }}?');">
                         <input type="hidden" name="bot_id" value="{{ $botId }}">
                         <button type="submit" class="btn btn-xs btn-danger">Delete</button>

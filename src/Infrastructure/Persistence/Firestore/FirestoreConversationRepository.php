@@ -27,10 +27,12 @@ class FirestoreConversationRepository extends AbstractFirestoreRepository implem
                         ->collection($botId);
     }
 
-    public function findByBotId(string $botId, int $limit = 20): array
+    public function findByBotId(string $botId, int $limit = 20, int $offset = 0): array
     {
         $conversationsCollection = $this->getBotConversationsCollection($botId);
-        $query = $conversationsCollection->orderBy('createdAt', Query::DIR_DESCENDING)->limit($limit);
+        $query = $conversationsCollection->orderBy('createdAt', Query::DIR_DESCENDING)
+            ->limit($limit)
+            ->offset($offset);
         $documents = $query->documents();
 
         $conversations = [];

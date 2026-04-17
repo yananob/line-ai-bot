@@ -8,11 +8,13 @@ use App\Application\Config\ConfigApplicationService;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\BotRepository;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Conversation\ConversationRepository;
 use PHPUnit\Framework\TestCase;
 
 final class ConfigApplicationServiceTest extends TestCase
 {
     private $repositoryMock;
+    private $conversationRepositoryMock;
     private ConfigApplicationService $service;
     private string $viewsPath;
     private string $cachePath;
@@ -20,11 +22,13 @@ final class ConfigApplicationServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->repositoryMock = $this->createMock(BotRepository::class);
+        $this->conversationRepositoryMock = $this->createMock(ConversationRepository::class);
         $this->viewsPath = __DIR__ . '/../../../views';
         $this->cachePath = '/tmp/bladeone_cache_test';
 
         $this->service = new ConfigApplicationService(
             $this->repositoryMock,
+            $this->conversationRepositoryMock,
             $this->viewsPath,
             $this->cachePath
         );
@@ -168,5 +172,26 @@ final class ConfigApplicationServiceTest extends TestCase
             ->with($botId);
 
         $this->service->deleteBot($botId);
+    }
+
+    public function test_renderLogsは会話リポジトリを呼び出す(): void
+    {
+        $botId = 'test-bot';
+        $bot = new Bot($botId);
+        $bot->setName('Test Bot');
+
+        $this->repositoryMock->expects($this->once())
+            ->method('findById')
+            ->with($botId)
+            ->willReturn($bot);
+
+        $this->conversationRepositoryMock->expects($this->once())
+            ->method('findByBotId')
+            ->with($botId, 51, 0)
+            ->willReturn([]);
+
+        $html = $this->service->renderLogs($botId, 1);
+        $this->assertIsString($html);
+        $this->assertStringContainsString('Chat Logs: Test Bot', $html);
     }
 }

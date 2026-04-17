@@ -14,7 +14,6 @@ permissions:
 
 jobs:
   prepare:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       function_name: ${{ steps.set_name.outputs.function_name }}
@@ -43,7 +42,6 @@ jobs:
         FIREBASE_SERVICE_ACCOUNT
       deploy_http_trigger: true
       deploy_event_trigger: true
-      runtime: 'php83'
       environment_variables: |-
         APP_ENV=production
     secrets:
@@ -67,4 +65,4 @@ jobs:
           submodules: 'true'
       - name: Add comment to PR
         run: |
-          gh pr comment $PR_NUMBER --body "Deployed to url https://${{ secrets.GCP_REGION }}-${{ secrets.GCP_PROJECT_ID }}.cloudfunctions.net/${{ needs.prepare.outputs.function_name }}"
+          gh pr comment $PR_NUMBER --body "Deployed to url https://${{ secrets.GCP_REGION }}-${{ secrets.GCP_PROJECT_ID }}.cloudfunctions.net/${{ needs.prepare.outputs.function_name }}/config"
