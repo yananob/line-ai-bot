@@ -4,6 +4,7 @@ namespace App\Application\Config;
 
 use App\Domain\Bot\BotRepository;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Conversation\ConversationRepository;
 use eftec\bladeone\BladeOne;
 
 class ConfigApplicationService
@@ -13,6 +14,7 @@ class ConfigApplicationService
 
     public function __construct(
         private BotRepository $botRepository,
+        private ConversationRepository $conversationRepository,
         string $viewsPath,
         string $cachePath
     ) {
@@ -101,6 +103,41 @@ class ConfigApplicationService
             "botId" => $botId,
             "botName" => $bot->getName(),
             "triggers" => $triggersData,
+            "basePath" => $this->basePath
+        ]);
+    }
+
+    public function renderLogs(string $botId, int $page = 1): string
+    {
+        $limit = 50;
+        $offset = ($page - 1) * $limit;
+
+        $bot = ($botId === 'default')
+            ? $this->botRepository->findDefault()
+            : $this->botRepository->findById($botId);
+
+        $conversations = $this->conversationRepository->findByBotId($botId, $limit + 1, $offset);
+
+        $hasMore = count($conversations) > $limit;
+        if ($hasMore) {
+            array_pop($conversations);
+        }
+
+        $logs = [];
+        foreach ($conversations as $conv) {
+            $logs[] = [
+                'speaker' => $conv->getSpeaker(),
+                'content' => $conv->getContent(),
+                'created_at' => $conv->getCreatedAt()->format('Y-m-d H:i:s'),
+            ];
+        }
+
+        return $this->blade->run("config.logs", [
+            "botId" => $botId,
+            "botName" => $bot->getName(),
+            "logs" => $logs,
+            "page" => $page,
+            "hasMore" => $hasMore,
             "basePath" => $this->basePath
         ]);
     }

@@ -61,6 +61,14 @@ class BotConfigController
             }
             return new Response(200, ['Content-Type' => 'text/html'], $this->configService->renderTriggers($botId));
         }
+        if ($subPath === '/logs') {
+            $botId = $request->getQueryParams()['bot_id'] ?? null;
+            $page = (int)($request->getQueryParams()['page'] ?? 1);
+            if (!$botId) {
+                return new Response(302, ['Location' => $basePath . '/config']);
+            }
+            return new Response(200, ['Content-Type' => 'text/html'], $this->configService->renderLogs($botId, $page));
+        }
         if ($subPath === '/trigger/edit') {
             $botId = $request->getQueryParams()['bot_id'] ?? null;
             $triggerId = $request->getQueryParams()['trigger_id'] ?? null;

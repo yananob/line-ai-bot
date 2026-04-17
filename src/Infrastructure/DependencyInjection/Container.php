@@ -117,6 +117,7 @@ class Container
         $cachePath = sys_get_temp_dir() . '/bladeone_cache';
         return new \App\Application\Config\ConfigApplicationService(
             $this->getBotRepository(),
+            $this->getConversationRepository(),
             __DIR__ . '/../../../views',
             $cachePath
         );
