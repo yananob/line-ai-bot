@@ -10,9 +10,10 @@ interface ConversationRepository
      *
      * @param string $botId The ID of the bot.
      * @param int $limit The maximum number of conversation entries to retrieve.
+     * @param int $offset The number of entries to skip.
      * @return Conversation[] An array of Conversation objects.
      */
-    public function findByBotId(string $botId, int $limit = 20): array;
+    public function findByBotId(string $botId, int $limit = 20, int $offset = 0): array;
 
     /**
      * Saves a Conversation entry.

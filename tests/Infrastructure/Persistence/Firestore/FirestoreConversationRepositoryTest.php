@@ -82,6 +82,8 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseã®å
         $this->botConversationsCollRefMock->expects($this->once())
             ->method('limit')->with($limit)->willReturnSelf();
         $this->botConversationsCollRefMock->expects($this->once())
+            ->method('offset')->with(0)->willReturnSelf();
+        $this->botConversationsCollRefMock->expects($this->once())
             ->method('documents')->willReturn(new \ArrayObject([$docSnapshotMock2, $docSnapshotMock1]));
 
         $conversations = $this->repository->findByBotId($botId, $limit);
@@ -161,10 +163,29 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseã®å
         $botId = "emptyBotId";
         $this->botConversationsCollRefMock->method('orderBy')->willReturnSelf();
         $this->botConversationsCollRefMock->method('limit')->willReturnSelf();
+        $this->botConversationsCollRefMock->method('offset')->willReturnSelf();
         $this->botConversationsCollRefMock->method('documents')->willReturn(new \ArrayObject([]));
 
         $conversations = $this->repository->findByBotId($botId);
         $this->assertCount(0, $conversations);
         $this->assertEquals([], $conversations);
+    }
+
+    public function test_findByBotId_with_offset(): void
+    {
+        $botId = "testBotId";
+        $limit = 10;
+        $offset = 20;
+
+        $this->botConversationsCollRefMock->expects($this->once())
+            ->method('orderBy')->with('createdAt', Query::DIR_DESCENDING)->willReturnSelf();
+        $this->botConversationsCollRefMock->expects($this->once())
+            ->method('limit')->with($limit)->willReturnSelf();
+        $this->botConversationsCollRefMock->expects($this->once())
+            ->method('offset')->with($offset)->willReturnSelf();
+        $this->botConversationsCollRefMock->expects($this->once())
+            ->method('documents')->willReturn(new \ArrayObject([]));
+
+        $this->repository->findByBotId($botId, $limit, $offset);
     }
 }
