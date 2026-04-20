@@ -58,10 +58,6 @@ final class FirestoreBotRepositoryTest extends TestCase
                 $docMock->method('id')->willReturn($tid);
                 $docMock->method('data')->willReturn($tdata);
                 $docs[] = $docMock;
-
-                // For individual save
-                $docRefMock = $this->createMock(DocumentReference::class);
-                $triggersSubCollMock->method('document')->with($tid)->willReturn($docRefMock);
             }
             $triggersSubCollMock->method('documents')->willReturn($docs);
         } else {
@@ -105,6 +101,51 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->expectExceptionMessage("Default bot configuration with ID 'default' not found.");
 
         $this->repository->findDefault();
+    }
+
+    public function test_findOrDefault_returns_existing_bot(): void
+    {
+        $botId = 'existing-bot';
+
+        $this->documentRootMock->method('collection')->willReturnCallback(function($id) {
+            [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+            $snapshotMock->method('exists')->willReturn(true);
+            $snapshotMock->method('data')->willReturn(['bot_name' => 'Existing Bot']);
+            return $botCollMock;
+        });
+
+        $bot = $this->repository->findOrDefault($botId);
+
+        $this->assertInstanceOf(Bot::class, $bot);
+        $this->assertEquals($botId, $bot->getId());
+        $this->assertEquals('Existing Bot', $bot->getName());
+    }
+
+    public function test_findOrDefault_returns_new_bot_with_default_when_not_found(): void
+    {
+        $botId = 'non-existent-bot';
+
+        $this->documentRootMock->method('collection')->willReturnCallback(function($id) use ($botId) {
+            [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+            if ($id === $botId) {
+                $snapshotMock->method('exists')->willReturn(false);
+            } else {
+                // default bot
+                $snapshotMock->method('exists')->willReturn(true);
+                $snapshotMock->method('data')->willReturn([
+                    'bot_name' => 'Default Bot',
+                    'line_target' => 'default-target'
+                ]);
+            }
+            return $botCollMock;
+        });
+
+        $bot = $this->repository->findOrDefault($botId);
+
+        $this->assertInstanceOf(Bot::class, $bot);
+        $this->assertEquals($botId, $bot->getId());
+        $this->assertEquals('', $bot->getName()); // New bot name is empty
+        $this->assertEquals('default-target', $bot->getLineTarget()); // Taken from default bot
     }
 
     public function test_findById_success_and_merges_with_default(): void
@@ -232,5 +273,72 @@ final class FirestoreBotRepositoryTest extends TestCase
         }));
 
         $this->repository->save($bot);
+    }
+
+    public function test_save_synchronizes_triggers_and_deletes_removed_ones(): void
+    {
+        $botId = 'test-bot';
+        $bot = new Bot($botId);
+
+        $trigger1 = new TimerTrigger('today', '10:00', 'Req 1');
+        $bot->setTrigger('trigger-1', $trigger1);
+
+        // Mock existing triggers in Firestore: trigger-1 and trigger-2
+        $triggerData = [
+            'trigger-1' => $trigger1->toArray(),
+            'trigger-2' => ['event' => 'timer', 'date' => 'tomorrow', 'time' => '11:00', 'request' => 'Req 2']
+        ];
+
+        [$botCollMock, $configDocMock, $snapshotMock, $triggersDocMock, $triggersSubCollMock] = $this->createBotMocks($triggerData);
+
+        $this->documentRootMock->method('collection')->with($botId)->willReturn($botCollMock);
+
+        // trigger-2 should be deleted because it's in Firestore but not in the Bot object
+        $trigger2DocRefMock = $this->createMock(DocumentReference::class);
+        $trigger2DocRefMock->expects($this->once())->method('delete');
+
+        // trigger-1 should be saved
+        $trigger1DocRefMock = $this->createMock(DocumentReference::class);
+        $trigger1DocRefMock->expects($this->once())->method('set');
+
+        $triggersSubCollMock->method('document')->willReturnCallback(function($id) use ($trigger1DocRefMock) {
+            if ($id === 'trigger-1') return $trigger1DocRefMock;
+            return $this->createMock(DocumentReference::class);
+        });
+
+        // Our createBotMocks already sets documents() to return snapshots for trigger-1 and trigger-2
+        // We need to ensure these snapshots return the correct reference() for deletion
+        $docs = $triggersSubCollMock->documents();
+        foreach ($docs as $doc) {
+            $refMock = $this->createMock(DocumentReference::class);
+            if ($doc->id() === 'trigger-2') {
+                $refMock = $trigger2DocRefMock;
+            }
+            $doc->method('reference')->willReturn($refMock);
+        }
+
+        $this->repository->save($bot);
+    }
+
+    public function test_delete_success(): void
+    {
+        $botId = 'test-bot';
+        $triggerData = [
+            't1' => ['event' => 'timer']
+        ];
+        [$botCollMock, $configDocMock, $snapshotMock, $triggersDocMock, $triggersSubCollMock] = $this->createBotMocks($triggerData);
+
+        $this->documentRootMock->method('collection')->with($botId)->willReturn($botCollMock);
+
+        $configDocMock->expects($this->once())->method('delete');
+        $triggersDocMock->expects($this->once())->method('delete');
+
+        $t1DocRefMock = $this->createMock(DocumentReference::class);
+        $t1DocRefMock->expects($this->once())->method('delete');
+
+        $docs = $triggersSubCollMock->documents();
+        $docs[0]->method('reference')->willReturn($t1DocRefMock);
+
+        $this->repository->delete($botId);
     }
 }

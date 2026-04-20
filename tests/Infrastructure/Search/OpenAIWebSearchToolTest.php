@@ -254,6 +254,20 @@ final class OpenAIWebSearchToolTest extends TestCase
         $this->assertSame($expectedMessage, $actualMessage);
     }
 
+    public function test_一般的な例外を処理する(): void
+    {
+        $query = "一般例外クエリ";
+        $exceptionMessage = "予期しないエラーが発生しました";
+
+        $this->mockResponsesResource->expects($this->once())
+            ->method('create')
+            ->willThrowException(new \Exception($exceptionMessage));
+
+        $expectedMessage = "Error performing web search. An unexpected error occurred. " . $exceptionMessage;
+        $actualMessage = $this->webSearchTool->search($query);
+        $this->assertSame($expectedMessage, $actualMessage);
+    }
+
     public function test_空クエリの場合にエラーを返す(): void
     {
         $this->assertSame(
