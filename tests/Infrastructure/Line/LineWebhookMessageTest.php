@@ -70,6 +70,28 @@ EOM;
 }
 EOM;
 
+    // テスト用ルームメッセージJSON
+    const TEST_ROOM_MESSAGE = <<<EOM
+{
+    "destination": "d4eb1d4beb26f7e26de2cbfc2d01fb51b",
+    "events": [
+        {
+            "type": "message",
+            "message": {
+                "type": "text",
+                "id": "037022103506649397",
+                "text": "Hello Room"
+            },
+            "source": {
+                "type": "room",
+                "roomId": "Rz8ae3320b1b13dbdaff35ae50dc09500",
+                "userId": "U56b4c873e7e93648c421114c1b4b09e8"
+            }
+        }
+    ]
+}
+EOM;
+
     // テスト用ユーザーポストバックJSON
     const TEST_USER_POSTBACK = <<<EOM
 {
@@ -98,12 +120,14 @@ EOM;
 
     private LineWebhookMessage $groupMessage;
     private LineWebhookMessage $userMessage;
+    private LineWebhookMessage $roomMessage;
     private LineWebhookMessage $userPostback;
 
     protected function setUp(): void
     {
         $this->groupMessage = new LineWebhookMessage(self::TEST_GROUP_MESSAGE);
         $this->userMessage = new LineWebhookMessage(self::TEST_USER_MESSAGE);
+        $this->roomMessage = new LineWebhookMessage(self::TEST_ROOM_MESSAGE);
         $this->userPostback = new LineWebhookMessage(self::TEST_USER_POSTBACK);
     }
 
@@ -130,11 +154,32 @@ EOM;
     {
         $this->assertSame("Cz8ae3320b1b13dbdaff35ae50dc09500", $this->groupMessage->getTargetId());
         $this->assertSame("U56b4c873e7e93648c421114c1b4b09e8", $this->userMessage->getTargetId());
+        $this->assertSame("Rz8ae3320b1b13dbdaff35ae50dc09500", $this->roomMessage->getTargetId());
     }
 
     public function test_リプライトークンを取得する(): void
     {
         $this->assertSame("b3c26b13dfc74f6387c8bea36965e27c", $this->groupMessage->getReplyToken());
+        $this->assertSame("23bc4b6aa81f4995b1ca40f9cd2c658e", $this->userPostback->getReplyToken());
+    }
+
+    public function test_リプライトークンがない場合に空文字を返す(): void
+    {
+        $noReplyTokenJson = <<<EOM
+{
+    "events": [
+        {
+            "type": "unfollow",
+            "source": {
+                "type": "user",
+                "userId": "U123"
+            }
+        }
+    ]
+}
+EOM;
+        $message = new LineWebhookMessage($noReplyTokenJson);
+        $this->assertSame("", $message->getReplyToken());
     }
 
     public function test_getTargetIdThrowsExceptionForUnknownType(): void

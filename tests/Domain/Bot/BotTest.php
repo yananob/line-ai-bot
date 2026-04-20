@@ -63,6 +63,16 @@ final class BotTest extends TestCase
         $this->assertFalse($this->bot->hasHumanCharacteristics());
     }
 
+    public function test_自分自身の特性が空でもデフォルトがあればhasHumanCharacteristicsがTrueを返す(): void
+    {
+        $defaultBot = new Bot("defaultBotId");
+        $defaultBot->setHumanCharacteristics(['デフォルト人間特性']);
+        $botWithDefault = new Bot("botWithDef", $defaultBot);
+
+        $botWithDefault->setHumanCharacteristics([]);
+        $this->assertTrue($botWithDefault->hasHumanCharacteristics());
+    }
+
     public function test_人間の特性がデフォルトとマージされることを確認する(): void
     {
         $defaultBot = new Bot("defaultBotId");
@@ -138,6 +148,9 @@ final class BotTest extends TestCase
 
         // IDで取得
         $this->assertSame($trigger1, $this->bot->getTriggerById($triggerId1));
+
+        // 存在しないIDで取得
+        $this->assertNull($this->bot->getTriggerById("non_existent_id"));
 
         $trigger2 = new TimerTrigger("everyday", "12:00", "リクエスト2");
         $this->bot->addTrigger($trigger2);
