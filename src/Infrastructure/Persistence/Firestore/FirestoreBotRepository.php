@@ -8,8 +8,8 @@ use Google\Cloud\Firestore\CollectionReference;
 use Google\Cloud\Firestore\DocumentSnapshot;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\BotRepository;
-use App\Domain\Bot\Trigger\TimerTrigger;
-use App\Domain\Bot\Trigger\Trigger;
+use App\Domain\Bot\Service\BotFactory;
+use App\Domain\Bot\Trigger\TriggerFactory;
 use App\Domain\Exception\BotNotFoundException;
 
 class FirestoreBotRepository extends AbstractFirestoreRepository implements BotRepository
@@ -36,34 +36,19 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
             return null;
         }
 
-        $bot = new Bot($botId, $defaultBotConfig);
         $data = $configSnapshot->data();
-
-        $bot->setName($data['bot_name'] ?? '');
-        $bot->setBotCharacteristics($data['bot_characteristics'] ?? []);
-        $bot->setHumanCharacteristics($data['human_characteristics'] ?? []);
-        $bot->setConfigRequests($data['requests'] ?? []);
-        $bot->setLineTarget($data['line_target'] ?? '');
 
         // Load triggers
         $triggerDocs = $this->getBotCollection($botId)->document('triggers')->collection('triggers')->documents();
         $triggers = [];
         foreach ($triggerDocs as $doc) {
-            $id = $doc->id();
-            $tData = $doc->data();
-            // Assuming TimerTrigger for now, this would need to be more flexible
-            if (isset($tData['event']) && $tData['event'] === 'timer') {
-                $dateForTrigger = (string)($tData['date'] ?? '');
-                $timeForTrigger = (string)($tData['time'] ?? '');
-                $request = (string)($tData['request'] ?? '');
-                $trigger = new TimerTrigger($dateForTrigger, $timeForTrigger, $request);
-                $trigger->setId((string)$id);
+            $trigger = TriggerFactory::fromArray((string)$doc->id(), $doc->data());
+            if ($trigger !== null) {
                 $triggers[$trigger->getId()] = $trigger;
             }
         }
-        $bot->setTriggers($triggers);
 
-        return $bot;
+        return BotFactory::create($botId, $data, $triggers, $defaultBotConfig);
     }
 
     public function findById(string $id): Bot
