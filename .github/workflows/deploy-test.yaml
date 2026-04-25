@@ -49,6 +49,7 @@ jobs:
         OPENAI_KEY_LINE_AI_BOT
         LINE_TOKENS_N_TARGETS
         FIREBASE_SERVICE_ACCOUNT
+        OPENAI_KEY_OML
       deploy_http_trigger: true
       deploy_event_trigger: true
       environment_variables: |-
