@@ -76,7 +76,7 @@ EOM;
 
     public function judgeCommand(string $message): Command
     {
-        $result = $this->gpt->getAnswer(self::PROMPT_JUDGE_COMMAND, $message);
+        $result = trim($this->gpt->getAnswer(self::PROMPT_JUDGE_COMMAND, $message));
         try {
             // Assuming Command::from() is a method that can handle string values.
             // If Command is an enum, this might need adjustment based on PHP version.
@@ -101,7 +101,7 @@ EOM;
 
     private function __generateTimerTrigger(string $prompt, string $message): TimerTrigger
     {
-        $result = $this->gpt->getAnswer($prompt, $message);
+        $result = trim($this->gpt->getAnswer($prompt, $message));
 
         // Default values in case regex fails
         $date = "today";
@@ -110,17 +110,17 @@ EOM;
 
         $matchesDate = [];
         if (preg_match('/・日付：(.+)$/m', $result, $matchesDate)) {
-            $date = rtrim($matchesDate[1]);
+            $date = trim($matchesDate[1]);
         }
 
         $matchesTime = [];
         if (preg_match('/・時刻：(.+)$/m', $result, $matchesTime)) {
-            $time = rtrim($matchesTime[1]);
+            $time = trim($matchesTime[1]);
         }
         
         $matchesRequest = [];
         if (preg_match('/・依頼内容：(.+)$/m', $result, $matchesRequest)) {
-            $request = rtrim($matchesRequest[1]);
+            $request = trim($matchesRequest[1]);
         }
 
         return new TimerTrigger($date, $time, $request);
