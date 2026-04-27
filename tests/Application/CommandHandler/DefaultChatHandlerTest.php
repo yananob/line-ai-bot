@@ -57,23 +57,40 @@ final class DefaultChatHandlerTest extends TestCase
         $this->assertSame("world", $response->getText());
     }
 
-    public function test_handle_withWebSearch(): void
+    /**
+     * @dataProvider provideWebSearchJudgmentCases
+     */
+    public function test_handle_withWebSearch(string $gptJudgment, bool $shouldSearch): void
     {
         $handler = new DefaultChatHandler($this->gptMock, $this->convRepoMock, $this->promptService, $this->webSearchMock);
         $bot = new Bot("test");
 
-        $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
+        $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) use ($gptJudgment) {
             if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
-                return "はい";
+                return $gptJudgment;
             }
-            return "Answer with web results";
+            return "Final Answer";
         });
 
-        $this->webSearchMock->expects($this->once())->method('search')->willReturn("Web info");
+        if ($shouldSearch) {
+            $this->webSearchMock->expects($this->once())->method('search')->willReturn("Web info");
+        } else {
+            $this->webSearchMock->expects($this->never())->method('search');
+        }
 
         $message = new Message("search query", false);
         $response = $handler->handle($message, $bot, Command::Other);
-        $this->assertSame("Answer with web results", $response->getText());
+        $this->assertSame("Final Answer", $response->getText());
+    }
+
+    public static function provideWebSearchJudgmentCases(): array
+    {
+        return [
+            'Normal Yes' => ["はい", true],
+            'Yes with whitespace' => [" はい \n", true],
+            'Normal No' => ["いいえ", false],
+            'Other response' => ["わからない", false],
+        ];
     }
 
     public function test_handle_systemTriggerMessageIsNotStored(): void

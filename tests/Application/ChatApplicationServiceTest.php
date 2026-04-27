@@ -41,9 +41,20 @@ final class ChatApplicationServiceTest extends TestCase
         );
     }
 
-    public function test_handleMessage_delegates_to_handler(): void
+    public function test_handleMessage_delegates_to_handler_and_logs(): void
     {
+        $loggerMock = $this->createMock(\App\Infrastructure\Logger\Logger::class);
+        $chatService = new ChatApplicationService(
+            $this->bot,
+            $this->commandAndTriggerServiceMock,
+            [$this->messageHandlerMock],
+            [$this->postbackHandlerMock],
+            $loggerMock
+        );
+
         $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::Other);
+        $loggerMock->expects($this->once())->method('log')->with($this->stringContains('Judged Command: 9'));
+
         $this->messageHandlerMock->method('canHandle')->with(Command::Other)->willReturn(true);
         $this->messageHandlerMock->expects($this->once())
             ->method('handle')
@@ -52,7 +63,7 @@ final class ChatApplicationServiceTest extends TestCase
             }), $this->bot, Command::Other)
             ->willReturn(new BotResponse("hi"));
 
-        $response = $this->chatService->handleMessage("hello");
+        $response = $chatService->handleMessage("hello");
         $this->assertSame("hi", $response->getText());
     }
 

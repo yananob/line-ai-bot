@@ -70,6 +70,40 @@ final class LineClientTest extends TestCase
         $client->sendReply('bot1', 'token', 'reply');
     }
 
+    public function test_sendReply_with_quickReply_calls_messaging_api_with_correct_parameters(): void
+    {
+        $apiMock = $this->createMock(MessagingApiApi::class);
+
+        $quickReplyItems = [
+            ['type' => 'action', 'action' => ['type' => 'message', 'label' => 'label', 'text' => 'text']]
+        ];
+
+        $apiMock->expects($this->once())
+            ->method('replyMessage')
+            ->with($this->callback(function (ReplyMessageRequest $request) use ($quickReplyItems) {
+                /** @var TextMessage $message */
+                $message = $request->getMessages()[0];
+                $quickReply = $message->getQuickReply();
+                return $request->getReplyToken() === 'token'
+                    && $message->getText() === 'reply'
+                    && $quickReply !== null
+                    && count($quickReply->getItems()) === 1;
+            }));
+
+        $client = new class($this->tokens, $this->targets, $apiMock) extends LineClient {
+            private $mockApi;
+            public function __construct($tokens, $targets, $mockApi) {
+                parent::__construct($tokens, $targets);
+                $this->mockApi = $mockApi;
+            }
+            protected function getApi(string $bot): MessagingApiApi {
+                return $this->mockApi;
+            }
+        };
+
+        $client->sendReply('bot1', 'token', 'reply', $quickReplyItems);
+    }
+
     public function test_showLoading_calls_messaging_api_with_correct_parameters(): void
     {
         $apiMock = $this->createMock(MessagingApiApi::class);

@@ -50,6 +50,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
             ["未知のコマンド", "9", Command::Other],
             ["GPTが数字以外を返した場合", "unexpected_string", Command::Other], // 堅牢性テスト
             ["GPTが空文字を返した場合", "", Command::Other], // 堅牢性テスト
+            ["GPTの回答に空白が含まれる場合", " 3 \n", Command::AddOneTimeTrigger], // 堅牢性テスト
         ];
     }
 
@@ -98,6 +99,12 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
                 "不完全なメッセージ",
                 "・日付：today\n・時刻：", // 時刻と依頼内容が欠落
                 ['date' => "today", 'time' => "now", 'request' => "Could not parse request"] // サービスからのデフォルト値
+            ],
+            [
+                // 堅牢性テスト: GPTの回答に余計な空白や改行が含まれる
+                "空白ありメッセージ",
+                "\n ・日付： today \n ・時刻： 12:00 \n ・依頼内容： テスト \n",
+                ['date' => "today", 'time' => "12:00", 'request' => "テスト"]
             ],
         ];
     }
