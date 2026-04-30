@@ -7,8 +7,7 @@ use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Infrastructure\Gcp\CloudFunctionUtils;
-use App\Application\CommandHandler\CommandHandlerInterface;
-use App\Application\CommandHandler\PostbackHandlerInterface;
+use App\Application\CommandHandler\CommandHandlerDispatcher;
 use App\Domain\Bot\ValueObject\Message;
 use App\Domain\Bot\Messages;
 use App\Domain\Exception\HandlerNotFoundException;
@@ -18,30 +17,18 @@ class ChatApplicationService
 {
     private CommandAndTriggerService $commandAndTriggerService;
     private Bot $bot;
-    /** @var CommandHandlerInterface[] */
-    private array $messageHandlers;
-    /** @var PostbackHandlerInterface[] */
-    private array $postbackHandlers;
+    private CommandHandlerDispatcher $dispatcher;
     private ?Logger $logger;
 
-    /**
-     * @param Bot $bot
-     * @param CommandAndTriggerService $commandAndTriggerService
-     * @param CommandHandlerInterface[] $messageHandlers
-     * @param PostbackHandlerInterface[] $postbackHandlers
-     * @param Logger|null $logger
-     */
     public function __construct(
         Bot $bot,
         CommandAndTriggerService $commandAndTriggerService,
-        array $messageHandlers = [],
-        array $postbackHandlers = [],
+        CommandHandlerDispatcher $dispatcher,
         ?Logger $logger = null
     ) {
         $this->bot = $bot;
         $this->commandAndTriggerService = $commandAndTriggerService;
-        $this->messageHandlers = $messageHandlers;
-        $this->postbackHandlers = $postbackHandlers;
+        $this->dispatcher = $dispatcher;
         $this->logger = $logger;
     }
 
@@ -53,13 +40,7 @@ class ChatApplicationService
         }
         $message = new Message($messageContent, isSystem: false);
 
-        foreach ($this->messageHandlers as $handler) {
-            if ($handler->canHandle($command)) {
-                return $handler->handle($message, $this->bot, $command);
-            }
-        }
-
-        throw new HandlerNotFoundException("No handler found for command: " . $command->value);
+        return $this->dispatcher->dispatchMessage($command, $message, $this->bot);
     }
 
     public function handleTrigger(TimerTrigger $trigger): BotResponse
@@ -70,13 +51,7 @@ class ChatApplicationService
         $message = new Message($messageContent, isSystem: true);
         $command = Command::Other;
 
-        foreach ($this->messageHandlers as $handler) {
-            if ($handler->canHandle($command)) {
-                return $handler->handle($message, $this->bot, $command);
-            }
-        }
-
-        throw new HandlerNotFoundException("No handler found for command: " . $command->value);
+        return $this->dispatcher->dispatchMessage($command, $message, $this->bot);
     }
 
     public function handlePostback(string $data): BotResponse
@@ -84,13 +59,7 @@ class ChatApplicationService
         parse_str($data, $params);
         $command = $params["command"] ?? "";
 
-        foreach ($this->postbackHandlers as $handler) {
-            if ($handler->canHandle($command)) {
-                return $handler->handle($params, $this->bot);
-            }
-        }
-
-        throw new HandlerNotFoundException("Unsupported postback command: " . $command);
+        return $this->dispatcher->dispatchPostback($command, $params, $this->bot);
     }
 
     public function getLineTarget(): string

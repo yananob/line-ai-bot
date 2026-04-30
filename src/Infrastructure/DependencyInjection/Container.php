@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\DependencyInjection;
 
 use App\Application\ChatApplicationService;
+use App\Application\CommandHandler\CommandHandlerDispatcher;
 use App\Application\CommandHandler\CommandHandlerFactory;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Service\ChatPromptService;
@@ -134,12 +135,12 @@ class Container
             $this->getWebSearchTool()
         );
         $postbackHandlers = CommandHandlerFactory::createPostbackHandlers($this->getBotRepository());
+        $dispatcher = new CommandHandlerDispatcher($messageHandlers, $postbackHandlers);
 
         return new ChatApplicationService(
             $bot,
             $this->getCommandAndTriggerService(),
-            $messageHandlers,
-            $postbackHandlers,
+            $dispatcher,
             $this->getLogger()
         );
     }
