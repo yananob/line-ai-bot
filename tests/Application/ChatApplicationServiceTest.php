@@ -14,6 +14,7 @@ use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Bot\ValueObject\Message;
 use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
+use App\Application\CommandHandler\CommandHandlerDispatcher;
 use PHPUnit\Framework\TestCase;
 
 final class ChatApplicationServiceTest extends TestCase
@@ -32,23 +33,23 @@ final class ChatApplicationServiceTest extends TestCase
         $this->commandAndTriggerServiceMock = $this->createMock(CommandAndTriggerService::class);
         $this->messageHandlerMock = $this->createMock(CommandHandlerInterface::class);
         $this->postbackHandlerMock = $this->createMock(PostbackHandlerInterface::class);
+        $dispatcher = new CommandHandlerDispatcher([$this->messageHandlerMock], [$this->postbackHandlerMock]);
 
         $this->chatService = new ChatApplicationService(
             $this->bot,
             $this->commandAndTriggerServiceMock,
-            [$this->messageHandlerMock],
-            [$this->postbackHandlerMock]
+            $dispatcher
         );
     }
 
     public function test_handleMessage_delegates_to_handler_and_logs(): void
     {
         $loggerMock = $this->createMock(\App\Infrastructure\Logger\Logger::class);
+        $dispatcher = new CommandHandlerDispatcher([$this->messageHandlerMock], [$this->postbackHandlerMock]);
         $chatService = new ChatApplicationService(
             $this->bot,
             $this->commandAndTriggerServiceMock,
-            [$this->messageHandlerMock],
-            [$this->postbackHandlerMock],
+            $dispatcher,
             $loggerMock
         );
 
@@ -78,11 +79,11 @@ final class ChatApplicationServiceTest extends TestCase
             ->method('handle')
             ->willReturn(new BotResponse("help content"));
 
+        $dispatcher = new CommandHandlerDispatcher([$handler1, $handler2], []);
         $chatService = new ChatApplicationService(
             $this->bot,
             $this->commandAndTriggerServiceMock,
-            [$handler1, $handler2],
-            []
+            $dispatcher
         );
 
         $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::ShowHelp);
