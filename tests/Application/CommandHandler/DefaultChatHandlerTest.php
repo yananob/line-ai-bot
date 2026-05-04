@@ -93,6 +93,27 @@ final class DefaultChatHandlerTest extends TestCase
         ];
     }
 
+    public function test_handle_withWebSearchToolNull_containsErrorMessageInContext(): void
+    {
+        $handler = new DefaultChatHandler($this->gptMock, $this->convRepoMock, $this->promptService, null);
+        $bot = new Bot("test");
+
+        $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
+            if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
+                return "はい";
+            }
+            // Check if context contains the error message
+            if (str_contains($context, "Error: Web search tool is not configured properly or failed to initialize.")) {
+                return "Handled Error";
+            }
+            return "Normal Answer";
+        });
+
+        $message = new Message("search please", false);
+        $response = $handler->handle($message, $bot, Command::Other);
+        $this->assertSame("Handled Error", $response->getText());
+    }
+
     public function test_handle_systemTriggerMessageIsNotStored(): void
     {
         $handler = new DefaultChatHandler($this->gptMock, $this->convRepoMock, $this->promptService, $this->webSearchMock);

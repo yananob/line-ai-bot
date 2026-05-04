@@ -69,6 +69,32 @@ final class TriggerScheduleTest extends TestCase
         $this->assertEquals('now +15 mins', $schedule->getOriginalTime());
     }
 
+    public function test_時刻の解決_now_plus_X_mins_で日付をまたぐ場合(): void
+    {
+        // 現在 23:55
+        Carbon::setTestNow(Carbon::parse('2025-01-01 23:55:00', new \DateTimeZone(Consts::TIMEZONE)));
+
+        $schedule = new TriggerSchedule('today', 'now +10 mins');
+
+        $this->assertEquals('00:05', $schedule->getResolvedTime());
+        // 期待される修正: 日付も翌日(2025/01/02)になっているべき
+        $this->assertEquals('2025/01/02', $schedule->getResolvedDate());
+    }
+
+    public function test_日付と時刻の解決_tomorrowで時刻加算により日付をまたぐ場合(): void
+    {
+        // 現在 23:55
+        Carbon::setTestNow(Carbon::parse('2025-01-01 23:55:00', new \DateTimeZone(Consts::TIMEZONE)));
+
+        $schedule = new TriggerSchedule('tomorrow', 'now +10 mins');
+
+        $this->assertEquals('00:05', $schedule->getResolvedTime());
+        // 「tomorrow」は本来 2025/01/02。
+        // 時刻加算で翌日(Jan 2nd)になり、さらに tomorrow の処理で addDay されると Jan 3rd になってしまう（ダブルジャンプ）。
+        // ここでは意図としては 2025/01/02 であるべき。
+        $this->assertEquals('2025/01/02', $schedule->getResolvedDate());
+    }
+
     public function test_時刻の解決_通常の時刻(): void
     {
         $schedule = new TriggerSchedule('today', '08:30');
