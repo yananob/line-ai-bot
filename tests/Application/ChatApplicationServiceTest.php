@@ -24,11 +24,13 @@ final class ChatApplicationServiceTest extends TestCase
     private $commandAndTriggerServiceMock;
     private $messageHandlerMock;
     private $postbackHandlerMock;
+    private string|false $originalKService;
 
     const TARGET_ID = "TARGET_ID";
 
     protected function setUp(): void
     {
+        $this->originalKService = getenv('K_SERVICE');
         $this->bot = new Bot(self::TARGET_ID);
         $this->commandAndTriggerServiceMock = $this->createMock(CommandAndTriggerService::class);
         $this->messageHandlerMock = $this->createMock(CommandHandlerInterface::class);
@@ -130,7 +132,24 @@ final class ChatApplicationServiceTest extends TestCase
     public function test_getLineTarget_returns_test_in_testing_env(): void
     {
         // CFUtils::isTestingEnv() is mocked by environment variable or usually returns true in tests
+        putenv('K_SERVICE=my-test-func');
         $this->assertSame('test', $this->chatService->getLineTarget());
+    }
+
+    public function test_getLineTarget_returns_bot_target_in_production(): void
+    {
+        putenv('K_SERVICE=my-prod-func');
+        $this->bot->setLineTarget('prod-target');
+        $this->assertSame('prod-target', $this->chatService->getLineTarget());
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->originalKService !== false) {
+            putenv("K_SERVICE={$this->originalKService}");
+        } else {
+            putenv("K_SERVICE");
+        }
     }
 
     public function test_handleTrigger_bypasses_command_judgment(): void

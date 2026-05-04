@@ -202,4 +202,12 @@ EOM;
         $this->expectExceptionMessage("Unknown type :unknown");
         $message->getTargetId();
     }
+
+    public function test_constructor_throws_exception_if_no_events(): void
+    {
+        $emptyJson = '{"destination": "xxx", "events": []}';
+        $this->expectException(InvalidWebhookEventException::class);
+        $this->expectExceptionMessage("No events found in webhook body");
+        new LineWebhookMessage($emptyJson);
+    }
 }

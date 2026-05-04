@@ -18,13 +18,15 @@ class TriggerSchedule
     public function __construct(string $date, string $time)
     {
         $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        $targetDateTime = $carbonNow->copy();
 
         $this->originalDate = $date;
         $this->originalTime = $time;
 
         // Resolve relative time (e.g., "now +10 mins")
         if (preg_match('/^now \+(\d+) mins$/', $time, $matches)) {
-            $this->resolvedTime = $carbonNow->copy()->addMinutes((int)$matches[1])->format('H:i');
+            $targetDateTime->addMinutes((int)$matches[1]);
+            $this->resolvedTime = $targetDateTime->format('H:i');
         } else {
             $this->resolvedTime = $time;
         }
@@ -35,9 +37,12 @@ class TriggerSchedule
                 $this->resolvedDate = 'everyday';
                 break;
             case 'today':
-                $this->resolvedDate = $carbonNow->copy()->format('Y/m/d');
+                // For 'today', we follow the wrap if the relative time (now +X mins) caused it.
+                $this->resolvedDate = $targetDateTime->format('Y/m/d');
                 break;
             case 'tomorrow':
+                // For 'tomorrow', we use the calendar day after the request time,
+                // avoiding a "double jump" if the relative time also crossed midnight.
                 $this->resolvedDate = $carbonNow->copy()->addDay()->format('Y/m/d');
                 break;
             case 'day after tomorrow':
