@@ -1,1 +1,2 @@
-_cf-common/.gitattributes
+*.html linguist-detectable=false
+*.xml linguist-detectable=false
