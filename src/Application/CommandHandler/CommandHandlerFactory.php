@@ -6,10 +6,8 @@ namespace App\Application\CommandHandler;
 
 use App\Domain\Bot\BotRepository;
 use App\Domain\Conversation\ConversationRepository;
-use App\Domain\Bot\Service\ChatPromptService;
+use App\Domain\Bot\Service\ChatService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
-use App\Domain\Bot\Service\WebSearchInterface;
-use App\Domain\Bot\Service\GptInterface;
 
 class CommandHandlerFactory
 {
@@ -19,16 +17,14 @@ class CommandHandlerFactory
     public static function createMessageHandlers(
         CommandAndTriggerService $commandAndTriggerService,
         BotRepository $botRepository,
-        GptInterface $gpt,
-        ConversationRepository $conversationRepository,
-        ChatPromptService $chatPromptService,
-        ?WebSearchInterface $webSearchTool
+        ChatService $chatService,
+        ConversationRepository $conversationRepository
     ): array {
         return [
             new HelpHandler(),
             new AddTriggerHandler($commandAndTriggerService, $botRepository),
             new RemoveTriggerHandler(),
-            new DefaultChatHandler($gpt, $conversationRepository, $chatPromptService, $webSearchTool)
+            new DefaultChatHandler($chatService, $conversationRepository)
         ];
     }
 

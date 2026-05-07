@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace Tests\Application\CommandHandler;
 
 use App\Application\CommandHandler\CommandHandlerFactory;
-use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
 use App\Domain\Bot\BotRepository;
 use App\Domain\Conversation\ConversationRepository;
-use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
-use App\Domain\Bot\Service\WebSearchInterface;
-use App\Domain\Bot\Service\GptInterface;
+use App\Domain\Bot\Service\ChatService;
 use PHPUnit\Framework\TestCase;
 
 final class CommandHandlerFactoryTest extends TestCase
@@ -21,18 +18,14 @@ final class CommandHandlerFactoryTest extends TestCase
     {
         $commandAndTriggerService = $this->createMock(CommandAndTriggerService::class);
         $botRepository = $this->createMock(BotRepository::class);
-        $gpt = $this->createMock(GptInterface::class);
+        $chatService = $this->createMock(ChatService::class);
         $conversationRepository = $this->createMock(ConversationRepository::class);
-        $chatPromptService = $this->createMock(ChatPromptService::class);
-        $webSearchTool = $this->createMock(WebSearchInterface::class);
 
         $handlers = CommandHandlerFactory::createMessageHandlers(
             $commandAndTriggerService,
             $botRepository,
-            $gpt,
-            $conversationRepository,
-            $chatPromptService,
-            $webSearchTool
+            $chatService,
+            $conversationRepository
         );
 
         $this->assertIsArray($handlers);

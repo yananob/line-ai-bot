@@ -5,26 +5,10 @@ namespace App\Domain\Bot\Service;
 use App\Domain\Bot\Bot;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Bot\ValueObject\StringList;
+use App\Domain\Bot\Messages;
 
 class ChatPromptService
 {
-    const GPT_CONTEXT = <<<EOM
-【チャットボット（あなた）の情報】
-<bot/characteristics>
-
-<title/human_characteristics>
-<human/characteristics>
-
-<title/recentConversations>
-<recentConversations>
-
-<title/web_search_results>
-<web_search_results>
-
-【依頼事項の前提】
-<requests>
-EOM;
-
     /**
      * @param Bot $bot
      * @param Conversation[] $conversations Array of Conversation entities
@@ -34,7 +18,7 @@ EOM;
      */
     public function generateContext(Bot $bot, array $conversations, StringList $requests, ?string $webSearchResults = null): string
     {
-        $result = self::GPT_CONTEXT;
+        $result = Messages::CHAT_CONTEXT_TEMPLATE;
         $replaceSettings = [
             ["search" => "<bot/characteristics>", "replace" => $bot->getBotCharacteristics()->format()],
             ["search" => "<requests>", "replace" => $requests->format()],
