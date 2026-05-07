@@ -9,6 +9,7 @@ use App\Application\CommandHandler\CommandHandlerDispatcher;
 use App\Application\CommandHandler\CommandHandlerFactory;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Service\ChatPromptService;
+use App\Domain\Bot\Service\ChatService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Infrastructure\Gpt\OpenAiGptClient;
 use App\Infrastructure\Logger\Logger;
@@ -26,6 +27,7 @@ class Container
     private ?FirestoreBotRepository $botRepository = null;
     private ?FirestoreConversationRepository $conversationRepository = null;
     private ?ChatPromptService $chatPromptService = null;
+    private ?ChatService $chatService = null;
     private ?OpenAiGptClient $gptClient = null;
     private ?CommandAndTriggerService $commandAndTriggerService = null;
     private ?OpenAIWebSearchTool $webSearchTool = null;
@@ -58,6 +60,19 @@ class Container
             $this->chatPromptService = new ChatPromptService();
         }
         return $this->chatPromptService;
+    }
+
+    public function getChatService(): ChatService
+    {
+        if ($this->chatService === null) {
+            $this->chatService = new ChatService(
+                $this->getGptClient(),
+                $this->getConversationRepository(),
+                $this->getChatPromptService(),
+                $this->getWebSearchTool()
+            );
+        }
+        return $this->chatService;
     }
 
     public function getGptClient(): OpenAiGptClient
@@ -129,10 +144,8 @@ class Container
         $messageHandlers = CommandHandlerFactory::createMessageHandlers(
             $this->getCommandAndTriggerService(),
             $this->getBotRepository(),
-            $this->getGptClient(),
-            $this->getConversationRepository(),
-            $this->getChatPromptService(),
-            $this->getWebSearchTool()
+            $this->getChatService(),
+            $this->getConversationRepository()
         );
         $postbackHandlers = CommandHandlerFactory::createPostbackHandlers($this->getBotRepository());
         $dispatcher = new CommandHandlerDispatcher($messageHandlers, $postbackHandlers);

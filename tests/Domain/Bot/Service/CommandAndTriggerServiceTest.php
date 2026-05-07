@@ -10,6 +10,7 @@ use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\Service\GptInterface;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\Messages;
 
 final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修飾名を使用
 {
@@ -31,7 +32,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     {
         $this->gptMock->expects($this->once())
             ->method('getAnswer')
-            ->with(CommandAndTriggerService::PROMPT_JUDGE_COMMAND, $message)
+            ->with(Messages::PROMPT_JUDGE_COMMAND, $message)
             ->willReturn($gptResponse);
 
         $actualCommand = $this->commandAndTriggerService->judgeCommand($message);
@@ -61,7 +62,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     {
         $this->gptMock->expects($this->once())
             ->method('getAnswer')
-            ->with(CommandAndTriggerService::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message)
+            ->with(Messages::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message)
             ->willReturn($gptResponse);
 
         $trigger = $this->commandAndTriggerService->generateOneTimeTrigger($message);
@@ -116,7 +117,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     {
         $this->gptMock->expects($this->once())
             ->method('getAnswer')
-            ->with(CommandAndTriggerService::PROMPT_SPLIT_DAILY_TRIGGER, $message)
+            ->with(Messages::PROMPT_SPLIT_DAILY_TRIGGER, $message)
             ->willReturn($gptResponse);
 
         $trigger = $this->commandAndTriggerService->generateDailyTrigger($message);
