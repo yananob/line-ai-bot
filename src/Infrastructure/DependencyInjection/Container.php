@@ -80,7 +80,7 @@ class Container
         if ($this->gptClient === null) {
             $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
             $openaiClient = OpenAI::client($openaiApiKey);
-            $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-4o", $this->getLogger());
+            $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-5.4-mini", $this->getLogger());
         }
         return $this->gptClient;
     }
@@ -100,7 +100,7 @@ class Container
             if ($openaiApiKey !== 'dummy') {
                 $openaiClient = OpenAI::client($openaiApiKey);
                 try {
-                    $this->webSearchTool = new OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
+                    $this->webSearchTool = new OpenAIWebSearchTool($openaiClient, "gpt-5.4-mini");
                 } catch (\Exception $e) {
                     // Log error if needed, but return null as it's optional
                     error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
