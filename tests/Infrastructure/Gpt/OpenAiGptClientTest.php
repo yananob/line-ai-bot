@@ -21,7 +21,7 @@ final class OpenAiGptClientTest extends TestCase
         $clientMock->method('chat')->willReturn($chatMock);
 
         $expectedPayload = [
-            'model' => 'gpt-4o',
+            'model' => 'gpt-5.4-mini',
             'messages' => [
                 ['role' => 'system', 'content' => 'system context'],
                 ['role' => 'user', 'content' => 'user message'],
@@ -36,7 +36,7 @@ final class OpenAiGptClientTest extends TestCase
             'id' => 'chatcmpl-123',
             'object' => 'chat.completion',
             'created' => 1677652288,
-            'model' => 'gpt-4o',
+            'model' => 'gpt-5.4-mini',
             'choices' => [
                 [
                     'index' => 0,
@@ -59,7 +59,7 @@ final class OpenAiGptClientTest extends TestCase
         /** @var array{x-request-id: string[], openai-model: string[], openai-organization: string[], openai-version: string[], openai-processing-ms: string[], x-ratelimit-limit-requests: string[], x-ratelimit-remaining-requests: string[], x-ratelimit-reset-requests: string[], x-ratelimit-limit-tokens: string[], x-ratelimit-remaining-tokens: string[], x-ratelimit-reset-tokens: string[]} $headers */
         $headers = [
             'x-request-id' => ['req_123'],
-            'openai-model' => ['gpt-4o'],
+            'openai-model' => ['gpt-5.4-mini'],
             'openai-organization' => ['org-123'],
             'openai-version' => ['2020-10-01'],
             'openai-processing-ms' => ['100'],
@@ -78,7 +78,7 @@ final class OpenAiGptClientTest extends TestCase
             ->with($expectedPayload)
             ->willReturn($response);
 
-        $gptClient = new OpenAiGptClient($clientMock, 'gpt-4o');
+        $gptClient = new OpenAiGptClient($clientMock, 'gpt-5.4-mini');
         $answer = $gptClient->getAnswer('system context', 'user message', ['temperature' => 0.7]);
 
         $this->assertSame('AI response', $answer);

@@ -4,6 +4,16 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Pull all",
+            "type": "shell",
+            "command": "git pull --all --rebase"
+        },
+        {
+            "label": "run_linter",
+            "type": "shell",
+            "command": "./tests/run_linter.sh"
+        },
+        {
             "label": "run_tests",
             "type": "shell",
             "command": "./tests/run_tests.sh"
