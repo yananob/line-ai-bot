@@ -10,6 +10,7 @@ use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Domain\Bot\Service\GptInterface;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\Messages;
 
 final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // TestCaseの完全修飾名を使用
 {
@@ -31,7 +32,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     {
         $this->gptMock->expects($this->once())
             ->method('getAnswer')
-            ->with(CommandAndTriggerService::PROMPT_JUDGE_COMMAND, $message)
+            ->with(Messages::PROMPT_JUDGE_COMMAND, $message)
             ->willReturn($gptResponse);
 
         $actualCommand = $this->commandAndTriggerService->judgeCommand($message);
@@ -50,6 +51,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
             ["未知のコマンド", "9", Command::Other],
             ["GPTが数字以外を返した場合", "unexpected_string", Command::Other], // 堅牢性テスト
             ["GPTが空文字を返した場合", "", Command::Other], // 堅牢性テスト
+            ["GPTの回答に空白が含まれる場合", " 3 \n", Command::AddOneTimeTrigger], // 堅牢性テスト
         ];
     }
 
@@ -60,7 +62,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     {
         $this->gptMock->expects($this->once())
             ->method('getAnswer')
-            ->with(CommandAndTriggerService::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message)
+            ->with(Messages::PROMPT_SPLIT_ONE_TIME_TRIGGER, $message)
             ->willReturn($gptResponse);
 
         $trigger = $this->commandAndTriggerService->generateOneTimeTrigger($message);
@@ -99,6 +101,12 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
                 "・日付：today\n・時刻：", // 時刻と依頼内容が欠落
                 ['date' => "today", 'time' => "now", 'request' => "Could not parse request"] // サービスからのデフォルト値
             ],
+            [
+                // 堅牢性テスト: GPTの回答に余計な空白や改行が含まれる
+                "空白ありメッセージ",
+                "\n ・日付： today \n ・時刻： 12:00 \n ・依頼内容： テスト \n",
+                ['date' => "today", 'time' => "12:00", 'request' => "テスト"]
+            ],
         ];
     }
 
@@ -109,7 +117,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
     {
         $this->gptMock->expects($this->once())
             ->method('getAnswer')
-            ->with(CommandAndTriggerService::PROMPT_SPLIT_DAILY_TRIGGER, $message)
+            ->with(Messages::PROMPT_SPLIT_DAILY_TRIGGER, $message)
             ->willReturn($gptResponse);
 
         $trigger = $this->commandAndTriggerService->generateDailyTrigger($message);

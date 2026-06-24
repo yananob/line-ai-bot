@@ -8,47 +8,36 @@ use App\Application\CommandHandler\DefaultChatHandler;
 use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
 use App\Domain\Conversation\ConversationRepository;
-use App\Domain\Bot\Service\ChatPromptService;
-use App\Domain\Bot\Service\WebSearchInterface;
-use App\Domain\Bot\Service\GptInterface;
+use App\Domain\Bot\Service\ChatService;
 use App\Domain\Bot\ValueObject\Message;
-use App\Domain\Bot\Messages;
 use PHPUnit\Framework\TestCase;
 
 final class DefaultChatHandlerTest extends TestCase
 {
-    private $gptMock;
+    private $chatServiceMock;
     private $convRepoMock;
-    private $promptService;
-    private $webSearchMock;
 
     protected function setUp(): void
     {
-        $this->gptMock = $this->createMock(GptInterface::class);
+        $this->chatServiceMock = $this->createMock(ChatService::class);
         $this->convRepoMock = $this->createMock(ConversationRepository::class);
-        $this->promptService = new ChatPromptService();
-        $this->webSearchMock = $this->createMock(WebSearchInterface::class);
     }
 
     public function test_canHandle(): void
     {
-        $handler = new DefaultChatHandler($this->gptMock, $this->convRepoMock, $this->promptService, $this->webSearchMock);
+        $handler = new DefaultChatHandler($this->chatServiceMock, $this->convRepoMock);
         $this->assertTrue($handler->canHandle(Command::Other));
         $this->assertFalse($handler->canHandle(Command::ShowHelp));
     }
 
     public function test_handle(): void
     {
-        $handler = new DefaultChatHandler($this->gptMock, $this->convRepoMock, $this->promptService, $this->webSearchMock);
+        $handler = new DefaultChatHandler($this->chatServiceMock, $this->convRepoMock);
         $bot = new Bot("test");
 
-        // Use willReturnCallback to handle the various calls to getAnswer
-        $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
-            if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
-                return "いいえ";
-            }
-            return "world";
-        });
+        $this->chatServiceMock->expects($this->once())
+            ->method('generateAnswer')
+            ->willReturn("world");
 
         $this->convRepoMock->expects($this->exactly(2))->method('save');
 
@@ -57,36 +46,14 @@ final class DefaultChatHandlerTest extends TestCase
         $this->assertSame("world", $response->getText());
     }
 
-    public function test_handle_withWebSearch(): void
-    {
-        $handler = new DefaultChatHandler($this->gptMock, $this->convRepoMock, $this->promptService, $this->webSearchMock);
-        $bot = new Bot("test");
-
-        $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
-            if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
-                return "はい";
-            }
-            return "Answer with web results";
-        });
-
-        $this->webSearchMock->expects($this->once())->method('search')->willReturn("Web info");
-
-        $message = new Message("search query", false);
-        $response = $handler->handle($message, $bot, Command::Other);
-        $this->assertSame("Answer with web results", $response->getText());
-    }
-
     public function test_handle_systemTriggerMessageIsNotStored(): void
     {
-        $handler = new DefaultChatHandler($this->gptMock, $this->convRepoMock, $this->promptService, $this->webSearchMock);
+        $handler = new DefaultChatHandler($this->chatServiceMock, $this->convRepoMock);
         $bot = new Bot("test");
 
-        $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {
-            if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
-                return "いいえ";
-            }
-            return "Timer action result";
-        });
+        $this->chatServiceMock->expects($this->once())
+            ->method('generateAnswer')
+            ->willReturn("Timer action result");
 
         // Should NOT call save
         $this->convRepoMock->expects($this->never())->method('save');

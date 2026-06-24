@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Infrastructure\DependencyInjection;
 
 use App\Application\ChatApplicationService;
+use App\Application\CommandHandler\CommandHandlerDispatcher;
 use App\Application\CommandHandler\CommandHandlerFactory;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Service\ChatPromptService;
+use App\Domain\Bot\Service\ChatService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Infrastructure\Gpt\OpenAiGptClient;
 use App\Infrastructure\Logger\Logger;
@@ -25,6 +27,7 @@ class Container
     private ?FirestoreBotRepository $botRepository = null;
     private ?FirestoreConversationRepository $conversationRepository = null;
     private ?ChatPromptService $chatPromptService = null;
+    private ?ChatService $chatService = null;
     private ?OpenAiGptClient $gptClient = null;
     private ?CommandAndTriggerService $commandAndTriggerService = null;
     private ?OpenAIWebSearchTool $webSearchTool = null;
@@ -59,12 +62,25 @@ class Container
         return $this->chatPromptService;
     }
 
+    public function getChatService(): ChatService
+    {
+        if ($this->chatService === null) {
+            $this->chatService = new ChatService(
+                $this->getGptClient(),
+                $this->getConversationRepository(),
+                $this->getChatPromptService(),
+                $this->getWebSearchTool()
+            );
+        }
+        return $this->chatService;
+    }
+
     public function getGptClient(): OpenAiGptClient
     {
         if ($this->gptClient === null) {
             $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
             $openaiClient = OpenAI::client($openaiApiKey);
-            $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-4o", $this->getLogger());
+            $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-5.4-mini", $this->getLogger());
         }
         return $this->gptClient;
     }
@@ -84,7 +100,7 @@ class Container
             if ($openaiApiKey !== 'dummy') {
                 $openaiClient = OpenAI::client($openaiApiKey);
                 try {
-                    $this->webSearchTool = new OpenAIWebSearchTool($openaiClient, "gpt-5-mini");
+                    $this->webSearchTool = new OpenAIWebSearchTool($openaiClient, "gpt-5.4-mini");
                 } catch (\Exception $e) {
                     // Log error if needed, but return null as it's optional
                     error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
@@ -128,18 +144,16 @@ class Container
         $messageHandlers = CommandHandlerFactory::createMessageHandlers(
             $this->getCommandAndTriggerService(),
             $this->getBotRepository(),
-            $this->getGptClient(),
-            $this->getConversationRepository(),
-            $this->getChatPromptService(),
-            $this->getWebSearchTool()
+            $this->getChatService(),
+            $this->getConversationRepository()
         );
         $postbackHandlers = CommandHandlerFactory::createPostbackHandlers($this->getBotRepository());
+        $dispatcher = new CommandHandlerDispatcher($messageHandlers, $postbackHandlers);
 
         return new ChatApplicationService(
             $bot,
             $this->getCommandAndTriggerService(),
-            $messageHandlers,
-            $postbackHandlers,
+            $dispatcher,
             $this->getLogger()
         );
     }

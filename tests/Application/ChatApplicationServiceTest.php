@@ -14,6 +14,7 @@ use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Bot\ValueObject\Message;
 use App\Application\CommandHandler\CommandHandlerInterface;
 use App\Application\CommandHandler\PostbackHandlerInterface;
+use App\Application\CommandHandler\CommandHandlerDispatcher;
 use PHPUnit\Framework\TestCase;
 
 final class ChatApplicationServiceTest extends TestCase
@@ -23,27 +24,40 @@ final class ChatApplicationServiceTest extends TestCase
     private $commandAndTriggerServiceMock;
     private $messageHandlerMock;
     private $postbackHandlerMock;
+    private string|false $originalKService;
 
     const TARGET_ID = "TARGET_ID";
 
     protected function setUp(): void
     {
+        $this->originalKService = getenv('K_SERVICE');
         $this->bot = new Bot(self::TARGET_ID);
         $this->commandAndTriggerServiceMock = $this->createMock(CommandAndTriggerService::class);
         $this->messageHandlerMock = $this->createMock(CommandHandlerInterface::class);
         $this->postbackHandlerMock = $this->createMock(PostbackHandlerInterface::class);
+        $dispatcher = new CommandHandlerDispatcher([$this->messageHandlerMock], [$this->postbackHandlerMock]);
 
         $this->chatService = new ChatApplicationService(
             $this->bot,
             $this->commandAndTriggerServiceMock,
-            [$this->messageHandlerMock],
-            [$this->postbackHandlerMock]
+            $dispatcher
         );
     }
 
-    public function test_handleMessage_delegates_to_handler(): void
+    public function test_handleMessage_delegates_to_handler_and_logs(): void
     {
+        $loggerMock = $this->createMock(\App\Infrastructure\Logger\Logger::class);
+        $dispatcher = new CommandHandlerDispatcher([$this->messageHandlerMock], [$this->postbackHandlerMock]);
+        $chatService = new ChatApplicationService(
+            $this->bot,
+            $this->commandAndTriggerServiceMock,
+            $dispatcher,
+            $loggerMock
+        );
+
         $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::Other);
+        $loggerMock->expects($this->once())->method('log')->with($this->stringContains('Judged Command: 9'));
+
         $this->messageHandlerMock->method('canHandle')->with(Command::Other)->willReturn(true);
         $this->messageHandlerMock->expects($this->once())
             ->method('handle')
@@ -52,7 +66,7 @@ final class ChatApplicationServiceTest extends TestCase
             }), $this->bot, Command::Other)
             ->willReturn(new BotResponse("hi"));
 
-        $response = $this->chatService->handleMessage("hello");
+        $response = $chatService->handleMessage("hello");
         $this->assertSame("hi", $response->getText());
     }
 
@@ -67,11 +81,11 @@ final class ChatApplicationServiceTest extends TestCase
             ->method('handle')
             ->willReturn(new BotResponse("help content"));
 
+        $dispatcher = new CommandHandlerDispatcher([$handler1, $handler2], []);
         $chatService = new ChatApplicationService(
             $this->bot,
             $this->commandAndTriggerServiceMock,
-            [$handler1, $handler2],
-            []
+            $dispatcher
         );
 
         $this->commandAndTriggerServiceMock->method('judgeCommand')->willReturn(Command::ShowHelp);
@@ -118,7 +132,24 @@ final class ChatApplicationServiceTest extends TestCase
     public function test_getLineTarget_returns_test_in_testing_env(): void
     {
         // CFUtils::isTestingEnv() is mocked by environment variable or usually returns true in tests
+        putenv('K_SERVICE=my-test-func');
         $this->assertSame('test', $this->chatService->getLineTarget());
+    }
+
+    public function test_getLineTarget_returns_bot_target_in_production(): void
+    {
+        putenv('K_SERVICE=my-prod-func');
+        $this->bot->setLineTarget('prod-target');
+        $this->assertSame('prod-target', $this->chatService->getLineTarget());
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->originalKService !== false) {
+            putenv("K_SERVICE={$this->originalKService}");
+        } else {
+            putenv("K_SERVICE");
+        }
     }
 
     public function test_handleTrigger_bypasses_command_judgment(): void

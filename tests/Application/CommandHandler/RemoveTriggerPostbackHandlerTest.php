@@ -38,4 +38,19 @@ final class RemoveTriggerPostbackHandlerTest extends TestCase
         $this->assertSame("削除しました：today 12:00 test", $response->getText());
         $this->assertArrayNotHasKey($triggerId, $bot->getTriggers());
     }
+
+    public function test_handle_throws_exception_if_trigger_id_not_found(): void
+    {
+        $repoMock = $this->createMock(BotRepository::class);
+        $handler = new RemoveTriggerPostbackHandler($repoMock);
+
+        $bot = new Bot("test");
+        // No trigger added
+
+        $this->expectException(\App\Domain\Exception\TriggerNotFoundException::class);
+        $this->expectExceptionMessage("Trigger with ID 'non-existent' not found.");
+
+        $params = ["id" => "non-existent", "trigger" => "some trigger"];
+        $handler->handle($params, $bot);
+    }
 }

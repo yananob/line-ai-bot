@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Bot\ValueObject\StringList;
+use App\Domain\Bot\ValueObject\BotPersonalityConfig;
 use App\Domain\Exception\TriggerNotFoundException;
 
 final class BotTest extends TestCase
@@ -16,7 +17,7 @@ final class BotTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->bot = new Bot("testBotId", null);
+        $this->bot = new Bot("testBotId");
     }
 
     public function test_IDを取得する(): void
@@ -33,65 +34,77 @@ final class BotTest extends TestCase
     public function test_ボットの特性を設定および取得する(): void
     {
         $chars = ["特性1", "特性2"];
-        $this->bot->setBotCharacteristics($chars);
+        $personality = new BotPersonalityConfig(new StringList($chars), new StringList([]));
+        $this->bot->setPersonality($personality);
         $this->assertEquals($chars, $this->bot->getBotCharacteristics()->toArray());
     }
 
     public function test_ボットの特性がデフォルトとマージされることを確認する(): void
     {
-        $defaultBot = new Bot("defaultBotId");
-        $defaultBot->setBotCharacteristics(['デフォルト特性']);
-        $botWithDefault = new Bot("botWithDef", $defaultBot);
+        $defaultPersonality = new BotPersonalityConfig(new StringList(['デフォルト特性']), new StringList([]));
+        $defaultBot = new Bot("defaultBotId", "Default", $defaultPersonality);
+        $botWithDefault = new Bot("botWithDef", "MyBot", null, null, '', [], $defaultBot);
         $this->assertEquals(['デフォルト特性'], $botWithDefault->getBotCharacteristics()->toArray());
 
         // 個別設定がある場合はマージされる
-        $botWithDefault->setBotCharacteristics(['個別特性']);
+        $personality = new BotPersonalityConfig(new StringList(['個別特性']), new StringList([]));
+        $botWithDefault->setPersonality($personality);
         $this->assertEquals(['デフォルト特性', '個別特性'], $botWithDefault->getBotCharacteristics()->toArray());
     }
 
     public function test_人間の特性を設定および取得する(): void
     {
         $chars = ["人間の特性1"];
-        $this->bot->setHumanCharacteristics($chars);
+        $personality = new BotPersonalityConfig(new StringList([]), new StringList($chars));
+        $this->bot->setPersonality($personality);
         $this->assertEquals($chars, $this->bot->getHumanCharacteristics()->toArray());
         $this->assertTrue($this->bot->hasHumanCharacteristics());
     }
 
     public function test_人間の特性が空の場合にhasHumanCharacteristicsがFalseを返す(): void
     {
-        $this->bot->setHumanCharacteristics([]);
+        $personality = new BotPersonalityConfig(new StringList([]), new StringList([]));
+        $this->bot->setPersonality($personality);
         $this->assertFalse($this->bot->hasHumanCharacteristics());
+    }
+
+    public function test_自分自身の特性が空でもデフォルトがあればhasHumanCharacteristicsがTrueを返す(): void
+    {
+        $defaultPersonality = new BotPersonalityConfig(new StringList([]), new StringList(['デフォルト人間特性']));
+        $defaultBot = new Bot("defaultBotId", "Default", $defaultPersonality);
+        $botWithDefault = new Bot("botWithDef", "MyBot", null, null, '', [], $defaultBot);
+
+        $this->assertTrue($botWithDefault->hasHumanCharacteristics());
     }
 
     public function test_人間の特性がデフォルトとマージされることを確認する(): void
     {
-        $defaultBot = new Bot("defaultBotId");
-        $defaultBot->setHumanCharacteristics(['デフォルト人間特性']);
-        $botWithDefault = new Bot("botWithDef", $defaultBot);
+        $defaultPersonality = new BotPersonalityConfig(new StringList([]), new StringList(['デフォルト人間特性']));
+        $defaultBot = new Bot("defaultBotId", "Default", $defaultPersonality);
+        $botWithDefault = new Bot("botWithDef", "MyBot", null, null, '', [], $defaultBot);
 
         $this->assertTrue($botWithDefault->hasHumanCharacteristics());
         $this->assertEquals(['デフォルト人間特性'], $botWithDefault->getHumanCharacteristics()->toArray());
 
         // 個別設定がある場合はマージされる
-        $botWithDefault->setHumanCharacteristics(['個別人間特性']);
+        $personality = new BotPersonalityConfig(new StringList([]), new StringList(['個別人間特性']));
+        $botWithDefault->setPersonality($personality);
         $this->assertTrue($botWithDefault->hasHumanCharacteristics());
         $this->assertEquals(['デフォルト人間特性', '個別人間特性'], $botWithDefault->getHumanCharacteristics()->toArray());
     }
 
-    public function test_設定リクエストを設定および取得する(): void
+    public function test_設定リクエストを取得する(): void
     {
         $reqs = ["リクエストA", "リクエストB"];
-        $this->bot->setConfigRequests($reqs);
-        $this->assertEquals($reqs, $this->bot->getConfigRequests(true, false)->toArray());
+        $bot = new Bot("testBotId", "TestBot", null, new StringList($reqs));
+        $this->assertEquals($reqs, $bot->getConfigRequests(true, false)->toArray());
     }
 
     public function test_設定リクエストがデフォルトとマージされることを確認する(): void
     {
-        $defaultBot = new Bot("defaultBotId");
-        $defaultBot->setConfigRequests(['デフォルトリクエスト']);
+        $defaultBot = new Bot("defaultBotId", "Default", null, new StringList(['デフォルトリクエスト']));
 
-        $bot = new Bot("myBot", $defaultBot);
-        $bot->setConfigRequests(['個別リクエスト']);
+        $bot = new Bot("myBot", "MyBot", null, new StringList(['個別リクエスト']), '', [], $defaultBot);
 
         $allRequests = $bot->getConfigRequests(true, true);
         $this->assertEquals(['デフォルトリクエスト', '個別リクエスト'], $allRequests->toArray());
@@ -114,10 +127,9 @@ final class BotTest extends TestCase
 
     public function test_LINEターゲットが設定されていない場合にデフォルトから取得する(): void
     {
-        $defaultBot = new Bot("defaultBotId");
-        $defaultBot->setLineTarget("default_target");
+        $defaultBot = new Bot("defaultBotId", "Default", null, null, "default_target");
 
-        $bot = new Bot("myBot", $defaultBot);
+        $bot = new Bot("myBot", "MyBot", null, null, '', [], $defaultBot);
         $this->assertEquals("default_target", $bot->getLineTarget());
 
         $bot->setLineTarget("personal_target");
@@ -138,6 +150,9 @@ final class BotTest extends TestCase
 
         // IDで取得
         $this->assertSame($trigger1, $this->bot->getTriggerById($triggerId1));
+
+        // 存在しないIDで取得
+        $this->assertNull($this->bot->getTriggerById("non_existent_id"));
 
         $trigger2 = new TimerTrigger("everyday", "12:00", "リクエスト2");
         $this->bot->addTrigger($trigger2);
