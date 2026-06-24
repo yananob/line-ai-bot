@@ -15,9 +15,9 @@ class TriggerSchedule
     private string $resolvedDate;
     private string $resolvedTime;
 
-    public function __construct(string $date, string $time)
+    public function __construct(string $date, string $time, ?Carbon $now = null)
     {
-        $carbonNow = new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
+        $carbonNow = $now ?? new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
         $targetDateTime = $carbonNow->copy();
 
         $this->originalDate = $date;

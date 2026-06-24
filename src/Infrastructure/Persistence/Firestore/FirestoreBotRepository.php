@@ -78,7 +78,10 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
             return $this->findById($id);
         } catch (BotNotFoundException $e) {
             $defaultBotConfig = $this->findDefault();
-            return new Bot($id, $defaultBotConfig);
+            return new Bot(
+                id: $id,
+                defaultBot: $defaultBotConfig
+            );
         }
     }
 

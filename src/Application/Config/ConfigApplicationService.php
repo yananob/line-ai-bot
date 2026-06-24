@@ -169,9 +169,11 @@ class ConfigApplicationService
     {
         $bot = $this->botRepository->findOrDefault($botId);
         $bot->setName($data['bot_name'] ?? '');
-        $bot->setBotCharacteristics($data['bot_characteristics'] ?? []);
-        $bot->setHumanCharacteristics($data['human_characteristics'] ?? []);
-        $bot->setConfigRequests($data['requests'] ?? []);
+        $bot->setPersonality(new \App\Domain\Bot\ValueObject\BotPersonalityConfig(
+            new \App\Domain\Bot\ValueObject\StringList($data['bot_characteristics'] ?? []),
+            new \App\Domain\Bot\ValueObject\StringList($data['human_characteristics'] ?? [])
+        ));
+        $bot->setConfigRequests(new \App\Domain\Bot\ValueObject\StringList($data['requests'] ?? []));
         $bot->setLineTarget($data['line_target'] ?? '');
         $this->botRepository->save($bot);
     }

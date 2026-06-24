@@ -4,6 +4,8 @@ namespace App\Domain\Bot\Service;
 
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Trigger\Trigger;
+use App\Domain\Bot\ValueObject\BotPersonalityConfig;
+use App\Domain\Bot\ValueObject\StringList;
 
 class BotFactory
 {
@@ -20,14 +22,20 @@ class BotFactory
         array $triggers = [],
         ?Bot $defaultBot = null
     ): Bot {
-        $bot = new Bot($id, $defaultBot);
-        $bot->setName($data['bot_name'] ?? '');
-        $bot->setBotCharacteristics($data['bot_characteristics'] ?? []);
-        $bot->setHumanCharacteristics($data['human_characteristics'] ?? []);
-        $bot->setConfigRequests($data['requests'] ?? []);
-        $bot->setLineTarget($data['line_target'] ?? '');
-        $bot->setTriggers($triggers);
+        $personality = new BotPersonalityConfig(
+            new StringList($data['bot_characteristics'] ?? []),
+            new StringList($data['human_characteristics'] ?? [])
+        );
+        $configRequests = new StringList($data['requests'] ?? []);
 
-        return $bot;
+        return new Bot(
+            $id,
+            $data['bot_name'] ?? '',
+            $personality,
+            $configRequests,
+            $data['line_target'] ?? '',
+            $triggers,
+            $defaultBot
+        );
     }
 }

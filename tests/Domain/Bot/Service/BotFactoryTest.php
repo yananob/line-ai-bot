@@ -6,6 +6,8 @@ use PHPUnit\Framework\TestCase;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Service\BotFactory;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\BotPersonalityConfig;
+use App\Domain\Bot\ValueObject\StringList;
 
 class BotFactoryTest extends TestCase
 {
@@ -37,8 +39,8 @@ class BotFactoryTest extends TestCase
 
     public function testCreateBotWithDefaultBot(): void
     {
-        $defaultBot = new Bot('default');
-        $defaultBot->setBotCharacteristics(['Base']);
+        $defaultPersonality = new BotPersonalityConfig(new StringList(['Base']), new StringList([]));
+        $defaultBot = new Bot('default', 'Default', $defaultPersonality);
 
         $id = 'bot_123';
         $data = [

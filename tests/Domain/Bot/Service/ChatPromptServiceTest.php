@@ -7,6 +7,7 @@ use App\Domain\Bot\Bot;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\ValueObject\StringList;
+use App\Domain\Bot\ValueObject\BotPersonalityConfig;
 
 class ChatPromptServiceTest extends TestCase
 {
@@ -20,8 +21,11 @@ class ChatPromptServiceTest extends TestCase
     public function test_generateContext_with_full_info(): void
     {
         $bot = new Bot("bot-123");
-        $bot->setBotCharacteristics(["Characteristic 1", "Characteristic 2"]);
-        $bot->setHumanCharacteristics(["Human Char 1"]);
+        $personality = new BotPersonalityConfig(
+            new StringList(["Characteristic 1", "Characteristic 2"]),
+            new StringList(["Human Char 1"])
+        );
+        $bot->setPersonality($personality);
 
         $conversation1 = new Conversation("bot-123", "human", "Hello");
         $conversation2 = new Conversation("bot-123", "bot", "Hi there!");
@@ -49,8 +53,6 @@ class ChatPromptServiceTest extends TestCase
     public function test_generateContext_with_minimal_info(): void
     {
         $bot = new Bot("bot-456");
-        $bot->setBotCharacteristics([]);
-        $bot->setHumanCharacteristics([]);
 
         $conversations = [];
         $requests = new StringList([]);
@@ -68,8 +70,6 @@ class ChatPromptServiceTest extends TestCase
     public function test_generateContext_excludes_empty_sections(): void
     {
         $bot = new Bot("bot-789");
-        $bot->setBotCharacteristics([]);
-        $bot->setHumanCharacteristics([]);
 
         $conversations = [];
         $requests = new StringList([]);

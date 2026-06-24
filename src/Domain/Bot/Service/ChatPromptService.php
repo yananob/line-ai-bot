@@ -18,46 +18,47 @@ class ChatPromptService
      */
     public function generateContext(Bot $bot, array $conversations, StringList $requests, ?string $webSearchResults = null): string
     {
-        $result = Messages::CHAT_CONTEXT_TEMPLATE;
-        $replaceSettings = [
-            ["search" => "<bot/characteristics>", "replace" => $bot->getBotCharacteristics()->format()],
-            ["search" => "<requests>", "replace" => $requests->format()],
+        $replacements = [
+            "<bot/characteristics>" => $bot->getBotCharacteristics()->format(),
+            "<requests>" => $requests->format(),
         ];
-        foreach ($replaceSettings as $replaceSetting) {
-            $result = str_replace($replaceSetting["search"], $replaceSetting["replace"], $result);
-        }
 
         if (empty($bot->hasHumanCharacteristics())) {
-            $result = $this->removeFromContext(["<title/human_characteristics>", "<human/characteristics>"], $result);
+            $replacements["<title/human_characteristics>"] = "";
+            $replacements["<human/characteristics>"] = "";
         } else {
-            $result = str_replace("<title/human_characteristics>", "【話し相手の情報】", $result);
-            $result = str_replace("<human/characteristics>", $bot->getHumanCharacteristics()->format(), $result);
+            $replacements["<title/human_characteristics>"] = "【話し相手の情報】";
+            $replacements["<human/characteristics>"] = $bot->getHumanCharacteristics()->format();
         }
 
         if (empty($conversations)) {
-            $result = $this->removeFromContext(["<title/recentConversations>", "<recentConversations>"], $result);
+            $replacements["<title/recentConversations>"] = "";
+            $replacements["<recentConversations>"] = "";
         } else {
-            $result = str_replace("<title/recentConversations>", "【最近の会話内容】", $result);
-            $result = str_replace("<recentConversations>", $this->convertConversationsToText($conversations), $result);
+            $replacements["<title/recentConversations>"] = "【最近の会話内容】";
+            $replacements["<recentConversations>"] = $this->convertConversationsToText($conversations);
         }
 
         if (empty($webSearchResults)) {
-            $result = $this->removeFromContext(["<title/web_search_results>", "<web_search_results>"], $result);
+            $replacements["<title/web_search_results>"] = "";
+            $replacements["<web_search_results>"] = "";
         } else {
-            $result = str_replace("<title/web_search_results>", "【Web検索結果】", $result);
-            $result = str_replace("<web_search_results>", $webSearchResults, $result);
+            $replacements["<title/web_search_results>"] = "【Web検索結果】";
+            $replacements["<web_search_results>"] = $webSearchResults;
+        }
+
+        $result = Messages::CHAT_CONTEXT_TEMPLATE;
+        foreach ($replacements as $placeholder => $value) {
+            if ($value === "") {
+                // Remove placeholder and any trailing newline if the value is empty
+                $result = str_replace($placeholder . "\n", "", $result);
+                $result = str_replace($placeholder, "", $result);
+            } else {
+                $result = str_replace($placeholder, $value, $result);
+            }
         }
 
         return $result;
-    }
-
-    private function removeFromContext(array $keywords, string $source): string
-    {
-        foreach ($keywords as $keyword) {
-            $source = str_replace($keyword . "\n", "", $source);
-            $source = str_replace($keyword, "", $source);
-        }
-        return $source;
     }
 
     /**

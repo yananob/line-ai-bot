@@ -7,6 +7,8 @@ namespace Tests\Infrastructure\Persistence\Firestore;
 use App\Infrastructure\Persistence\Firestore\FirestoreBotRepository;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Bot\ValueObject\BotPersonalityConfig;
+use App\Domain\Bot\ValueObject\StringList;
 use App\Domain\Exception\BotNotFoundException;
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
@@ -257,12 +259,11 @@ final class FirestoreBotRepositoryTest extends TestCase
 
     public function test_save_success_and_saves_only_personal_settings(): void
     {
-        $defaultBot = new Bot('default');
-        $defaultBot->setBotCharacteristics(['default-char']);
+        $defaultPersonality = new BotPersonalityConfig(new StringList(['default-char']), new StringList([]));
+        $defaultBot = new Bot('default', 'Default', $defaultPersonality);
 
-        $bot = new Bot('test-bot', $defaultBot);
-        $bot->setName('Personal Name');
-        $bot->setBotCharacteristics(['personal-char']);
+        $personality = new BotPersonalityConfig(new StringList(['personal-char']), new StringList([]));
+        $bot = new Bot('test-bot', 'Personal Name', $personality, null, '', [], $defaultBot);
 
         [$botCollMock, $configDocMock] = $this->createBotMocks();
 
