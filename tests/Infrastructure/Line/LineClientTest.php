@@ -80,7 +80,7 @@ final class LineClientTest extends TestCase
 
         $apiMock->expects($this->once())
             ->method('replyMessage')
-            ->with($this->callback(function (ReplyMessageRequest $request) use ($quickReplyItems) {
+            ->with($this->callback(function (ReplyMessageRequest $request) {
                 /** @var TextMessage $message */
                 $message = $request->getMessages()[0];
                 $quickReply = $message->getQuickReply();

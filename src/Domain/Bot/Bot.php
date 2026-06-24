@@ -10,19 +10,38 @@ use App\Domain\Bot\ValueObject\BotPersonalityConfig;
 class Bot
 {
     private string $id;
-    private string $name = '';
+    private string $name;
     private BotPersonalityConfig $personality;
     private StringList $configRequests;
-    private string $lineTarget = '';
-    private array $triggers = []; // This will hold Trigger objects
+    private string $lineTarget;
+    private array $triggers; // This will hold Trigger objects
     private ?Bot $defaultBot;
 
-    public function __construct(string $id, ?Bot $defaultBot = null)
-    {
+    /**
+     * @param string $id
+     * @param string $name
+     * @param BotPersonalityConfig|null $personality
+     * @param StringList|null $configRequests
+     * @param string $lineTarget
+     * @param array<string, Trigger> $triggers
+     * @param Bot|null $defaultBot
+     */
+    public function __construct(
+        string $id,
+        string $name = '',
+        ?BotPersonalityConfig $personality = null,
+        ?StringList $configRequests = null,
+        string $lineTarget = '',
+        array $triggers = [],
+        ?Bot $defaultBot = null
+    ) {
         $this->id = $id;
+        $this->name = $name;
+        $this->personality = $personality ?? new BotPersonalityConfig(new StringList([]), new StringList([]));
+        $this->configRequests = $configRequests ?? new StringList([]);
+        $this->lineTarget = $lineTarget;
+        $this->triggers = $triggers;
         $this->defaultBot = $defaultBot;
-        $this->personality = new BotPersonalityConfig(new StringList([]), new StringList([]));
-        $this->configRequests = new StringList([]);
     }
 
     public function getId(): string
@@ -127,25 +146,9 @@ class Bot
         $this->personality = $personality;
     }
 
-    public function setBotCharacteristics(array $characteristics): void
+    public function setConfigRequests(StringList $configRequests): void
     {
-        $this->personality = new BotPersonalityConfig(
-            new StringList($characteristics),
-            $this->personality->getHumanCharacteristics()
-        );
-    }
-
-    public function setHumanCharacteristics(array $characteristics): void
-    {
-        $this->personality = new BotPersonalityConfig(
-            $this->personality->getBotCharacteristics(),
-            new StringList($characteristics)
-        );
-    }
-
-    public function setConfigRequests(array $requests): void
-    {
-        $this->configRequests = new StringList($requests);
+        $this->configRequests = $configRequests;
     }
 
     public function setLineTarget(string $target): void

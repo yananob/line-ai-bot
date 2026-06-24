@@ -14,10 +14,11 @@ class TimerTrigger implements Trigger
      * @param string $date タイマー実行日（JST）
      * @param string $time タイマー実行時間（JST）
      * @param string $request タイマー実行時のリクエスト内容
+     * @param \Carbon\Carbon|null $now
      */
-    public function __construct(string $date, string $time, string $request)
+    public function __construct(string $date, string $time, string $request, ?\Carbon\Carbon $now = null)
     {
-        $this->schedule = new TriggerSchedule($date, $time);
+        $this->schedule = new TriggerSchedule($date, $time, $now);
         $this->request = $request;
     }
 
