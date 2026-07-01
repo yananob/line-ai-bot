@@ -9,16 +9,21 @@ namespace App\Domain\Bot\ValueObject;
  */
 class Message
 {
-    private string $content;
+    private MessageContent $content;
     private bool $isSystem;
 
-    public function __construct(string $content, bool $isSystem = false)
+    public function __construct(string|MessageContent $content, bool $isSystem = false)
     {
-        $this->content = $content;
+        $this->content = $content instanceof MessageContent ? $content : new MessageContent($content);
         $this->isSystem = $isSystem;
     }
 
     public function getContent(): string
+    {
+        return $this->content->getValue();
+    }
+
+    public function getMessageContent(): MessageContent
     {
         return $this->content;
     }
@@ -30,6 +35,6 @@ class Message
 
     public function __toString(): string
     {
-        return $this->content;
+        return (string)$this->content;
     }
 }
