@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GRPC_VERBOSITY: ERROR  # GRPCのログ出力を抑止
+      APP_ENV: test
 
     steps:
     - uses: actions/checkout@v5
