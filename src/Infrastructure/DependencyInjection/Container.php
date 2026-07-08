@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\DependencyInjection;
 
 use App\Application\ChatApplicationService;
+use App\Application\TriggerApplicationService;
 use App\Application\CommandHandler\CommandHandlerDispatcher;
 use App\Application\CommandHandler\CommandHandlerFactory;
 use App\Domain\Bot\Bot;
@@ -136,6 +137,16 @@ class Container
             $this->getConversationRepository(),
             __DIR__ . '/../../../views',
             $cachePath
+        );
+    }
+
+    public function createTriggerApplicationService(): TriggerApplicationService
+    {
+        return new TriggerApplicationService(
+            $this->getBotRepository(),
+            $this->getLineClient(),
+            $this,
+            $this->getLogger()
         );
     }
 
