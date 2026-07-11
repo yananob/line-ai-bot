@@ -272,4 +272,24 @@ final class TimerTriggerTest extends TestCase
         // 「tomorrow」のままだとここでまた実行されてしまうが、解決済みなので実行されないはず
         $this->assertFalse($reconstructedTrigger->shouldRunNow(10));
     }
+
+    /**
+     * @dataProvider provideGptResponses
+     */
+    public function test_GPT応答から正しく生成される(string $gptResponse, string $expectedDate, string $expectedTime, string $expectedRequest): void
+    {
+        $trigger = TimerTrigger::fromGptResponse($gptResponse);
+        $this->assertEquals($expectedDate, $trigger->getDate());
+        $this->assertEquals($expectedTime, $trigger->getTime());
+        $this->assertEquals($expectedRequest, $trigger->getRequest());
+    }
+
+    public static function provideGptResponses(): array
+    {
+        return [
+            ["・日付：today\n・時刻：10:00\n・依頼内容：テスト", 'today', '10:00', 'テスト'],
+            ["・日付：everyday\n・時刻：08:00\n・依頼内容：おはよう", 'everyday', '08:00', 'おはよう'],
+            ['不正な形式', 'today', 'now', 'Could not parse request'],
+        ];
+    }
 }

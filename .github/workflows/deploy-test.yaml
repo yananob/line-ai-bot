@@ -1,4 +1,4 @@
-name: Deploy Cloud Functions (test)
+name: Run test & Deploy Cloud Functions (test)
 
 on:
   push:
@@ -16,13 +16,72 @@ on:
 
 concurrency:
   group: line-ai-bot-deploy-test
+  cancel-in-progress: true
 
 permissions:
   contents: 'read'
   id-token: 'write'
 
 jobs:
-  prepare:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GRPC_VERBOSITY: ERROR  # GRPCのログ出力を抑止
+      APP_ENV: test
+
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        submodules: 'true'
+
+    - name: Set up PHP 8.2
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: "8.2"
+        extensions: grpc
+
+    - name: Validate composer.json and composer.lock
+      run: composer validate
+
+    - name: Get current directory
+      id: current_dir
+      run: echo "CURRENT_DIR=$(pwd)" >> $GITHUB_OUTPUT
+
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v5
+      with:
+        path: ${{ steps.current_dir.outputs.CURRENT_DIR }}/vendor
+        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-
+
+    # - name: Cache NPM packages
+    #   id: npm-cache
+    #   uses: actions/cache@v5
+    #   with:
+    #     path: ${{ steps.current_dir.outputs.CURRENT_DIR }}/node_modules
+    #     key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-npm-
+
+    - name: Install dependencies (Composer)
+      run: composer install --prefer-dist --no-progress
+
+    # - name: Install dependencies (NPM)
+    #   run: npm install --prefer-offline --no-audit --progress=false
+
+    - name: Google Cloud認証
+      id: 'auth'
+      uses: 'google-github-actions/auth@v3'
+      with:
+        workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
+        service_account: 'cloud-run-functions-deployer@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
+    - name: Test with phpunit
+      run: bash tests/run_tests.sh
+
+  prepare-deploy:
     runs-on: ubuntu-latest
     outputs:
       function_name: ${{ steps.set_name.outputs.function_name }}
@@ -37,10 +96,10 @@ jobs:
           # fi
 
   deploy:
-    needs: prepare
+    needs: [prepare-deploy, test]
     uses: yananob/cloud-functions-common/.github/workflows/deploy-cloud-functions.yaml@main
     with:
-      function_name: ${{ needs.prepare.outputs.function_name }}
+      function_name: ${{ needs.prepare-deploy.outputs.function_name }}
       service_account_name: 'cloud-run-functions-deployer'
       wip_pool_name: 'github-actions-pool'
       wip_provider_name: 'github-provider'
@@ -49,8 +108,16 @@ jobs:
         OPENAI_KEY_LINE_AI_BOT
         LINE_TOKENS_N_TARGETS
         FIREBASE_SERVICE_ACCOUNT
+      # gcs_source_dir: ./public/
+      # gcs_bucket_name: line-ai-bot-static
+      # gcs_bucket_path: test
+      # disable_gcs_cache: true
       deploy_http_trigger: true
-      deploy_event_trigger: true
+      deploy_event_trigger: false
+      http_max_instance_count: 1
+      memory: '256M'
+      http_timeout: '5m'
+      event_timeout: '540s'
       environment_variables: |-
         APP_ENV=test
     secrets:
@@ -59,7 +126,7 @@ jobs:
       GCP_PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }}
 
   comment:
-    needs: [prepare, deploy]
+    needs: [deploy, prepare-deploy]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     env:
@@ -69,9 +136,9 @@ jobs:
       pull-requests: write
       contents: read  # チェックアウトなど、他の操作に必要
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'true'
       - name: Add comment to PR
         run: |
-          gh pr comment $PR_NUMBER --body "Deployed to url https://${{ secrets.GCP_REGION }}-${{ secrets.GCP_PROJECT_ID }}.cloudfunctions.net/${{ needs.prepare.outputs.function_name }}/config"
+          gh pr comment $PR_NUMBER --body "Deployment succeeded to https://${{ needs.prepare-deploy.outputs.function_name }}-${{ secrets.GCP_PROJECT_NUMBER }}.${{ secrets.GCP_REGION }}.run.app [skip ci]"

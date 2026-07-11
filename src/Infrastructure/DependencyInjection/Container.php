@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\DependencyInjection;
 
 use App\Application\ChatApplicationService;
+use App\Application\TriggerApplicationService;
 use App\Application\CommandHandler\CommandHandlerDispatcher;
 use App\Application\CommandHandler\CommandHandlerFactory;
 use App\Domain\Bot\Bot;
@@ -80,7 +81,7 @@ class Container
         if ($this->gptClient === null) {
             $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
             $openaiClient = OpenAI::client($openaiApiKey);
-            $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-5.4-mini", $this->getLogger());
+            $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-5.6-luna", $this->getLogger());
         }
         return $this->gptClient;
     }
@@ -100,7 +101,7 @@ class Container
             if ($openaiApiKey !== 'dummy') {
                 $openaiClient = OpenAI::client($openaiApiKey);
                 try {
-                    $this->webSearchTool = new OpenAIWebSearchTool($openaiClient, "gpt-5.4-mini");
+                    $this->webSearchTool = new OpenAIWebSearchTool($openaiClient, "gpt-5.6-luna");
                 } catch (\Exception $e) {
                     // Log error if needed, but return null as it's optional
                     error_log("Failed to initialize WebSearchTool: " . $e->getMessage());
@@ -136,6 +137,16 @@ class Container
             $this->getConversationRepository(),
             __DIR__ . '/../../../views',
             $cachePath
+        );
+    }
+
+    public function createTriggerApplicationService(): TriggerApplicationService
+    {
+        return new TriggerApplicationService(
+            $this->getBotRepository(),
+            $this->getLineClient(),
+            $this,
+            $this->getLogger()
         );
     }
 

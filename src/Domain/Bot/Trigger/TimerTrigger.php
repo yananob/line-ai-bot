@@ -22,6 +22,31 @@ class TimerTrigger implements Trigger
         $this->request = $request;
     }
 
+    public static function fromGptResponse(string $gptResponse): self
+    {
+        // Default values in case regex fails
+        $date = "today";
+        $time = "now";
+        $request = "Could not parse request";
+
+        $matchesDate = [];
+        if (preg_match('/・日付：(.+)$/m', $gptResponse, $matchesDate)) {
+            $date = trim($matchesDate[1]);
+        }
+
+        $matchesTime = [];
+        if (preg_match('/・時刻：(.+)$/m', $gptResponse, $matchesTime)) {
+            $time = trim($matchesTime[1]);
+        }
+
+        $matchesRequest = [];
+        if (preg_match('/・依頼内容：(.+)$/m', $gptResponse, $matchesRequest)) {
+            $request = trim($matchesRequest[1]);
+        }
+
+        return new self($date, $time, $request);
+    }
+
     public function getId(): ?string
     {
         return $this->id;
