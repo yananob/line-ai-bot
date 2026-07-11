@@ -19,6 +19,8 @@
 .vscode/
 
 *.md
+_template/
+
 # deploy related
 deploy*.sh
 gha-creds-*.json
