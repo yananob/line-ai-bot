@@ -5,6 +5,8 @@ namespace App\Application\Config;
 use App\Domain\Bot\BotRepository;
 use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Conversation\ConversationRepository;
+use App\Domain\Bot\ValueObject\BotPersonalityConfig;
+use App\Domain\Bot\ValueObject\StringList;
 use eftec\bladeone\BladeOne;
 
 class ConfigApplicationService
@@ -70,7 +72,7 @@ class ConfigApplicationService
                 $botName = $bot->getName();
                 $botChars = $bot->getPersonality()->getBotCharacteristics()->toArray();
                 $humanChars = $bot->getPersonality()->getHumanCharacteristics()->toArray();
-                $requests = $bot->getConfigRequests(true, false)->toArray();
+                $requests = $bot->getPersonality()->getConfigRequests()->toArray();
                 $lineTarget = $bot->getLineTarget();
             } catch (\Exception $e) {
                 // Bot not found, use defaults
@@ -169,11 +171,11 @@ class ConfigApplicationService
     {
         $bot = $this->botRepository->findOrDefault($botId);
         $bot->setName($data['bot_name'] ?? '');
-        $bot->setPersonality(new \App\Domain\Bot\ValueObject\BotPersonalityConfig(
-            new \App\Domain\Bot\ValueObject\StringList($data['bot_characteristics'] ?? []),
-            new \App\Domain\Bot\ValueObject\StringList($data['human_characteristics'] ?? [])
+        $bot->setPersonality(new BotPersonalityConfig(
+            new StringList($data['bot_characteristics'] ?? []),
+            new StringList($data['human_characteristics'] ?? []),
+            new StringList($data['requests'] ?? [])
         ));
-        $bot->setConfigRequests(new \App\Domain\Bot\ValueObject\StringList($data['requests'] ?? []));
         $bot->setLineTarget($data['line_target'] ?? '');
         $this->botRepository->save($bot);
     }
