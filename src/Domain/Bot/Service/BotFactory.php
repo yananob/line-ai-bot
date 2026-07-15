@@ -24,15 +24,14 @@ class BotFactory
     ): Bot {
         $personality = new BotPersonalityConfig(
             new StringList($data['bot_characteristics'] ?? []),
-            new StringList($data['human_characteristics'] ?? [])
+            new StringList($data['human_characteristics'] ?? []),
+            new StringList($data['requests'] ?? [])
         );
-        $configRequests = new StringList($data['requests'] ?? []);
 
         return new Bot(
             $id,
             $data['bot_name'] ?? '',
             $personality,
-            $configRequests,
             $data['line_target'] ?? '',
             $triggers,
             $defaultBot

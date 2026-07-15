@@ -6,7 +6,8 @@ class BotPersonalityConfig
 {
     public function __construct(
         private StringList $botCharacteristics,
-        private StringList $humanCharacteristics
+        private StringList $humanCharacteristics,
+        private StringList $configRequests = new StringList([])
     ) {
     }
 
@@ -20,8 +21,24 @@ class BotPersonalityConfig
         return $this->humanCharacteristics;
     }
 
+    public function getConfigRequests(): StringList
+    {
+        return $this->configRequests;
+    }
+
     public function isEmpty(): bool
     {
-        return $this->botCharacteristics->isEmpty() && $this->humanCharacteristics->isEmpty();
+        return $this->botCharacteristics->isEmpty() &&
+               $this->humanCharacteristics->isEmpty() &&
+               $this->configRequests->isEmpty();
+    }
+
+    public function merge(BotPersonalityConfig $default): self
+    {
+        return new self(
+            $default->getBotCharacteristics()->merge($this->botCharacteristics),
+            $default->getHumanCharacteristics()->merge($this->humanCharacteristics),
+            $default->getConfigRequests()->merge($this->configRequests)
+        );
     }
 }

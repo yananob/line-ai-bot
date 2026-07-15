@@ -43,7 +43,7 @@ final class BotTest extends TestCase
     {
         $defaultPersonality = new BotPersonalityConfig(new StringList(['デフォルト特性']), new StringList([]));
         $defaultBot = new Bot("defaultBotId", "Default", $defaultPersonality);
-        $botWithDefault = new Bot("botWithDef", "MyBot", null, null, '', [], $defaultBot);
+        $botWithDefault = new Bot("botWithDef", "MyBot", null, '', [], $defaultBot);
         $this->assertEquals(['デフォルト特性'], $botWithDefault->getBotCharacteristics()->toArray());
 
         // 個別設定がある場合はマージされる
@@ -72,7 +72,7 @@ final class BotTest extends TestCase
     {
         $defaultPersonality = new BotPersonalityConfig(new StringList([]), new StringList(['デフォルト人間特性']));
         $defaultBot = new Bot("defaultBotId", "Default", $defaultPersonality);
-        $botWithDefault = new Bot("botWithDef", "MyBot", null, null, '', [], $defaultBot);
+        $botWithDefault = new Bot("botWithDef", "MyBot", null, '', [], $defaultBot);
 
         $this->assertTrue($botWithDefault->hasHumanCharacteristics());
     }
@@ -81,7 +81,7 @@ final class BotTest extends TestCase
     {
         $defaultPersonality = new BotPersonalityConfig(new StringList([]), new StringList(['デフォルト人間特性']));
         $defaultBot = new Bot("defaultBotId", "Default", $defaultPersonality);
-        $botWithDefault = new Bot("botWithDef", "MyBot", null, null, '', [], $defaultBot);
+        $botWithDefault = new Bot("botWithDef", "MyBot", null, '', [], $defaultBot);
 
         $this->assertTrue($botWithDefault->hasHumanCharacteristics());
         $this->assertEquals(['デフォルト人間特性'], $botWithDefault->getHumanCharacteristics()->toArray());
@@ -96,15 +96,18 @@ final class BotTest extends TestCase
     public function test_設定リクエストを取得する(): void
     {
         $reqs = ["リクエストA", "リクエストB"];
-        $bot = new Bot("testBotId", "TestBot", null, new StringList($reqs));
+        $personality = new BotPersonalityConfig(new StringList([]), new StringList([]), new StringList($reqs));
+        $bot = new Bot("testBotId", "TestBot", $personality);
         $this->assertEquals($reqs, $bot->getConfigRequests(true, false)->toArray());
     }
 
     public function test_設定リクエストがデフォルトとマージされることを確認する(): void
     {
-        $defaultBot = new Bot("defaultBotId", "Default", null, new StringList(['デフォルトリクエスト']));
+        $defaultPersonality = new BotPersonalityConfig(new StringList([]), new StringList([]), new StringList(['デフォルトリクエスト']));
+        $defaultBot = new Bot("defaultBotId", "Default", $defaultPersonality);
 
-        $bot = new Bot("myBot", "MyBot", null, new StringList(['個別リクエスト']), '', [], $defaultBot);
+        $personality = new BotPersonalityConfig(new StringList([]), new StringList([]), new StringList(['個別リクエスト']));
+        $bot = new Bot("myBot", "MyBot", $personality, '', [], $defaultBot);
 
         $allRequests = $bot->getConfigRequests(true, true);
         $this->assertEquals(['デフォルトリクエスト', '個別リクエスト'], $allRequests->toArray());
@@ -127,9 +130,9 @@ final class BotTest extends TestCase
 
     public function test_LINEターゲットが設定されていない場合にデフォルトから取得する(): void
     {
-        $defaultBot = new Bot("defaultBotId", "Default", null, null, "default_target");
+        $defaultBot = new Bot("defaultBotId", "Default", null, "default_target");
 
-        $bot = new Bot("myBot", "MyBot", null, null, '', [], $defaultBot);
+        $bot = new Bot("myBot", "MyBot", null, '', [], $defaultBot);
         $this->assertEquals("default_target", $bot->getLineTarget());
 
         $bot->setLineTarget("personal_target");

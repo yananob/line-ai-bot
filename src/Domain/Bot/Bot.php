@@ -12,7 +12,6 @@ class Bot
     private string $id;
     private string $name;
     private BotPersonalityConfig $personality;
-    private StringList $configRequests;
     private string $lineTarget;
     private array $triggers; // This will hold Trigger objects
     private ?Bot $defaultBot;
@@ -21,7 +20,6 @@ class Bot
      * @param string $id
      * @param string $name
      * @param BotPersonalityConfig|null $personality
-     * @param StringList|null $configRequests
      * @param string $lineTarget
      * @param array<string, Trigger> $triggers
      * @param Bot|null $defaultBot
@@ -30,7 +28,6 @@ class Bot
         string $id,
         string $name = '',
         ?BotPersonalityConfig $personality = null,
-        ?StringList $configRequests = null,
         string $lineTarget = '',
         array $triggers = [],
         ?Bot $defaultBot = null
@@ -38,7 +35,6 @@ class Bot
         $this->id = $id;
         $this->name = $name;
         $this->personality = $personality ?? new BotPersonalityConfig(new StringList([]), new StringList([]));
-        $this->configRequests = $configRequests ?? new StringList([]);
         $this->lineTarget = $lineTarget;
         $this->triggers = $triggers;
         $this->defaultBot = $defaultBot;
@@ -64,47 +60,44 @@ class Bot
         return $this->personality;
     }
 
+    public function getMergedPersonality(): BotPersonalityConfig
+    {
+        if ($this->defaultBot !== null) {
+            return $this->personality->merge($this->defaultBot->getPersonality());
+        }
+        return $this->personality;
+    }
+
     public function getBotCharacteristics(): StringList
     {
-        $chars = $this->personality->getBotCharacteristics();
-        if ($this->defaultBot !== null) {
-            $defaultChars = $this->defaultBot->getBotCharacteristics();
-            $chars = $defaultChars->merge($chars);
-        }
-        return $chars;
+        return $this->getMergedPersonality()->getBotCharacteristics();
     }
 
     public function getHumanCharacteristics(): StringList
     {
-        $chars = $this->personality->getHumanCharacteristics();
-        if ($this->defaultBot !== null) {
-            $defaultChars = $this->defaultBot->getHumanCharacteristics();
-            $chars = $defaultChars->merge($chars);
-        }
-        return $chars;
+        return $this->getMergedPersonality()->getHumanCharacteristics();
     }
 
     public function hasHumanCharacteristics(): bool
     {
-        if (!$this->personality->getHumanCharacteristics()->isEmpty()) {
-            return true;
-        }
-        return $this->defaultBot !== null && $this->defaultBot->hasHumanCharacteristics();
+        return !$this->getHumanCharacteristics()->isEmpty();
     }
 
     public function getConfigRequests(bool $usePersonal = true, bool $useDefault = true): StringList
     {
-        $requests = new StringList([]);
+        if ($usePersonal && $useDefault) {
+            return $this->getMergedPersonality()->getConfigRequests();
+        }
+
         if ($usePersonal) {
-            $requests = $this->configRequests;
+            return $this->personality->getConfigRequests();
         }
 
         if ($useDefault && $this->defaultBot !== null) {
-            $defaultRequests = $this->defaultBot->getConfigRequests(true, false);
-            // Default requests come first
-            $requests = $defaultRequests->merge($requests);
+            return $this->defaultBot->getPersonality()->getConfigRequests();
         }
-        return $requests;
+
+        return new StringList([]);
     }
 
     public function getLineTarget(): string
@@ -148,7 +141,12 @@ class Bot
 
     public function setConfigRequests(StringList $configRequests): void
     {
-        $this->configRequests = $configRequests;
+        // For compatibility with previous API, update personality's configRequests
+        $this->personality = new BotPersonalityConfig(
+            $this->personality->getBotCharacteristics(),
+            $this->personality->getHumanCharacteristics(),
+            $configRequests
+        );
     }
 
     public function setLineTarget(string $target): void
