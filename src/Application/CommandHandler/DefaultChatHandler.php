@@ -8,6 +8,7 @@ use App\Domain\Bot\ValueObject\Command;
 use App\Domain\Bot\Bot;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Conversation\ConversationRepository;
+use App\Domain\Conversation\ValueObject\Speaker;
 use App\Domain\Bot\Service\ChatService;
 use App\Application\BotResponse;
 use App\Domain\Bot\ValueObject\Message;
@@ -44,10 +45,10 @@ class DefaultChatHandler implements CommandHandlerInterface
 
     private function storeConversations(Bot $bot, string $messageContent, string $answer): void
     {
-        $humanConversation = new Conversation($bot->getId(), "human", $messageContent);
+        $humanConversation = new Conversation($bot->getId(), Speaker::HUMAN, $messageContent);
         $this->conversationRepository->save($humanConversation);
 
-        $botConversation = new Conversation($bot->getId(), "bot", $answer);
+        $botConversation = new Conversation($bot->getId(), Speaker::BOT, $answer);
         $this->conversationRepository->save($botConversation);
     }
 }

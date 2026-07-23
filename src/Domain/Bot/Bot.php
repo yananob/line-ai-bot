@@ -6,7 +6,15 @@ use App\Domain\Bot\Trigger\Trigger;
 use App\Domain\Bot\ValueObject\StringList;
 use App\Domain\Exception\TriggerNotFoundException;
 use App\Domain\Bot\ValueObject\BotPersonalityConfig;
+use App\Domain\Bot\Event\DomainEvent;
+use App\Domain\Bot\Event\BotCreatedEvent;
+use App\Domain\Bot\Event\BotConfigChangedEvent;
+use App\Domain\Bot\Event\TriggerAddedToBotEvent;
+use App\Domain\Bot\Event\TriggerRemovedFromBotEvent;
 
+/**
+ * ボットの基本情報を表すアグリゲート。
+ */
 class Bot
 {
     private string $id;
@@ -15,6 +23,9 @@ class Bot
     private string $lineTarget;
     private array $triggers; // This will hold Trigger objects
     private ?Bot $defaultBot;
+
+    /** @var DomainEvent[] */
+    private array $recordedEvents = [];
 
     /**
      * @param string $id
@@ -53,6 +64,7 @@ class Bot
     public function setName(string $name): void
     {
         $this->name = $name;
+        $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
     public function getPersonality(): BotPersonalityConfig
@@ -123,6 +135,7 @@ class Bot
         $triggerId = uniqid('trigger_', true);
         $trigger->setId($triggerId);
         $this->triggers[$triggerId] = $trigger;
+        $this->recordEvent(new TriggerAddedToBotEvent($this->id, $trigger));
         return $triggerId;
     }
 
@@ -132,11 +145,13 @@ class Bot
             throw new TriggerNotFoundException("Trigger with ID '{$id}' not found.");
         }
         unset($this->triggers[$id]);
+        $this->recordEvent(new TriggerRemovedFromBotEvent($this->id, $id));
     }
 
     public function setPersonality(BotPersonalityConfig $personality): void
     {
         $this->personality = $personality;
+        $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
     public function setConfigRequests(StringList $configRequests): void
@@ -147,11 +162,13 @@ class Bot
             $this->personality->getHumanCharacteristics(),
             $configRequests
         );
+        $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
     public function setLineTarget(string $target): void
     {
         $this->lineTarget = $target;
+        $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
     public function setTriggers(array $triggers): void
@@ -163,5 +180,25 @@ class Bot
     {
         $trigger->setId($id);
         $this->triggers[$id] = $trigger;
+    }
+
+    /**
+     * ドメインイベントを記録します。
+     */
+    public function recordEvent(DomainEvent $event): void
+    {
+        $this->recordedEvents[] = $event;
+    }
+
+    /**
+     * 記録されたドメインイベントを取得し、クリアします。
+     *
+     * @return DomainEvent[]
+     */
+    public function releaseEvents(): array
+    {
+        $events = $this->recordedEvents;
+        $this->recordedEvents = [];
+        return $events;
     }
 }
