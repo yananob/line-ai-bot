@@ -128,7 +128,7 @@ class ConfigApplicationService
         $logs = [];
         foreach ($conversations as $conv) {
             $logs[] = [
-                'speaker' => $conv->getSpeaker(),
+                'speaker' => $conv->getSpeaker()->value,
                 'content' => $conv->getContent(),
                 'created_at' => $conv->getCreatedAt()->format('Y-m-d H:i:s'),
             ];

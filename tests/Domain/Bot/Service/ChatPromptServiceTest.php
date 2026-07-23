@@ -5,6 +5,7 @@ namespace Tests\Domain\Bot\Service;
 use PHPUnit\Framework\TestCase;
 use App\Domain\Bot\Bot;
 use App\Domain\Conversation\Conversation;
+use App\Domain\Conversation\ValueObject\Speaker;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\ValueObject\StringList;
 use App\Domain\Bot\ValueObject\BotPersonalityConfig;
@@ -27,8 +28,8 @@ class ChatPromptServiceTest extends TestCase
         );
         $bot->setPersonality($personality);
 
-        $conversation1 = new Conversation("bot-123", "human", "Hello");
-        $conversation2 = new Conversation("bot-123", "bot", "Hi there!");
+        $conversation1 = new Conversation("bot-123", Speaker::HUMAN, "Hello");
+        $conversation2 = new Conversation("bot-123", Speaker::BOT, "Hi there!");
         $conversations = [$conversation1, $conversation2];
 
         $requests = new StringList(["Request 1"]);
