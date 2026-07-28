@@ -6,22 +6,31 @@ use App\Domain\Bot\Trigger\Trigger;
 use App\Domain\Bot\ValueObject\StringList;
 use App\Domain\Exception\TriggerNotFoundException;
 use App\Domain\Bot\ValueObject\BotPersonalityConfig;
+use App\Domain\Bot\Event\DomainEvent;
+use App\Domain\Bot\Event\BotCreatedEvent;
+use App\Domain\Bot\Event\BotConfigChangedEvent;
+use App\Domain\Bot\Event\TriggerAddedToBotEvent;
+use App\Domain\Bot\Event\TriggerRemovedFromBotEvent;
 
+/**
+ * ボットの基本情報を表すアグリゲート。
+ */
 class Bot
 {
     private string $id;
     private string $name;
     private BotPersonalityConfig $personality;
-    private StringList $configRequests;
     private string $lineTarget;
     private array $triggers; // This will hold Trigger objects
     private ?Bot $defaultBot;
+
+    /** @var DomainEvent[] */
+    private array $recordedEvents = [];
 
     /**
      * @param string $id
      * @param string $name
      * @param BotPersonalityConfig|null $personality
-     * @param StringList|null $configRequests
      * @param string $lineTarget
      * @param array<string, Trigger> $triggers
      * @param Bot|null $defaultBot
@@ -30,7 +39,6 @@ class Bot
         string $id,
         string $name = '',
         ?BotPersonalityConfig $personality = null,
-        ?StringList $configRequests = null,
         string $lineTarget = '',
         array $triggers = [],
         ?Bot $defaultBot = null
@@ -38,7 +46,6 @@ class Bot
         $this->id = $id;
         $this->name = $name;
         $this->personality = $personality ?? new BotPersonalityConfig(new StringList([]), new StringList([]));
-        $this->configRequests = $configRequests ?? new StringList([]);
         $this->lineTarget = $lineTarget;
         $this->triggers = $triggers;
         $this->defaultBot = $defaultBot;
@@ -57,6 +64,7 @@ class Bot
     public function setName(string $name): void
     {
         $this->name = $name;
+        $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
     public function getPersonality(): BotPersonalityConfig
@@ -64,47 +72,44 @@ class Bot
         return $this->personality;
     }
 
+    public function getMergedPersonality(): BotPersonalityConfig
+    {
+        if ($this->defaultBot !== null) {
+            return $this->personality->merge($this->defaultBot->getPersonality());
+        }
+        return $this->personality;
+    }
+
     public function getBotCharacteristics(): StringList
     {
-        $chars = $this->personality->getBotCharacteristics();
-        if ($this->defaultBot !== null) {
-            $defaultChars = $this->defaultBot->getBotCharacteristics();
-            $chars = $defaultChars->merge($chars);
-        }
-        return $chars;
+        return $this->getMergedPersonality()->getBotCharacteristics();
     }
 
     public function getHumanCharacteristics(): StringList
     {
-        $chars = $this->personality->getHumanCharacteristics();
-        if ($this->defaultBot !== null) {
-            $defaultChars = $this->defaultBot->getHumanCharacteristics();
-            $chars = $defaultChars->merge($chars);
-        }
-        return $chars;
+        return $this->getMergedPersonality()->getHumanCharacteristics();
     }
 
     public function hasHumanCharacteristics(): bool
     {
-        if (!$this->personality->getHumanCharacteristics()->isEmpty()) {
-            return true;
-        }
-        return $this->defaultBot !== null && $this->defaultBot->hasHumanCharacteristics();
+        return !$this->getHumanCharacteristics()->isEmpty();
     }
 
     public function getConfigRequests(bool $usePersonal = true, bool $useDefault = true): StringList
     {
-        $requests = new StringList([]);
+        if ($usePersonal && $useDefault) {
+            return $this->getMergedPersonality()->getConfigRequests();
+        }
+
         if ($usePersonal) {
-            $requests = $this->configRequests;
+            return $this->personality->getConfigRequests();
         }
 
         if ($useDefault && $this->defaultBot !== null) {
-            $defaultRequests = $this->defaultBot->getConfigRequests(true, false);
-            // Default requests come first
-            $requests = $defaultRequests->merge($requests);
+            return $this->defaultBot->getPersonality()->getConfigRequests();
         }
-        return $requests;
+
+        return new StringList([]);
     }
 
     public function getLineTarget(): string
@@ -130,6 +135,7 @@ class Bot
         $triggerId = uniqid('trigger_', true);
         $trigger->setId($triggerId);
         $this->triggers[$triggerId] = $trigger;
+        $this->recordEvent(new TriggerAddedToBotEvent($this->id, $trigger));
         return $triggerId;
     }
 
@@ -139,21 +145,30 @@ class Bot
             throw new TriggerNotFoundException("Trigger with ID '{$id}' not found.");
         }
         unset($this->triggers[$id]);
+        $this->recordEvent(new TriggerRemovedFromBotEvent($this->id, $id));
     }
 
     public function setPersonality(BotPersonalityConfig $personality): void
     {
         $this->personality = $personality;
+        $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
     public function setConfigRequests(StringList $configRequests): void
     {
-        $this->configRequests = $configRequests;
+        // For compatibility with previous API, update personality's configRequests
+        $this->personality = new BotPersonalityConfig(
+            $this->personality->getBotCharacteristics(),
+            $this->personality->getHumanCharacteristics(),
+            $configRequests
+        );
+        $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
     public function setLineTarget(string $target): void
     {
         $this->lineTarget = $target;
+        $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
     public function setTriggers(array $triggers): void
@@ -165,5 +180,25 @@ class Bot
     {
         $trigger->setId($id);
         $this->triggers[$id] = $trigger;
+    }
+
+    /**
+     * ドメインイベントを記録します。
+     */
+    public function recordEvent(DomainEvent $event): void
+    {
+        $this->recordedEvents[] = $event;
+    }
+
+    /**
+     * 記録されたドメインイベントを取得し、クリアします。
+     *
+     * @return DomainEvent[]
+     */
+    public function releaseEvents(): array
+    {
+        $events = $this->recordedEvents;
+        $this->recordedEvents = [];
+        return $events;
     }
 }

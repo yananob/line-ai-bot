@@ -3,18 +3,22 @@
 namespace App\Domain\Conversation;
 
 use DateTimeImmutable;
+use App\Domain\Conversation\ValueObject\Speaker;
 
+/**
+ * 会話の履歴を表すドメインアグリゲート/エンティティ。
+ */
 class Conversation
 {
     private ?string $id = null;
     private string $botId;
-    private string $speaker; // "human" or "bot"
+    private Speaker $speaker;
     private string $content;
     private DateTimeImmutable $createdAt;
 
     public function __construct(
         string $botId,
-        string $speaker,
+        Speaker $speaker,
         string $content,
         ?DateTimeImmutable $createdAt = null,
         ?string $id = null
@@ -36,7 +40,7 @@ class Conversation
         return $this->botId;
     }
 
-    public function getSpeaker(): string
+    public function getSpeaker(): Speaker
     {
         return $this->speaker;
     }

@@ -12,6 +12,7 @@ use App\Domain\Bot\Service\WebSearchInterface;
 use App\Domain\Bot\Service\GptInterface;
 use App\Domain\Bot\ValueObject\Message;
 use App\Domain\Bot\Service\ChatService;
+use App\Domain\Bot\Service\WebSearchDomainService;
 use PHPUnit\Framework\TestCase;
 
 final class ChatServiceTest extends TestCase
@@ -28,11 +29,12 @@ final class ChatServiceTest extends TestCase
         $this->convRepoMock = $this->createMock(ConversationRepository::class);
         $this->promptService = new ChatPromptService();
         $this->webSearchMock = $this->createMock(WebSearchInterface::class);
+        $webSearchDomainService = new WebSearchDomainService($this->gptMock, $this->webSearchMock);
         $this->chatService = new ChatService(
             $this->gptMock,
             $this->convRepoMock,
             $this->promptService,
-            $this->webSearchMock
+            $webSearchDomainService
         );
     }
 
@@ -89,7 +91,8 @@ final class ChatServiceTest extends TestCase
 
     public function test_generateAnswer_withWebSearchToolNull_containsErrorMessageInContext(): void
     {
-        $chatService = new ChatService($this->gptMock, $this->convRepoMock, $this->promptService, null);
+        $webSearchDomainService = new WebSearchDomainService($this->gptMock, null);
+        $chatService = new ChatService($this->gptMock, $this->convRepoMock, $this->promptService, $webSearchDomainService);
         $bot = new Bot("test");
 
         $this->gptMock->method('getAnswer')->willReturnCallback(function($context, $message) {

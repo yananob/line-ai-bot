@@ -11,6 +11,7 @@ use App\Application\CommandHandler\CommandHandlerFactory;
 use App\Domain\Bot\Bot;
 use App\Domain\Bot\Service\ChatPromptService;
 use App\Domain\Bot\Service\ChatService;
+use App\Domain\Bot\Service\WebSearchDomainService;
 use App\Domain\Bot\Service\CommandAndTriggerService;
 use App\Infrastructure\Gpt\OpenAiGptClient;
 use App\Infrastructure\Logger\Logger;
@@ -29,6 +30,7 @@ class Container
     private ?FirestoreConversationRepository $conversationRepository = null;
     private ?ChatPromptService $chatPromptService = null;
     private ?ChatService $chatService = null;
+    private ?WebSearchDomainService $webSearchDomainService = null;
     private ?OpenAiGptClient $gptClient = null;
     private ?CommandAndTriggerService $commandAndTriggerService = null;
     private ?OpenAIWebSearchTool $webSearchTool = null;
@@ -70,10 +72,21 @@ class Container
                 $this->getGptClient(),
                 $this->getConversationRepository(),
                 $this->getChatPromptService(),
-                $this->getWebSearchTool()
+                $this->getWebSearchDomainService()
             );
         }
         return $this->chatService;
+    }
+
+    public function getWebSearchDomainService(): WebSearchDomainService
+    {
+        if ($this->webSearchDomainService === null) {
+            $this->webSearchDomainService = new WebSearchDomainService(
+                $this->getGptClient(),
+                $this->getWebSearchTool()
+            );
+        }
+        return $this->webSearchDomainService;
     }
 
     public function getGptClient(): OpenAiGptClient

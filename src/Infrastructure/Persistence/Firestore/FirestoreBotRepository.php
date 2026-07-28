@@ -11,6 +11,7 @@ use App\Domain\Bot\BotRepository;
 use App\Domain\Bot\Service\BotFactory;
 use App\Domain\Bot\Trigger\TriggerFactory;
 use App\Domain\Exception\BotNotFoundException;
+use App\Domain\Bot\Event\BotCreatedEvent;
 
 class FirestoreBotRepository extends AbstractFirestoreRepository implements BotRepository
 {
@@ -78,10 +79,12 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
             return $this->findById($id);
         } catch (BotNotFoundException $e) {
             $defaultBotConfig = $this->findDefault();
-            return new Bot(
+            $bot = new Bot(
                 id: $id,
                 defaultBot: $defaultBotConfig
             );
+            $bot->recordEvent(new BotCreatedEvent($id, ''));
+            return $bot;
         }
     }
 

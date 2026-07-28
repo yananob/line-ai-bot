@@ -4,6 +4,7 @@ namespace App\Domain\Bot\Service;
 
 use App\Domain\Bot\Bot;
 use App\Domain\Conversation\Conversation;
+use App\Domain\Conversation\ValueObject\Speaker;
 use App\Domain\Bot\ValueObject\StringList;
 use App\Domain\Bot\Messages;
 
@@ -69,7 +70,7 @@ class ChatPromptService
         $result = "";
         foreach ($conversations as $conversation) {
             $result .= "・日時：" . $conversation->getCreatedAt()->format('Y-m-d H:i:s') . "\n";
-            $speakerDisplay = ($conversation->getSpeaker() === "human") ? "話し相手" : "チャットボット（あなた）";
+            $speakerDisplay = ($conversation->getSpeaker() === Speaker::HUMAN) ? "話し相手" : "チャットボット（あなた）";
             $result .= "・発言者：" . $speakerDisplay . "\n";
             $result .= "・内容：" . $conversation->getContent() . "\n";
             $result .= str_repeat("-", 80) . "\n";

@@ -6,6 +6,7 @@ namespace Tests\Infrastructure\Persistence\Firestore; // 名前空間を追加
 
 use App\Infrastructure\Persistence\Firestore\FirestoreConversationRepository;
 use App\Domain\Conversation\Conversation;
+use App\Domain\Conversation\ValueObject\Speaker;
 // use App\Domain\Conversation\ConversationRepository; // インターフェースの型ヒント用 (このファイル内では直接使われていない模様)
 use Google\Cloud\Firestore\FirestoreClient;
 use Google\Cloud\Firestore\CollectionReference;
@@ -91,14 +92,14 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
         $this->assertCount(2, $conversations);
         $this->assertInstanceOf(Conversation::class, $conversations[0]);
         $this->assertEquals('どうも', $conversations[0]->getContent());
-        $this->assertEquals('bot', $conversations[0]->getSpeaker());
+        $this->assertEquals(Speaker::BOT, $conversations[0]->getSpeaker());
         $this->assertInstanceOf(Conversation::class, $conversations[1]);
         $this->assertEquals('こんにちは', $conversations[1]->getContent());
     }
 
     public function test_新しい会話を保存する(): void
     {
-        $conversation = new Conversation("testBotId", "human", "メッセージ");
+        $conversation = new Conversation("testBotId", Speaker::HUMAN, "メッセージ");
 
         $newDocRefMock = $this->createMock(DocumentReference::class);
         $newDocRefMock->method('id')->willReturn('new-doc-id');
@@ -117,7 +118,7 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
 
     public function test_既存の会話を保存する(): void
     {
-        $conversation = new Conversation("testBotId", "human", "メッセージ", new \DateTimeImmutable(), "existing-id");
+        $conversation = new Conversation("testBotId", Speaker::HUMAN, "メッセージ", new \DateTimeImmutable(), "existing-id");
 
         $existingDocRefMock = $this->createMock(DocumentReference::class);
         $this->botConversationsCollRefMock->method('document')->with('existing-id')->willReturn($existingDocRefMock);
@@ -134,7 +135,7 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
     public function test_過去の日時を指定して会話を保存する(): void
     {
         $pastTime = new \DateTimeImmutable('2020-01-01 00:00:00');
-        $conversation = new Conversation("testBotId", "human", "古いメッセージ", $pastTime);
+        $conversation = new Conversation("testBotId", Speaker::HUMAN, "古いメッセージ", $pastTime);
 
         $newDocRefMock = $this->createMock(DocumentReference::class);
         $newDocRefMock->method('id')->willReturn('old-doc-id');

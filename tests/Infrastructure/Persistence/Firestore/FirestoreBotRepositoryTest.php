@@ -263,7 +263,7 @@ final class FirestoreBotRepositoryTest extends TestCase
         $defaultBot = new Bot('default', 'Default', $defaultPersonality);
 
         $personality = new BotPersonalityConfig(new StringList(['personal-char']), new StringList([]));
-        $bot = new Bot('test-bot', 'Personal Name', $personality, null, '', [], $defaultBot);
+        $bot = new Bot('test-bot', 'Personal Name', $personality, '', [], $defaultBot);
 
         [$botCollMock, $configDocMock] = $this->createBotMocks();
 

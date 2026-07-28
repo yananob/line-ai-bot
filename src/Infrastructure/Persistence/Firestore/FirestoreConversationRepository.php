@@ -8,6 +8,7 @@ use Google\Cloud\Firestore\FieldValue;
 use Google\Cloud\Firestore\Query;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Conversation\ConversationRepository;
+use App\Domain\Conversation\ValueObject\Speaker;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -51,7 +52,7 @@ class FirestoreConversationRepository extends AbstractFirestoreRepository implem
 
                 $conversations[] = new Conversation(
                     $data['botId'],
-                    $data['speaker'],
+                    Speaker::tryFrom($data['speaker']) ?? Speaker::HUMAN,
                     $data['content'],
                     $dateTime,
                     $document->id() // Use Firestore document ID as Conversation ID
@@ -69,7 +70,7 @@ class FirestoreConversationRepository extends AbstractFirestoreRepository implem
         
         $data = [
             'botId'   => $conversation->getBotId(),
-            'speaker' => $conversation->getSpeaker(),
+            'speaker' => $conversation->getSpeaker()->value,
             'content' => $conversation->getContent(),
             // Using Firestore Server Timestamp for createdAt ensures atomicity and correct ordering.
             // If $conversation->getCreatedAt() was set to a specific historical time,

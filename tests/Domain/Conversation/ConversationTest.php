@@ -4,6 +4,7 @@ namespace Tests\Domain\Conversation;
 
 use PHPUnit\Framework\TestCase;
 use App\Domain\Conversation\Conversation;
+use App\Domain\Conversation\ValueObject\Speaker;
 use DateTimeImmutable;
 
 class ConversationTest extends TestCase
@@ -11,7 +12,7 @@ class ConversationTest extends TestCase
     public function test_constructor_and_getters(): void
     {
         $botId = 'bot-123';
-        $speaker = 'human';
+        $speaker = Speaker::HUMAN;
         $content = 'Hello world';
         $createdAt = new DateTimeImmutable('2025-01-01 10:00:00');
         $id = 'conv-456';
@@ -27,7 +28,7 @@ class ConversationTest extends TestCase
 
     public function test_setId_updates_id(): void
     {
-        $conversation = new Conversation('bot', 'human', 'msg');
+        $conversation = new Conversation('bot', Speaker::HUMAN, 'msg');
         $this->assertNull($conversation->getId());
 
         $conversation->setId('new-id');
@@ -36,7 +37,7 @@ class ConversationTest extends TestCase
 
     public function test_constructor_default_values(): void
     {
-        $conversation = new Conversation('bot', 'bot', 'answer');
+        $conversation = new Conversation('bot', Speaker::BOT, 'answer');
 
         $this->assertNull($conversation->getId());
         $this->assertInstanceOf(DateTimeImmutable::class, $conversation->getCreatedAt());
