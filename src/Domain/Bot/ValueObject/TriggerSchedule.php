@@ -4,6 +4,7 @@ namespace App\Domain\Bot\ValueObject;
 
 use Carbon\Carbon;
 use App\Domain\Bot\Consts;
+use App\Domain\Exception\InvalidTriggerScheduleException;
 
 /**
  * Handles the scheduling logic for a trigger, including relative date/time resolution.
@@ -15,8 +16,17 @@ class TriggerSchedule
     private string $resolvedDate;
     private string $resolvedTime;
 
+    /**
+     * @param string $date
+     * @param string $time
+     * @param Carbon|null $now
+     * @throws InvalidTriggerScheduleException
+     */
     public function __construct(string $date, string $time, ?Carbon $now = null)
     {
+        // 値オブジェクトとして、不正な形式でのインスタンス作成を禁止する
+        self::validate($date, $time);
+
         $carbonNow = $now ?? new Carbon(timezone: new \DateTimeZone(Consts::TIMEZONE));
         $targetDateTime = $carbonNow->copy();
 
@@ -28,7 +38,12 @@ class TriggerSchedule
             $targetDateTime->addMinutes((int)$matches[1]);
             $this->resolvedTime = $targetDateTime->format('H:i');
         } else {
-            $this->resolvedTime = $time;
+            // 秒数付き(HH:MM:SS)をHH:MMに丸める
+            if (preg_match('/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/', $time)) {
+                $this->resolvedTime = substr($time, 0, 5);
+            } else {
+                $this->resolvedTime = $time;
+            }
         }
 
         // Resolve relative date (e.g., "today", "tomorrow")
@@ -58,6 +73,38 @@ class TriggerSchedule
                     $this->resolvedDate = $date;
                 }
                 break;
+        }
+    }
+
+    /**
+     * トリガースケジュールの形式をバリデートします。
+     * 不正な形式の場合、InvalidTriggerScheduleExceptionをスローします。
+     *
+     * @param string $date
+     * @param string $time
+     * @throws InvalidTriggerScheduleException
+     */
+    public static function validate(string $date, string $time): void
+    {
+        // 1. 時刻のチェック
+        $isRelativeTime = (bool)preg_match('/^now \+(\d+) mins$/', $time);
+        $isAbsoluteTime = (bool)preg_match('/^([0-1][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $time);
+
+        if (!$isRelativeTime && !$isAbsoluteTime) {
+            throw new InvalidTriggerScheduleException("時刻の形式が不正です。'HH:MM'、'HH:MM:SS'、または'now +X mins'を指定してください。入力: '{$time}'");
+        }
+
+        // 2. 日付のチェック
+        $validRelativeDates = ['everyday', 'today', 'tomorrow', 'day after tomorrow'];
+        if (in_array($date, $validRelativeDates, true)) {
+            return;
+        }
+
+        // 任意の日付文字列の場合は、Carbon::parseが成功するか検証する
+        try {
+            Carbon::parse($date, new \DateTimeZone(Consts::TIMEZONE));
+        } catch (\Exception $e) {
+            throw new InvalidTriggerScheduleException("日付の形式が不正です。パース可能な日付文字列を指定してください。入力: '{$date}'", 0, $e);
         }
     }
 

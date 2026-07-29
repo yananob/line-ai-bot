@@ -6,6 +6,7 @@ namespace Tests\Domain\Bot\Trigger; // PSR-4のための調整済み名前空間
 
 use PHPUnit\Framework\TestCase;
 use App\Domain\Bot\Trigger\TimerTrigger;
+use App\Domain\Exception\InvalidTriggerScheduleException;
 use Carbon\Carbon;
 use App\Domain\Bot\Consts;
 
@@ -57,7 +58,7 @@ final class TimerTriggerTest extends TestCase
     {
         return [
             // モックする現在時刻, 期待される結果, メッセージ
-            // トリガーは "2023-06-15" の "08:00". タイマー間隔は15分.
+            // トリガーは "2023-06-15" の "08:00". 日時フォーマットはHH:MM:SSなどの場合も対応
             ['2023-06-15 08:00:00', true, '特定日: 正確な時刻に実行されるべき'], // スロット [08:00, 08:15), スケジュール 08:00. OK.
             ['2023-06-15 08:14:59', true, '特定日: 間隔の終わりに実行されるべき'], // スロット [08:00, 08:15), スケジュール 08:00. OK.
             ['2023-06-15 08:15:00', false, '特定日: 間隔外では実行されないべき'], // スロット [08:15, 08:30), スケジュール 08:00. スロットにない.
@@ -191,11 +192,10 @@ final class TimerTriggerTest extends TestCase
         $this->assertFalse($trigger->shouldRunNow(5), "日付が「明後日」の場合、「明日」には実行されないべきです");
     }
 
-    public function test_shouldRunNowが無効な時刻フォーマットの場合にFalseを返す(): void
+    public function test_shouldRunNowが無効な時刻フォーマットの場合に例外を投げる(): void
     {
-        $trigger = new TimerTrigger("everyday", "無効な時刻", "テスト");
-        Carbon::setTestNow(Carbon::parse("2023-01-01 10:00:00", new \DateTimeZone(Consts::TIMEZONE)));
-        $this->assertFalse($trigger->shouldRunNow(10));
+        $this->expectException(InvalidTriggerScheduleException::class);
+        new TimerTrigger("everyday", "無効な時刻", "テスト");
     }
 
     public function test_shouldRunNowがコンストラクタ処理後にnowプラスX分を正しく処理する(): void
@@ -280,7 +280,14 @@ final class TimerTriggerTest extends TestCase
     {
         $trigger = TimerTrigger::fromGptResponse($gptResponse);
         $this->assertEquals($expectedDate, $trigger->getDate());
-        $this->assertEquals($expectedTime, $trigger->getTime());
+
+        if ($expectedTime === 'now +0 mins') {
+            $expectedResolved = Carbon::now(new \DateTimeZone(Consts::TIMEZONE))->format('H:i');
+            $this->assertEquals($expectedResolved, $trigger->getTime());
+        } else {
+            $this->assertEquals($expectedTime, $trigger->getTime());
+        }
+
         $this->assertEquals($expectedRequest, $trigger->getRequest());
     }
 
@@ -289,7 +296,7 @@ final class TimerTriggerTest extends TestCase
         return [
             ["・日付：today\n・時刻：10:00\n・依頼内容：テスト", 'today', '10:00', 'テスト'],
             ["・日付：everyday\n・時刻：08:00\n・依頼内容：おはよう", 'everyday', '08:00', 'おはよう'],
-            ['不正な形式', 'today', 'now', 'Could not parse request'],
+            ['不正な形式', 'today', 'now +0 mins', 'Could not parse request'],
         ];
     }
 }

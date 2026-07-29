@@ -6,6 +6,7 @@ namespace Tests\Domain\Bot\ValueObject;
 
 use PHPUnit\Framework\TestCase;
 use App\Domain\Bot\ValueObject\TriggerSchedule;
+use App\Domain\Exception\InvalidTriggerScheduleException;
 use Carbon\Carbon;
 use App\Domain\Bot\Consts;
 
@@ -57,9 +58,8 @@ final class TriggerScheduleTest extends TestCase
 
     public function test_日付の解決_不正な形式(): void
     {
-        // Carbon::parse が失敗した場合、オリジナルが返る
-        $schedule = new TriggerSchedule('invalid-date', '12:00');
-        $this->assertEquals('invalid-date', $schedule->getResolvedDate());
+        $this->expectException(InvalidTriggerScheduleException::class);
+        new TriggerSchedule('invalid-date', '12:00');
     }
 
     public function test_時刻の解決_now_plus_X_mins(): void
@@ -108,6 +108,31 @@ final class TriggerScheduleTest extends TestCase
         $this->assertEquals('2025/01/01 12:00', (string)$schedule);
     }
 
+    public function test_validate_with_invalid_time_throws_exception(): void
+    {
+        $this->expectException(InvalidTriggerScheduleException::class);
+        TriggerSchedule::validate('today', 'invalid-time');
+    }
+
+    public function test_validate_with_invalid_date_throws_exception(): void
+    {
+        $this->expectException(InvalidTriggerScheduleException::class);
+        TriggerSchedule::validate('invalid-date', '12:00');
+    }
+
+    public function test_validate_with_valid_data_does_not_throw_exception(): void
+    {
+        try {
+            TriggerSchedule::validate('today', '12:00');
+            TriggerSchedule::validate('tomorrow', 'now +15 mins');
+            TriggerSchedule::validate('everyday', '23:59');
+            TriggerSchedule::validate('2025-12-31', '00:00');
+            $this->assertTrue(true);
+        } catch (InvalidTriggerScheduleException $e) {
+            $this->fail('Valid schedule format threw InvalidTriggerScheduleException');
+        }
+    }
+
     /**
      * @dataProvider provideShouldRunNowData
      */
@@ -142,7 +167,6 @@ final class TriggerScheduleTest extends TestCase
             '毎日_当日' => ['everyday', '07:00', '2025-01-01 07:00:00', 30, true],
             '毎日_翌日' => ['everyday', '07:00', '2025-01-02 07:05:00', 30, true],
             '相対時刻_解決済み' => ['today', 'now +10 mins', '2025-01-01 10:10:00', 5, true],
-            '不正な時刻形式' => ['today', 'invalid', '2025-01-01 10:00:00', 10, false],
         ];
     }
 }
