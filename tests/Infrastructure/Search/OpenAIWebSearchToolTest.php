@@ -177,19 +177,18 @@ final class OpenAIWebSearchToolTest extends TestCase
         $this->assertSame($expectedSummary, $actualSummary);
     }
 
-    public function test_検索クエリに最近の結果を求める日本語フレーズが含まれる(): void
+    public function test_検索クエリがそのままAPIに渡される(): void
     {
         $baseQuery = "元のクエリ";
         $numResults = 1;
-        $expectedPhraseSuffix = " 検索結果はできるだけ新しいものを使うようにしてください。";
 
         $apiOutputContents = [["テストスニペット。"]];
         $mockApiResponse = $this->createMockApiResponse($apiOutputContents);
 
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
-            ->with($this->callback(function ($params) use ($baseQuery, $expectedPhraseSuffix) {
-                return $params['input'] === $baseQuery . $expectedPhraseSuffix;
+            ->with($this->callback(function ($params) use ($baseQuery) {
+                return $params['input'] === $baseQuery;
             }))
             ->willReturn($mockApiResponse);
 
@@ -206,7 +205,7 @@ final class OpenAIWebSearchToolTest extends TestCase
             ->method('create')
             ->willReturn($mockApiResponse);
 
-        $expectedMessage = "No web search results found or unexpected response structure for: " . htmlspecialchars($query . " 検索結果はできるだけ新しいものを使うようにしてください。");
+        $expectedMessage = "No web search results found or unexpected response structure for: " . htmlspecialchars($query);
         $actualMessage = $this->webSearchTool->search($query);
         $this->assertSame($expectedMessage, $actualMessage);
     }

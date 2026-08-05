@@ -44,9 +44,6 @@ class OpenAIWebSearchTool implements WebSearchInterface
             return "Error: Number of results must be positive.";
         }
 
-        // Modify the query to prefer recent information
-        $query .= " 検索結果はできるだけ新しいものを使うようにしてください。";
-
         $params = [
             'model' => $this->openaiModel,
             'input' => $query,
