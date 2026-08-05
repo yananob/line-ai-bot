@@ -342,4 +342,28 @@ final class FirestoreBotRepositoryTest extends TestCase
 
         $this->repository->delete($botId);
     }
+
+    public function test_save_publishes_domain_events(): void
+    {
+        $bot = new Bot('test-bot', 'Initial Name');
+        $bot->setName('New Name'); // Records BotConfigChangedEvent
+
+        // Let's mock firestore save behavior
+        [$botCollMock, $configDocMock] = $this->createBotMocks();
+        $this->documentRootMock->method('collection')->with('test-bot')->willReturn($botCollMock);
+
+        $publisher = \App\Domain\Bot\Event\DomainEventPublisher::getInstance();
+        $publisher->clear();
+
+        $dispatchedEvents = [];
+        $publisher->subscribe(\App\Domain\Bot\Event\BotConfigChangedEvent::class, function($event) use (&$dispatchedEvents) {
+            $dispatchedEvents[] = $event;
+        });
+
+        $this->repository->save($bot);
+
+        $this->assertCount(1, $dispatchedEvents);
+        $this->assertSame('test-bot', $dispatchedEvents[0]->getBotId());
+        $this->assertSame('New Name', $dispatchedEvents[0]->getName());
+    }
 }

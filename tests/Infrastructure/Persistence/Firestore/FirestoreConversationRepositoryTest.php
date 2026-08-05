@@ -208,4 +208,31 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseの�
 
         $this->repository->findByBotId($botId, $limit, $offset);
     }
+
+    public function test_save_publishes_conversation_stored_event(): void
+    {
+        $conversation = new Conversation("testBotId", Speaker::HUMAN, "メッセージ");
+
+        $newDocRefMock = $this->createMock(DocumentReference::class);
+        $newDocRefMock->method('id')->willReturn('new-doc-id');
+
+        $this->botConversationsCollRefMock->expects($this->once())
+            ->method('add')
+            ->willReturn($newDocRefMock);
+
+        $publisher = \App\Domain\Bot\Event\DomainEventPublisher::getInstance();
+        $publisher->clear();
+
+        $dispatchedEvents = [];
+        $publisher->subscribe(\App\Domain\Conversation\Event\ConversationStoredEvent::class, function($event) use (&$dispatchedEvents) {
+            $dispatchedEvents[] = $event;
+        });
+
+        $this->repository->save($conversation);
+
+        $this->assertCount(1, $dispatchedEvents);
+        $this->assertSame('testBotId', $dispatchedEvents[0]->getBotId());
+        $this->assertSame(Speaker::HUMAN, $dispatchedEvents[0]->getSpeaker());
+        $this->assertSame('メッセージ', $dispatchedEvents[0]->getContent());
+    }
 }

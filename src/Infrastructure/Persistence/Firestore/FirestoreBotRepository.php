@@ -12,6 +12,7 @@ use App\Domain\Bot\Service\BotFactory;
 use App\Domain\Bot\Trigger\TriggerFactory;
 use App\Domain\Exception\BotNotFoundException;
 use App\Domain\Bot\Event\BotCreatedEvent;
+use App\Domain\Bot\Event\DomainEventPublisher;
 
 class FirestoreBotRepository extends AbstractFirestoreRepository implements BotRepository
 {
@@ -131,6 +132,11 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
         foreach ($bot->getTriggers() as $trigger) {
             $triggerId = $trigger->getId() ?: uniqid('trigger_');
             $triggersCollection->document($triggerId)->set($trigger->toArray());
+        }
+
+        // ドメインイベントの発行
+        foreach ($bot->releaseEvents() as $event) {
+            DomainEventPublisher::getInstance()->publish($event);
         }
     }
 
