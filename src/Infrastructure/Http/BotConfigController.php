@@ -80,15 +80,21 @@ class BotConfigController
         if ($subPath === '/trigger/save') {
             $params = $this->getParams($request);
             $botId = (string)$params['bot_id'];
-            $triggerId = $params['trigger_id'] ?: uniqid('trigger_');
+            $originalTriggerId = $params['trigger_id'] ?: null;
+            $triggerId = $originalTriggerId ?: uniqid('trigger_');
             $data = [
                 'event' => (string)($params['event'] ?? 'timer'),
                 'date' => (string)($params['date'] ?? ''),
                 'time' => (string)($params['time'] ?? ''),
                 'request' => (string)($params['request'] ?? ''),
             ];
-            $this->configService->saveTrigger($botId, $triggerId, $data);
-            return new Response(302, ['Location' => $basePath . '/config/triggers?bot_id=' . $botId]);
+            try {
+                $this->configService->saveTrigger($botId, $triggerId, $data);
+                return new Response(302, ['Location' => $basePath . '/config/triggers?bot_id=' . $botId]);
+            } catch (\App\Domain\Exception\InvalidTriggerScheduleException $e) {
+                // 不正なスケジュール設定による例外をキャッチして、ユーザーに入力値とエラー内容を提示する
+                return new Response(200, ['Content-Type' => 'text/html'], $this->configService->renderTriggerEdit($botId, $originalTriggerId, $data, $e->getMessage()));
+            }
         }
         if ($subPath === '/trigger/delete') {
             $params = $this->getParams($request);
