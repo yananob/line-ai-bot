@@ -82,7 +82,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
         return [
             [
                 "1時間後に「できたよ」と送って",
-                "・日付：today\n・時刻：10:00\n・依頼内容：「できたよ」と送って", // GPTはこれを出力するかもしれない
+                "・日付：today\n・時刻：10:00\n・依頼内容：「できたよ」と送って", // GPTはこれを出力する intellectual
                 ['date' => "today", 'time' => "10:00", 'request' => "「できたよ」と送って"]
             ],
             [
@@ -99,7 +99,7 @@ final class CommandAndTriggerServiceTest extends \PHPUnit\Framework\TestCase // 
                 // 堅牢性テスト: GPTが不正な形式の出力を返す
                 "不完全なメッセージ",
                 "・日付：today\n・時刻：", // 時刻と依頼内容が欠落
-                ['date' => "today", 'time' => "now", 'request' => "Could not parse request"] // サービスからのデフォルト値
+                ['date' => "today", 'time' => "09:00", 'request' => "Could not parse request"] // now +0 mins resolved to JST 09:00
             ],
             [
                 // 堅牢性テスト: GPTの回答に余計な空白や改行が含まれる

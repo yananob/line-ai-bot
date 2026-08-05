@@ -26,7 +26,7 @@ class TimerTrigger implements Trigger
     {
         // Default values in case regex fails
         $date = "today";
-        $time = "now";
+        $time = "now +0 mins";
         $request = "Could not parse request";
 
         $matchesDate = [];

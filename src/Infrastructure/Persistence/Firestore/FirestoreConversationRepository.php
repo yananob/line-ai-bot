@@ -9,6 +9,7 @@ use Google\Cloud\Firestore\Query;
 use App\Domain\Conversation\Conversation;
 use App\Domain\Conversation\ConversationRepository;
 use App\Domain\Conversation\ValueObject\Speaker;
+use App\Domain\Bot\Event\DomainEventPublisher;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -94,6 +95,11 @@ class FirestoreConversationRepository extends AbstractFirestoreRepository implem
             // Add new conversation, Firestore will generate an ID
             $docRef = $conversationsCollection->add($data);
             $conversation->setId($docRef->id()); // Set the ID back to the entity object
+        }
+
+        // ドメインイベントの発行
+        foreach ($conversation->releaseEvents() as $event) {
+            DomainEventPublisher::getInstance()->publish($event);
         }
     }
 
