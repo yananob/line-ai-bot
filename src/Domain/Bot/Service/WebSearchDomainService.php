@@ -24,7 +24,8 @@ class WebSearchDomainService
         }
 
         if ($this->webSearchTool instanceof WebSearchInterface) {
-            return $this->webSearchTool->search($messageContent, 5);
+            $optimizedQuery = $this->generateOptimizedQuery($messageContent);
+            return $this->webSearchTool->search($optimizedQuery, 5);
         }
 
         return "Error: Web search tool is not configured properly or failed to initialize.";
@@ -37,5 +38,26 @@ class WebSearchDomainService
             message: $messageContent,
         ));
         return $response === "はい";
+    }
+
+    /**
+     * GPTを使って現在の日時をもとにした最適な検索クエリ（キーワード）を生成します。
+     * 日付・時刻の取得には Carbon を使用します。
+     */
+    private function generateOptimizedQuery(string $messageContent): string
+    {
+        $nowStr = \Carbon\Carbon::now('Asia/Tokyo')->format('Y年m月d日');
+        $context = str_replace('<current_time>', $nowStr, Messages::PROMPT_GENERATE_WEB_SEARCH_QUERY);
+
+        $response = trim($this->gpt->getAnswer(
+            context: $context,
+            message: $messageContent,
+        ));
+
+        if (empty($response)) {
+            return $messageContent;
+        }
+
+        return $response;
     }
 }
