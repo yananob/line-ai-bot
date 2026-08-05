@@ -65,11 +65,18 @@ final class ChatServiceTest extends TestCase
             if ($context === Messages::PROMPT_JUDGE_WEB_SEARCH) {
                 return $gptJudgment;
             }
+            // クエリ最適化のコンテキストの場合
+            if (str_contains($context, 'あなたは検索エンジンのための最適な検索クエリ')) {
+                return "Optimized: " . $message;
+            }
             return "Final Answer";
         });
 
         if ($shouldSearch) {
-            $this->webSearchMock->expects($this->once())->method('search')->willReturn("Web info");
+            $this->webSearchMock->expects($this->once())
+                ->method('search')
+                ->with($this->equalTo("Optimized: search query"))
+                ->willReturn("Web info");
         } else {
             $this->webSearchMock->expects($this->never())->method('search');
         }
