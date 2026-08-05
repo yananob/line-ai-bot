@@ -50,4 +50,21 @@ class TriggerFactoryTest extends TestCase
 
         $this->assertNull($trigger);
     }
+
+    public function testFromArrayWithInvalidSchedule(): void
+    {
+        // 不正なスケジュール設定を含むテストデータ（時刻が「不明」）
+        $id = 'trigger_invalid_schedule';
+        $data = [
+            'event' => 'timer',
+            'date' => 'today',
+            'time' => '不明',
+            'request' => '告白の予定'
+        ];
+
+        // 復元時に例外が発生せず、nullが返ることを検証
+        $trigger = TriggerFactory::fromArray($id, $data);
+
+        $this->assertNull($trigger);
+    }
 }

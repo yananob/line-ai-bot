@@ -2,6 +2,8 @@
 
 namespace App\Domain\Bot\Trigger;
 
+use App\Domain\Exception\InvalidTriggerScheduleException;
+
 class TriggerFactory
 {
     /**
@@ -15,9 +17,15 @@ class TriggerFactory
             $date = (string)($data['date'] ?? '');
             $time = (string)($data['time'] ?? '');
             $request = (string)($data['request'] ?? '');
-            $trigger = new TimerTrigger($date, $time, $request);
-            $trigger->setId($id);
-            return $trigger;
+            try {
+                $trigger = new TimerTrigger($date, $time, $request);
+                $trigger->setId($id);
+                return $trigger;
+            } catch (InvalidTriggerScheduleException $e) {
+                // 不正なスケジュール設定を持つトリガーを検出した場合、ログに警告を出力し、nullを返してスキップできるようにする
+                error_log("警告：不正なトリガースケジュール（ID: {$id}）の復元に失敗したため、スキップします。詳細: " . $e->getMessage());
+                return null;
+            }
         }
 
         return null;
