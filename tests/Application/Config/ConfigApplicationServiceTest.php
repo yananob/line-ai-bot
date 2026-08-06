@@ -194,4 +194,46 @@ final class ConfigApplicationServiceTest extends TestCase
         $this->assertIsString($html);
         $this->assertStringContainsString('Chat Logs: Test Bot', $html);
     }
+
+    public function test_renderTriggerEdit_with_error_and_data(): void
+    {
+        $botId = 'test-bot';
+        $bot = new Bot($botId);
+        $bot->setName('Test Bot');
+
+        $this->repositoryMock->expects($this->once())
+            ->method('findById')
+            ->with($botId)
+            ->willReturn($bot);
+
+        $error = '時刻の形式が不正です。';
+        $triggerData = [
+            'event' => 'timer',
+            'date' => 'today',
+            'time' => '不明',
+            'request' => 'テスト依頼'
+        ];
+
+        $html = $this->service->renderTriggerEdit($botId, null, $triggerData, $error);
+        $this->assertIsString($html);
+        $this->assertStringContainsString('Test Bot', $html);
+        $this->assertStringContainsString($error, $html);
+        $this->assertStringContainsString('不明', $html);
+    }
+
+    public function test_saveTrigger_throws_exception_with_invalid_data(): void
+    {
+        $botId = 'test-bot';
+        $triggerId = 'trigger-1';
+        $data = ['request' => 'New Trigger', 'date' => 'today', 'time' => '不明'];
+        $bot = new Bot($botId);
+
+        $this->repositoryMock->expects($this->once())
+            ->method('findById')
+            ->with($botId)
+            ->willReturn($bot);
+
+        $this->expectException(\App\Domain\Exception\InvalidTriggerScheduleException::class);
+        $this->service->saveTrigger($botId, $triggerId, $data);
+    }
 }
