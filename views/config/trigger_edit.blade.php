@@ -7,6 +7,12 @@
     <h1 class="h2">{{ $triggerId ? 'Edit Trigger' : 'Add New Trigger' }} (Bot: {{ $botName ?: $botId }})</h1>
 </div>
 
+@if(!empty($error))
+<div class="alert alert-danger" role="alert">
+    {{ $error }}
+</div>
+@endif
+
 <div class="card mb-4">
     <div class="card-body">
         <form action="{{ $basePath }}/config/trigger/save" method="POST">

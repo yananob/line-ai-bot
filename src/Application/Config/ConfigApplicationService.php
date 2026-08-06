@@ -144,14 +144,22 @@ class ConfigApplicationService
         ]);
     }
 
-    public function renderTriggerEdit(string $botId, ?string $triggerId = null): string
+    /**
+     * トリガー編集画面をレンダリングします。
+     *
+     * @param string $botId
+     * @param string|null $triggerId
+     * @param array<string, mixed>|null $triggerData
+     * @param string|null $error
+     * @return string
+     */
+    public function renderTriggerEdit(string $botId, ?string $triggerId = null, ?array $triggerData = null, ?string $error = null): string
     {
         $bot = ($botId === 'default')
             ? $this->botRepository->findDefault()
             : $this->botRepository->findById($botId);
 
-        $triggerData = null;
-        if ($triggerId !== null) {
+        if ($triggerData === null && $triggerId !== null) {
             $trigger = $bot->getTriggerById($triggerId);
             if ($trigger) {
                 $triggerData = $trigger->toArray();
@@ -163,7 +171,8 @@ class ConfigApplicationService
             "botName" => $bot->getName(),
             "triggerId" => $triggerId,
             "trigger" => $triggerData,
-            "basePath" => $this->basePath
+            "basePath" => $this->basePath,
+            "error" => $error
         ]);
     }
 
