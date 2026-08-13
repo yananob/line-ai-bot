@@ -11,7 +11,7 @@
         "openai-php/client": "^0.13",
         "guzzlehttp/guzzle": "^7.8",
         "monolog/monolog": "^3.0",
-        "linecorp/line-bot-sdk": "^9.0",
+        "linecorp/line-bot-sdk": "^12.7",
         "symfony/clock": "^7.0",
         "symfony/translation": "^7.0",
         "eftec/bladeone": "^4.19"
