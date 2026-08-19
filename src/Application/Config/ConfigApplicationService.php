@@ -65,9 +65,7 @@ class ConfigApplicationService
 
         if ($botId !== null) {
             try {
-                $bot = ($botId === 'default')
-                    ? $this->botRepository->findDefault()
-                    : $this->botRepository->findById($botId);
+                $bot = $this->findBotByIdOrDefault($botId);
 
                 $botName = $bot->getName();
                 $botChars = $bot->getPersonality()->getBotCharacteristics()->toArray();
@@ -92,9 +90,7 @@ class ConfigApplicationService
 
     public function renderTriggers(string $botId): string
     {
-        $bot = ($botId === 'default')
-            ? $this->botRepository->findDefault()
-            : $this->botRepository->findById($botId);
+        $bot = $this->findBotByIdOrDefault($botId);
 
         $triggersData = [];
         foreach ($bot->getTriggers() as $trigger) {
@@ -114,9 +110,7 @@ class ConfigApplicationService
         $limit = 50;
         $offset = ($page - 1) * $limit;
 
-        $bot = ($botId === 'default')
-            ? $this->botRepository->findDefault()
-            : $this->botRepository->findById($botId);
+        $bot = $this->findBotByIdOrDefault($botId);
 
         $conversations = $this->conversationRepository->findByBotId($botId, $limit + 1, $offset);
 
@@ -155,9 +149,7 @@ class ConfigApplicationService
      */
     public function renderTriggerEdit(string $botId, ?string $triggerId = null, ?array $triggerData = null, ?string $error = null): string
     {
-        $bot = ($botId === 'default')
-            ? $this->botRepository->findDefault()
-            : $this->botRepository->findById($botId);
+        $bot = $this->findBotByIdOrDefault($botId);
 
         if ($triggerData === null && $triggerId !== null) {
             $trigger = $bot->getTriggerById($triggerId);
@@ -191,9 +183,7 @@ class ConfigApplicationService
 
     public function saveTrigger(string $botId, string $triggerId, array $data): void
     {
-        $bot = ($botId === 'default')
-            ? $this->botRepository->findDefault()
-            : $this->botRepository->findById($botId);
+        $bot = $this->findBotByIdOrDefault($botId);
 
         $trigger = new TimerTrigger(
             (string)($data['date'] ?? ''),
@@ -206,9 +196,7 @@ class ConfigApplicationService
 
     public function deleteTrigger(string $botId, string $triggerId): void
     {
-        $bot = ($botId === 'default')
-            ? $this->botRepository->findDefault()
-            : $this->botRepository->findById($botId);
+        $bot = $this->findBotByIdOrDefault($botId);
 
         $bot->deleteTriggerById($triggerId);
         $this->botRepository->save($bot);
@@ -217,5 +205,12 @@ class ConfigApplicationService
     public function deleteBot(string $botId): void
     {
         $this->botRepository->delete($botId);
+    }
+
+    private function findBotByIdOrDefault(string $botId): \App\Domain\Bot\Bot
+    {
+        return ($botId === 'default')
+            ? $this->botRepository->findDefault()
+            : $this->botRepository->findById($botId);
     }
 }
