@@ -6,6 +6,7 @@ namespace App\Infrastructure\Http;
 
 use App\Domain\Bot\BotRepository;
 use App\Infrastructure\Line\LineClient;
+use App\Domain\Exception\InvalidWebhookEventException;
 use App\Infrastructure\Line\LineWebhookMessage;
 use App\Infrastructure\Logger\Logger;
 use App\Infrastructure\DependencyInjection\Container;
@@ -51,7 +52,7 @@ class LineWebhookController
         } elseif ($webhookMessage->getType() === LineWebhookMessage::TYPE_POSTBACK) {
             $botResponse = $chatService->handlePostback($webhookMessage->getPostbackData());
         } else {
-            throw new \Exception("Unsupported message type: " . $webhookMessage->getType());
+            throw new InvalidWebhookEventException("Unsupported message type: " . $webhookMessage->getType());
         }
 
         $this->lineClient->sendReply(

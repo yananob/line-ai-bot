@@ -13,7 +13,7 @@ class TriggerFactory
      */
     public static function fromArray(string $id, array $data): ?Trigger
     {
-        if (isset($data['event']) && $data['event'] === 'timer') {
+        if (isset($data['event']) && $data['event'] === TimerTrigger::EVENT_TIMER) {
             $date = (string)($data['date'] ?? '');
             $time = (string)($data['time'] ?? '');
             $request = (string)($data['request'] ?? '');
