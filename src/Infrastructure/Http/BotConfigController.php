@@ -83,7 +83,7 @@ class BotConfigController
             $originalTriggerId = $params['trigger_id'] ?: null;
             $triggerId = $originalTriggerId ?: uniqid('trigger_');
             $data = [
-                'event' => (string)($params['event'] ?? 'timer'),
+                'event' => (string)($params['event'] ?? \App\Domain\Bot\Trigger\TimerTrigger::EVENT_TIMER),
                 'date' => (string)($params['date'] ?? ''),
                 'time' => (string)($params['time'] ?? ''),
                 'request' => (string)($params['request'] ?? ''),

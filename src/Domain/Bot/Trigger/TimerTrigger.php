@@ -6,6 +6,8 @@ use App\Domain\Bot\ValueObject\TriggerSchedule;
 
 class TimerTrigger implements Trigger
 {
+    public const EVENT_TIMER = 'timer';
+
     private ?string $id = null;
     private TriggerSchedule $schedule;
     private string $request;
@@ -59,7 +61,7 @@ class TimerTrigger implements Trigger
 
     public function getEvent(): string
     {
-        return "timer";
+        return self::EVENT_TIMER;
     }
 
     public function getRequest(): string

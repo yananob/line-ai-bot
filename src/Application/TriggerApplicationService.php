@@ -34,7 +34,7 @@ class TriggerApplicationService
                     continue;
                 }
 
-                if ($trigger->getEvent() !== "timer") {
+                if ($trigger->getEvent() !== TimerTrigger::EVENT_TIMER) {
                     continue;
                 }
 
