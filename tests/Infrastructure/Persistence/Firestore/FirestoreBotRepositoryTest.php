@@ -366,4 +366,35 @@ final class FirestoreBotRepositoryTest extends TestCase
         $this->assertSame('test-bot', $dispatchedEvents[0]->getBotId());
         $this->assertSame('New Name', $dispatchedEvents[0]->getName());
     }
+
+    public function test_findDefault_caches_instance_on_subsequent_calls(): void
+    {
+        $botId = 'default';
+        [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+
+        $this->documentRootMock->method('collection')->with($botId)->willReturn($botCollMock);
+        $snapshotMock->expects($this->once())->method('exists')->willReturn(true);
+        $snapshotMock->method('data')->willReturn(['bot_name' => 'Default Bot']);
+
+        $bot1 = $this->repository->findDefault();
+        $bot2 = $this->repository->findDefault();
+
+        $this->assertSame($bot1, $bot2);
+    }
+
+    public function test_save_default_bot_clears_cache(): void
+    {
+        $botId = 'default';
+        [$botCollMock, $configDocMock, $snapshotMock] = $this->createBotMocks();
+
+        $this->documentRootMock->method('collection')->with($botId)->willReturn($botCollMock);
+        $snapshotMock->expects($this->exactly(2))->method('exists')->willReturn(true);
+        $snapshotMock->method('data')->willReturn(['bot_name' => 'Default Bot']);
+
+        $bot1 = $this->repository->findDefault();
+        $this->repository->save($bot1);
+        $bot2 = $this->repository->findDefault();
+
+        $this->assertInstanceOf(Bot::class, $bot2);
+    }
 }

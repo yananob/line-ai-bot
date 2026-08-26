@@ -17,6 +17,7 @@ use App\Domain\Bot\Event\DomainEventPublisher;
 class FirestoreBotRepository extends AbstractFirestoreRepository implements BotRepository
 {
     private DocumentReference $documentRoot; // e.g., /ai-bots/{bot_id}/configs/
+    private ?Bot $cachedDefaultBot = null;
 
     public function __construct(?FirestoreClient $db = null)
     {
@@ -63,15 +64,16 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
         $botCollection = $this->getBotCollection($id);
         $configSnapshot = $botCollection->document('config')->snapshot();
 
-        if (!$configSnapshot->exists()) {
-            throw new BotNotFoundException("Bot with ID '{$id}' not found.");
-        }
-
         // 各Botは、自身のconfig + defaultで動作する
         $defaultBotConfig = $this->findDefault();
         error_log("Loading bot with ID '{$id}' using default config.");
 
-        return $this->loadBotFromSnapshot($id, $configSnapshot, $defaultBotConfig);
+        $bot = $this->loadBotFromSnapshot($id, $configSnapshot, $defaultBotConfig);
+        if ($bot === null) {
+            throw new BotNotFoundException("Bot with ID '{$id}' not found.");
+        }
+
+        return $bot;
     }
 
     public function findOrDefault(string $id): Bot
@@ -91,15 +93,29 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
 
     public function findDefault(): Bot
     {
+        if ($this->cachedDefaultBot !== null) {
+            return $this->cachedDefaultBot;
+        }
+
         $defaultBotCollection = $this->getBotCollection('default');
         $configSnapshot = $defaultBotCollection->document('config')->snapshot();
 
-        if (!$configSnapshot->exists()) {
+        // The default bot does not have a further default config, so pass null.
+        $bot = $this->loadBotFromSnapshot('default', $configSnapshot, null);
+        if ($bot === null) {
             throw new BotNotFoundException("Default bot configuration with ID 'default' not found.");
         }
 
-        // The default bot does not have a further default config, so pass null.
-        return $this->loadBotFromSnapshot('default', $configSnapshot, null);
+        $this->cachedDefaultBot = $bot;
+        return $bot;
+    }
+
+    /**
+     * Clears in-memory caches (such as default bot config cache).
+     */
+    public function clearCache(): void
+    {
+        $this->cachedDefaultBot = null;
     }
 
     public function save(Bot $bot): void
@@ -134,6 +150,10 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
             $triggersCollection->document($triggerId)->set($trigger->toArray());
         }
 
+        if ($bot->getId() === 'default') {
+            $this->clearCache();
+        }
+
         // ドメインイベントの発行
         foreach ($bot->releaseEvents() as $event) {
             DomainEventPublisher::getInstance()->publish($event);
@@ -151,6 +171,10 @@ class FirestoreBotRepository extends AbstractFirestoreRepository implements BotR
             $doc->reference()->delete();
         }
         $botCollection->document('triggers')->delete();
+
+        if ($id === 'default') {
+            $this->clearCache();
+        }
     }
 
     public function getAllUserBots(): array
