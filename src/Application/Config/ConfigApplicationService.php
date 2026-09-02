@@ -7,6 +7,7 @@ use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Conversation\ConversationRepository;
 use App\Domain\Bot\ValueObject\BotPersonalityConfig;
 use App\Domain\Bot\ValueObject\StringList;
+use App\Domain\Exception\BotNotFoundException;
 use eftec\bladeone\BladeOne;
 
 class ConfigApplicationService
@@ -45,7 +46,7 @@ class ConfigApplicationService
             $botConfigs['default'] = [
                 'bot_name' => $defaultBot->getName() ?: 'default',
             ];
-        } catch (\Exception $e) {
+        } catch (BotNotFoundException $e) {
             // Default might not exist yet
         }
 
@@ -72,7 +73,7 @@ class ConfigApplicationService
                 $humanChars = $bot->getPersonality()->getHumanCharacteristics()->toArray();
                 $requests = $bot->getPersonality()->getConfigRequests()->toArray();
                 $lineTarget = $bot->getLineTarget();
-            } catch (\Exception $e) {
+            } catch (BotNotFoundException $e) {
                 // Bot not found, use defaults
             }
         }
