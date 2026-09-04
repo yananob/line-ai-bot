@@ -81,9 +81,11 @@ final class OpenAIWebSearchToolTest extends TestCase
             'max_output_tokens' => null,
             'model' => $this->testOpenAiModel,
             'output' => $outputMessages,
+            'output_text' => null,
             'parallel_tool_calls' => false,
             'previous_response_id' => null,
-            'reasoning' => ['effort' => 'none', 'generate_summary' => null],
+            'prompt' => null,
+            'reasoning' => ['effort' => 'none', 'generate_summary' => null, 'summary' => null],
             'store' => false,
             'temperature' => null,
             'text' => ['format' => ['type' => 'text', 'text' => ($outputMessages ? 'formatted text' : '')]],
@@ -224,9 +226,12 @@ final class OpenAIWebSearchToolTest extends TestCase
             'code' => $errorCode,
         ];
 
+        $mockResponse = $this->createMock(\Psr\Http\Message\ResponseInterface::class);
+        $mockResponse->method('getStatusCode')->willReturn($statusCode);
+
         $this->mockResponsesResource->expects($this->once())
             ->method('create')
-            ->willThrowException(new ErrorException($errorContents, $statusCode));
+            ->willThrowException(new ErrorException($errorContents, $mockResponse));
 
         $expectedMessage = "Error performing web search: AI service returned an error. " . $exceptionMessage;
         $actualMessage = $this->webSearchTool->search($query);

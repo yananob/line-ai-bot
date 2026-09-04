@@ -6,10 +6,10 @@ Interpreting the format:
 - Files and subdirectories within a directory are listed below that directory's entry.
 --- (separator) ---
 .:
-DDD_REFACTORING_SUGGESTIONS.md
-LEARNINGS.md
+AGENTS.md
 README.md
-_cf-common
+_myapps-common
+_template
 composer.json
 composer.lock
 configs
@@ -19,134 +19,346 @@ deploy_event_prod.sh
 deploy_event_test.sh
 deploy_http_prod.sh
 deploy_http_test.sh
+docs
 file_structure.txt
 index.php
+miscs
 php.ini
+phpstan.neon
 src
 tests
+views
 
-./_cf-common:
+./_myapps-common:
 README.md
 deploy
 misc
 test
 
-./_cf-common/deploy:
+./_myapps-common/deploy:
 RENAME_deploy.sh
 common.sh
 deploy_php_event.sh
 deploy_php_http.sh
-deploy_py_http.sh
 rsync_exclude.conf
 
-./_cf-common/misc:
+./_myapps-common/misc:
 artifact_cleanup_policy
 
-./_cf-common/misc/artifact_cleanup_policy:
+./_myapps-common/misc/artifact_cleanup_policy:
 apply.sh
 policy.json
 
-./_cf-common/test:
+./_myapps-common/test:
+export_secrets.sh
+unset_secrets.sh
+
+./_template:
+AGENTS.md
+HOW_TO_INIT.md
+README.md
+composer.json
+composer.lock
+docs
+index.php
+miscs
+php.ini
 phpstan.neon
+src
+tests
+
+./_template/docs:
+implementation_policy.md
+
+./_template/miscs:
+merge_and_deploy_main.sh
+
+./_template/src:
+AppConfig.php
+
+./_template/tests:
+export_secrets.sh
+listen_local_event.sh
+listen_local_http.sh
+run_linter.sh
+run_single_test.sh
+run_tests.sh
+secrets.sh
+trigger_event_cloud.sh
+trigger_event_local.sh
+unset_secrets.sh
 
 ./configs:
 configs.json.sample.bak
 search_api.json.sample
 
+./docs:
+implementation_policy.md
+
+./miscs:
+merge_and_deploy_main.sh
+
 ./src:
+AppConfig.php
 Application
-Command.php
-  # Description: Defines an enumeration for different commands the bot can process.
-Consts.php
-  # Description: Defines global constants for the application, like timezone and command labels.
 Domain
 Infrastructure
-LineWebhookMessage.php
-  # Description: Parses and provides access to data from a LINE webhook event, such as message type, content, and sender ID.
-Messages.php
-  # Description: Defines constant messages for the application, such as help text.
-TimerTrigger_old.php
-  # Description: An older/alternative class for timer-based triggers, handling date/time parsing and execution logic.
-Tools.php
-  # Description: Provides static utility methods, e.g., for converting triggers to LINE quick reply formats.
-Trigger.php
-  # Description: Placeholder or incomplete class definition for Trigger in the root namespace.
-WebSearchTool.php
-  # Description: Performs web searches using the OpenAI API and formats the results.
 
 ./src/Application:
+BotResponse.php
 ChatApplicationService.php
-  # Description: Handles chat interactions, including getting answers from a GPT model, managing conversation history, performing web searches if needed, and managing triggers.
+CommandHandler
+Config
+TriggerApplicationService.php
+
+./src/Application/CommandHandler:
+AddTriggerHandler.php
+CommandHandlerDispatcher.php
+CommandHandlerFactory.php
+CommandHandlerInterface.php
+DefaultChatHandler.php
+HelpHandler.php
+PostbackHandlerInterface.php
+RemoveTriggerHandler.php
+RemoveTriggerPostbackHandler.php
+
+./src/Application/Config:
+ConfigApplicationService.php
 
 ./src/Domain:
 Bot
 Conversation
+Exception
 
 ./src/Domain/Bot:
 Bot.php
-  # Description: Defines the Bot entity, encapsulating properties like characteristics, configurations, and triggers.
 BotRepository.php
-  # Description: Defines an interface for bot repositories, outlining methods to find, save, and retrieve bot entities.
+Consts.php
+Event
+Messages.php
 Service
 Trigger
+ValueObject
+
+./src/Domain/Bot/Event:
+BotConfigChangedEvent.php
+BotCreatedEvent.php
+DomainEvent.php
+DomainEventPublisher.php
+TriggerAddedToBotEvent.php
+TriggerRemovedFromBotEvent.php
 
 ./src/Domain/Bot/Service:
+BotFactory.php
+ChatPromptService.php
+ChatService.php
 CommandAndTriggerService.php
-  # Description: Service for judging command types and generating timer triggers from user messages using GPT.
+GptInterface.php
+WebSearchDomainService.php
+WebSearchInterface.php
 
 ./src/Domain/Bot/Trigger:
 TimerTrigger.php
-  # Description: Defines a timer-based trigger, handling date/time parsing and logic for execution.
 Trigger.php
-  # Description: Defines an interface for various types of triggers within the bot system.
+TriggerFactory.php
+
+./src/Domain/Bot/ValueObject:
+BotPersonalityConfig.php
+Command.php
+Message.php
+MessageContent.php
+StringList.php
+TriggerSchedule.php
 
 ./src/Domain/Conversation:
 Conversation.php
-  # Description: Represents a single message in a chat, including speaker, content, and timestamp.
 ConversationRepository.php
-  # Description: Defines an interface for storing and retrieving conversation history.
+Event
+ValueObject
+
+./src/Domain/Conversation/Event:
+ConversationStoredEvent.php
+
+./src/Domain/Conversation/ValueObject:
+Speaker.php
+
+./src/Domain/Exception:
+BotNotFoundException.php
+DomainException.php
+HandlerNotFoundException.php
+InvalidTriggerScheduleException.php
+InvalidWebhookEventException.php
+TriggerNotFoundException.php
 
 ./src/Infrastructure:
+DependencyInjection
+Gcp
+Gpt
+Http
+Line
+Logger
 Persistence
+Search
+
+./src/Infrastructure/DependencyInjection:
+Container.php
+
+./src/Infrastructure/Gcp:
+CloudFunctionUtils.php
+
+./src/Infrastructure/Gpt:
+OpenAiGptClient.php
+
+./src/Infrastructure/Http:
+BotConfigController.php
+LineWebhookController.php
+
+./src/Infrastructure/Line:
+LineClient.php
+LineTools.php
+LineWebhookMessage.php
+
+./src/Infrastructure/Logger:
+Logger.php
 
 ./src/Infrastructure/Persistence:
 Firestore
 
 ./src/Infrastructure/Persistence/Firestore:
+AbstractFirestoreRepository.php
 FirestoreBotRepository.php
-  # Description: Implements BotRepository using Firestore to store and manage bot data and configurations.
 FirestoreConversationRepository.php
-  # Description: Implements ConversationRepository using Firestore to manage chat message history.
+
+./src/Infrastructure/Search:
+OpenAIWebSearchTool.php
 
 ./tests:
-ChatApplicationServiceTest.php
+AppConfigTest.php
+Application
+ConstsAndMessagesTest.php
 Domain
-FirestoreConversationRepositoryTest.php
-LineWebhookMessageTest.php
-ToolsTest.php
-WebSearchToolTest.php
+Infrastructure
 configs
 listen_local_event.sh
 listen_local_http.sh
 run_tests.sh
+secrets.sh
 trigger_event_cloud_prod.sh
 trigger_event_cloud_test.sh
 trigger_event_local.sh
 trigger_http_local.sh
+trigger_http_local2.sh
+
+./tests/Application:
+BotResponseTest.php
+ChatApplicationServiceTest.php
+CommandHandler
+Config
+TriggerApplicationServiceTest.php
+
+./tests/Application/CommandHandler:
+AddTriggerHandlerTest.php
+CommandHandlerDispatcherTest.php
+CommandHandlerFactoryTest.php
+DefaultChatHandlerTest.php
+HelpHandlerTest.php
+RemoveTriggerHandlerTest.php
+RemoveTriggerPostbackHandlerTest.php
+
+./tests/Application/Config:
+ConfigApplicationServiceTest.php
 
 ./tests/Domain:
 Bot
+BotDomainEventTest.php
+BotTest.php
+Conversation
+Exception
 
 ./tests/Domain/Bot:
-BotTest.php
+Event
 Service
 Trigger
+ValueObject
+
+./tests/Domain/Bot/Event:
+DomainEventPublisherTest.php
 
 ./tests/Domain/Bot/Service:
+BotFactoryTest.php
+ChatPromptServiceTest.php
+ChatServiceTest.php
 CommandAndTriggerServiceTest.php
+WebSearchDomainServiceTest.php
 
 ./tests/Domain/Bot/Trigger:
 TimerTriggerTest.php
+TriggerFactoryTest.php
+
+./tests/Domain/Bot/ValueObject:
+BotPersonalityConfigTest.php
+CommandTest.php
+MessageContentTest.php
+MessageTest.php
+StringListTest.php
+TriggerScheduleTest.php
+
+./tests/Domain/Conversation:
+ConversationTest.php
+
+./tests/Domain/Exception:
+DomainExceptionTest.php
+
+./tests/Infrastructure:
+DependencyInjection
+Gcp
+Gpt
+Http
+Line
+Logger
+Persistence
+Search
+
+./tests/Infrastructure/DependencyInjection:
+ContainerTest.php
+
+./tests/Infrastructure/Gcp:
+CloudFunctionUtilsTest.php
+
+./tests/Infrastructure/Gpt:
+OpenAiGptClientTest.php
+
+./tests/Infrastructure/Http:
+LineWebhookControllerTest.php
+
+./tests/Infrastructure/Line:
+LineClientTest.php
+LineToolsTest.php
+LineWebhookMessageTest.php
+
+./tests/Infrastructure/Logger:
+LoggerTest.php
+
+./tests/Infrastructure/Persistence:
+Firestore
+
+./tests/Infrastructure/Persistence/Firestore:
+FirestoreBotRepositoryTest.php
+FirestoreConversationRepositoryTest.php
+
+./tests/Infrastructure/Search:
+OpenAIWebSearchToolTest.php
 
 ./tests/configs:
 config.json.bak
+
+./views:
+config
+layout.blade.php
+
+./views/config:
+edit.blade.php
+index.blade.php
+logs.blade.php
+trigger_edit.blade.php
+triggers.blade.php
