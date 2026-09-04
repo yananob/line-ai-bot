@@ -96,6 +96,6 @@ class AppConfig
     public static function getFunctionName(string $defaultName = ''): string
     {
         $funcName = getenv('K_SERVICE');
-        return ($funcName === false) ? $defaultName : $funcName;
+        return ($funcName === false || $funcName === '') ? $defaultName : $funcName;
     }
 }
