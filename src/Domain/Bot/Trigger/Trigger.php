@@ -2,11 +2,12 @@
 
 namespace App\Domain\Bot\Trigger;
 
-interface Trigger
+interface Trigger extends \Stringable
 {
     public function getId(): ?string;
     public function setId(string $id): void;
     public function getEvent(): string;
     public function getRequest(): string;
     public function toArray(): array;
+    public function __toString(): string;
 }

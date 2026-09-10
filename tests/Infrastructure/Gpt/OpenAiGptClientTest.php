@@ -43,8 +43,6 @@ final class OpenAiGptClientTest extends TestCase
                     'message' => [
                         'role' => 'assistant',
                         'content' => 'AI response',
-                        'function_call' => null,
-                        'tool_calls' => null,
                     ],
                     'logprobs' => null,
                     'finish_reason' => 'stop',

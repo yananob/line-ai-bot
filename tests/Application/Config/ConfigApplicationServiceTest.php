@@ -9,6 +9,7 @@ use App\Domain\Bot\Bot;
 use App\Domain\Bot\BotRepository;
 use App\Domain\Bot\Trigger\TimerTrigger;
 use App\Domain\Conversation\ConversationRepository;
+use App\Domain\Exception\BotNotFoundException;
 use PHPUnit\Framework\TestCase;
 
 final class ConfigApplicationServiceTest extends TestCase
@@ -46,6 +47,32 @@ final class ConfigApplicationServiceTest extends TestCase
         $html = $this->service->renderIndex();
         $this->assertIsString($html);
         $this->assertStringContainsString('Bot 1', $html);
+    }
+
+    public function test_renderIndexはfindDefaultでBotNotFoundExceptionが発生してもデフォルトなしで処理を完了する(): void
+    {
+        $this->repositoryMock->expects($this->once())
+            ->method('getAllUserBots')
+            ->willReturn([]);
+
+        $this->repositoryMock->expects($this->once())
+            ->method('findDefault')
+            ->willThrowException(new BotNotFoundException('Default bot not found'));
+
+        $html = $this->service->renderIndex();
+        $this->assertIsString($html);
+    }
+
+    public function test_renderEditはbotId指定時にBotNotFoundExceptionが発生してもデフォルト設定でHTMLを返す(): void
+    {
+        $botId = 'non-existent-bot';
+        $this->repositoryMock->expects($this->once())
+            ->method('findById')
+            ->with($botId)
+            ->willThrowException(new BotNotFoundException("Bot with ID '{$botId}' not found."));
+
+        $html = $this->service->renderEdit($botId);
+        $this->assertIsString($html);
     }
 
     public function test_renderEditはbotIdが指定された場合にリポジトリを呼び出す(): void

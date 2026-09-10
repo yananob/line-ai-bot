@@ -5,9 +5,9 @@ LINE Messaging APIを使用したAIボットアプリケーションです。Goo
 ## 機能内容
 
 1.  **LINE Bot機能**
-    - ユーザーからのテキストメッセージに対して、GPT-5.4-mini（デフォルト）を使用して応答を生成します。
+    - ユーザーからのテキストメッセージに対して、GPT-5.6-luna（デフォルト）を使用して応答を生成します。
     - LINEのクイックリプライを使用して、タイマートリガーの設定などのアクションを促します。
-    - ウェブ検索が必要と判断された場合、OpenAIのウェブ検索ツール（gpt-5.4-miniなど）を使用して情報を取得し、回答に反映させます。
+    - ウェブ検索が必要と判断された場合、OpenAIのウェブ検索ツール（gpt-5.6-lunaなど）を使用して情報を取得し、回答に反映させます。
 
 2.  **スケジューリング機能（タイマートリガー）**
     - 特定の日時にボットからメッセージを送信するように予約できます。
@@ -31,7 +31,7 @@ LINE Messaging APIを使用したAIボットアプリケーションです。Goo
 - **Language**: PHP 8.3/8.4
 - **Framework**: Google Cloud Functions Framework for PHP
 - **Database**: Google Cloud Firestore
-- **AI Integration**: OpenAI API (GPT-5.4-mini, Web Search)
+- **AI Integration**: OpenAI API (GPT-5.6-luna, Web Search)
 - **Messaging**: LINE Messaging API
 - **View**: BladeOne, Bootstrap 5
 - **DI**: 独自実装の `Container` クラスによる依存注入

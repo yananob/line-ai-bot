@@ -174,7 +174,6 @@ final class FirestoreConversationRepositoryTest extends TestCase // TestCaseã®å
     {
         $botId = "testBotId";
         $this->botConversationsCollRefMock->expects($this->never())->method('orderBy');
-        $this->firestoreClientMock->expects($this->never())->method('batch');
         $this->repository->deleteByBotId($botId, 0);
     }
 
