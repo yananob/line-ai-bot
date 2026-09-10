@@ -241,7 +241,9 @@ final class FirestoreBotRepositoryTest extends TestCase
         $botCollMock2 = $this->createMock(CollectionReference::class);
         $botCollMock2->method('id')->willReturn('default'); // ignore default
 
-        $this->documentRootMock->method('collections')->willReturn([$botCollMock1, $botCollMock2]);
+        $pageIterator = new \ArrayIterator([[$botCollMock1, $botCollMock2]]);
+        $itemIterator = new \Google\Cloud\Core\Iterator\ItemIterator($pageIterator);
+        $this->documentRootMock->method('collections')->willReturn($itemIterator);
 
         // findById will be called for 'user-bot-1'
         $this->documentRootMock->method('collection')->willReturnCallback(function($id) {
