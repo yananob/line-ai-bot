@@ -17,7 +17,11 @@
    - `DocumentReference::collections()` などのコレクション一覧取得メソッドの返り値の型宣言が、`array` から `Google\Cloud\Core\Iterator\ItemIterator`（`\Iterator` の実装）に変更されました。
    - これに伴い、`collections()` の戻り値を配列前提でモック（PHPUnit）していたテストコードは修正が必要です。
 
-3. **削除されたメソッド・インターフェースの更新**
+3. **FirestoreClient の初期化と環境変数の見直し**
+   - v2 移行に伴い、`FirestoreClient` の初期化は `new FirestoreClient()` （引数なし）で実施し、Application Default Credentials (ADC) や GCP 環境のデフォルト認証を利用します。
+   - 明示的に `FIREBASE_SERVICE_ACCOUNT` キーファイルを渡す初期化処理および環境変数が不要となります。
+
+4. **削除されたメソッド・インターフェースの更新**
    - v1 から v2 への移行に伴い非推奨・削除されたメソッド（例: `FirestoreClient::batch()` 等の古いインターフェース）がモックや本実装に残っていないか確認してください。
 
 ---
@@ -38,6 +42,18 @@
 
 ```bash
 composer update google/cloud-firestore --with-all-dependencies --ignore-platform-req=ext-grpc
+```
+
+### ステップ 2: `FirestoreClient` 初期化処理の修正
+
+リポジトリクラス等の初期化処理から `keyFile` の指定（および `FIREBASE_SERVICE_ACCOUNT` 環境変数への依存）を削除し、引数なしでインスタンス化するように変更します。
+
+```php
+// 変更前
+$this->db = $db ?? new FirestoreClient(["keyFile" => json_decode(getenv("FIREBASE_SERVICE_ACCOUNT") ?: '[]', true)]);
+
+// 変更後
+$this->db = $db ?? new FirestoreClient();
 ```
 
 ---
