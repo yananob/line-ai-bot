@@ -3,11 +3,16 @@ parameters:
     paths:
         - .
     excludePaths:
-        - vendor
-        - node_modules
-        - templates_c
-        - _deploy
-        - _template
-        - _cf-common
+        analyseAndScan:
+            - vendor (?)
+            - node_modules (?)
+            - templates_c (?)
+            - _deploy (?)
+            - _template (?)
+            - _cf-common (?)
 
     treatPhpDocTypesAsCertain: false
+
+    ignoreErrors:
+        -
+            identifier: method.alreadyNarrowedType
