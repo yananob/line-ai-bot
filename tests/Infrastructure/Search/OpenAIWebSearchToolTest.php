@@ -19,7 +19,7 @@ final class OpenAIWebSearchToolTest extends TestCase
     private MockObject $mockOpenAiClient;
     private MockObject $mockResponsesResource;
     private OpenAIWebSearchTool $webSearchTool;
-    private string $testOpenAiModel = 'gpt-5.6-luna';
+    private string $testOpenAiModel = 'gpt-6-luna';
 
     protected function setUp(): void
     {
@@ -101,7 +101,7 @@ final class OpenAIWebSearchToolTest extends TestCase
         /** @var array{x-request-id: string[], openai-model: string[], openai-organization: string[], openai-version: string[], openai-processing-ms: string[], x-ratelimit-limit-requests: string[], x-ratelimit-remaining-requests: string[], x-ratelimit-reset-requests: string[], x-ratelimit-limit-tokens: string[], x-ratelimit-remaining-tokens: string[], x-ratelimit-reset-tokens: string[]} $headers */
         $headers = [
             'x-request-id' => ['req_123'],
-            'openai-model' => ['gpt-5.6-luna'],
+            'openai-model' => ['gpt-6-luna'],
             'openai-organization' => ['org-123'],
             'openai-version' => ['2020-10-01'],
             'openai-processing-ms' => ['100'],
