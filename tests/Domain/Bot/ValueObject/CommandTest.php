@@ -21,7 +21,7 @@ final class CommandTest extends TestCase
     public function test_不正な文字列の場合は例外を投げる(): void
     {
         $this->expectException(\ValueError::class);
-        Command::from("unknown");
+        $_ = Command::from("unknown");
     }
 
     public function test_tryFromで安全に変換できる(): void
