@@ -21,11 +21,13 @@
 
 環境変数は、アプリケーションの挙動を環境（開発・テスト・本番）ごとに切り替えるために重要です。
 
+アプリケーションで使用する環境変数は動作に必要なものなので、値を使用する前に値が設定されているかは検証するようにします。値が設定されていない場合は例外を発生させ、エラーを検知できるようにします。
+
 ### 主要な環境変数
 
 | 変数名 | 説明 | 備考 |
 | :--- | :--- | :--- |
-| `APP_ENV` | 実行環境の指定。`production`, `test`, `development` のいずれか。 | デフォルト値はなしにする（設定の問題が分かりやすくなよう）|
+| `APP_ENV` | 実行環境の指定。`production`, `test`, `development` のいずれか。 | デフォルト値はなしにする（設定の問題が分かりやすくなるよう）|
 | `OPENAI_KEY_XXXX` | OpenAI API のシークレットキー。 | `XXXX` はアプリごとに変える |
 | `K_SERVICE` | Cloud Functions のサービス名。 | URLの組み立てなどに使用 |
 | `LINE_TOKENS_N_TARGETS` | LINE 送信用トークンと送信先IDのマッピング（JSON形式）。 | 複数環境/複数Botのルーティング管理用 |
@@ -55,11 +57,11 @@
 
 ## 3. Firestore の初期化
 
-Firestore へのアクセスには、Application Default Credentials (ADC) や GCP 環境で自動的に設定されるデフォルトの認証情報を使用します。引数なしで初期化します。
+Firestore へのアクセスには、Application Default Credentials (ADC) や GCP 環境のデフォルト認証を使用します。
 
 ### ライブラリの初期化例
 
-Google Cloud PHP クライアントライブラリを使用する場合、引数なしでインスタンス化します。
+Google Cloud PHP クライアントライブラリを使用する場合、引数なしで初期化します。
 
 ```php
 $firestore = new FirestoreClient();
