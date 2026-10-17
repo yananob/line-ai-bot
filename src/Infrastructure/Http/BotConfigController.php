@@ -38,7 +38,8 @@ class BotConfigController
         }
         if ($subPath === '/save') {
             $params = $this->getParams($request);
-            $botId = $params['bot_id'] ?: uniqid('bot_');
+            $rawBotId = (string)($params['bot_id'] ?? '');
+            $botId = $rawBotId !== '' ? $rawBotId : uniqid('bot_');
             $data = [
                 'bot_name' => (string)($params['bot_name'] ?? ''),
                 'bot_characteristics' => array_filter(array_map('trim', (array)($params['bot_characteristics'] ?? [])), fn($v) => $v !== ''),
@@ -51,7 +52,10 @@ class BotConfigController
         }
         if ($subPath === '/delete') {
             $params = $this->getParams($request);
-            $this->configService->deleteBot((string)$params['bot_id']);
+            $botId = (string)($params['bot_id'] ?? '');
+            if ($botId !== '') {
+                $this->configService->deleteBot($botId);
+            }
             return new Response(302, ['Location' => $basePath . '/config']);
         }
         if ($subPath === '/triggers') {
@@ -79,8 +83,9 @@ class BotConfigController
         }
         if ($subPath === '/trigger/save') {
             $params = $this->getParams($request);
-            $botId = (string)$params['bot_id'];
-            $originalTriggerId = $params['trigger_id'] ?: null;
+            $botId = (string)($params['bot_id'] ?? '');
+            $rawTriggerId = (string)($params['trigger_id'] ?? '');
+            $originalTriggerId = $rawTriggerId !== '' ? $rawTriggerId : null;
             $triggerId = $originalTriggerId ?: uniqid('trigger_');
             $data = [
                 'event' => (string)($params['event'] ?? \App\Domain\Bot\Trigger\TimerTrigger::EVENT_TIMER),
@@ -98,8 +103,11 @@ class BotConfigController
         }
         if ($subPath === '/trigger/delete') {
             $params = $this->getParams($request);
-            $botId = (string)$params['bot_id'];
-            $this->configService->deleteTrigger($botId, (string)$params['trigger_id']);
+            $botId = (string)($params['bot_id'] ?? '');
+            $triggerId = (string)($params['trigger_id'] ?? '');
+            if ($botId !== '' && $triggerId !== '') {
+                $this->configService->deleteTrigger($botId, $triggerId);
+            }
             return new Response(302, ['Location' => $basePath . '/config/triggers?bot_id=' . $botId]);
         }
 

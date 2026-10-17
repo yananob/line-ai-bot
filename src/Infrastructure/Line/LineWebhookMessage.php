@@ -27,7 +27,7 @@ class LineWebhookMessage
     public function __construct(string $messageBody)
     {
         $parsedBody = json_decode($messageBody, true);
-        if (!isset($parsedBody['events'][0])) {
+        if (!is_array($parsedBody) || !isset($parsedBody['events'][0]) || !is_array($parsedBody['events'][0])) {
             throw new InvalidWebhookEventException("No events found in webhook body");
         }
 
