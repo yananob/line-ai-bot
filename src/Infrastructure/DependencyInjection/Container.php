@@ -89,10 +89,15 @@ class Container
         return $this->webSearchDomainService;
     }
 
+    private function getOpenAiApiKey(): string
+    {
+        return getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
+    }
+
     public function getGptClient(): OpenAiGptClient
     {
         if ($this->gptClient === null) {
-            $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
+            $openaiApiKey = $this->getOpenAiApiKey();
             $openaiClient = OpenAI::client($openaiApiKey);
             $this->gptClient = new OpenAiGptClient($openaiClient, "gpt-6-luna", $this->getLogger());
         }
@@ -110,7 +115,7 @@ class Container
     public function getWebSearchTool(): ?OpenAIWebSearchTool
     {
         if ($this->webSearchTool === null) {
-            $openaiApiKey = getenv("OPENAI_KEY_LINE_AI_BOT") ?: 'dummy';
+            $openaiApiKey = $this->getOpenAiApiKey();
             if ($openaiApiKey !== 'dummy') {
                 $openaiClient = OpenAI::client($openaiApiKey);
                 try {
