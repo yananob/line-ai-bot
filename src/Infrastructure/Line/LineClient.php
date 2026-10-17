@@ -19,6 +19,8 @@ class LineClient
     private array $tokens;
     private array $presetTargetIds;
     private Client $httpClient;
+    /** @var array<string, MessagingApiApi> */
+    private array $apiInstances = [];
 
     /**
      * @param array $tokens LINE API access tokens
@@ -33,12 +35,18 @@ class LineClient
 
     protected function getApi(string $bot): MessagingApiApi
     {
+        if (isset($this->apiInstances[$bot])) {
+            return $this->apiInstances[$bot];
+        }
+
         if (!isset($this->tokens[$bot])) {
             throw new Exception("Unknown bot: {$bot}");
         }
         $config = new Configuration();
         $config->setAccessToken($this->tokens[$bot]);
-        return new MessagingApiApi($this->httpClient, $config);
+        $this->apiInstances[$bot] = new MessagingApiApi($this->httpClient, $config);
+
+        return $this->apiInstances[$bot];
     }
 
     /**

@@ -32,6 +32,7 @@ class LineWebhookController
         }
 
         $this->logger->log("Received HTTP Webhook Body: " . $body);
+
         $webhookMessage = new LineWebhookMessage($body);
 
         try {
