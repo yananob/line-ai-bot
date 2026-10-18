@@ -12,6 +12,6 @@ abstract class AbstractFirestoreRepository
     public function __construct(?FirestoreClient $db = null)
     {
         $this->collectionName = \App\AppConfig::getFirestoreRootCollection();
-        $this->db = $db ?? new FirestoreClient();
+        $this->db = $db ?? new FirestoreClient(['transport' => 'rest']);
     }
 }
