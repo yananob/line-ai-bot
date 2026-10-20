@@ -102,6 +102,15 @@ final class TriggerScheduleTest extends TestCase
         $this->assertEquals('08:30', $schedule->getResolvedTime());
     }
 
+    public function test_時刻の解決_1桁時間の正規化(): void
+    {
+        $schedule = new TriggerSchedule('everyday', '8:00');
+        $this->assertEquals('08:00', $schedule->getResolvedTime());
+
+        $scheduleWithSec = new TriggerSchedule('everyday', '8:00:00');
+        $this->assertEquals('08:00', $scheduleWithSec->getResolvedTime());
+    }
+
     public function test_文字列変換(): void
     {
         $schedule = new TriggerSchedule('2025-01-01', '12:00');
@@ -126,6 +135,7 @@ final class TriggerScheduleTest extends TestCase
             TriggerSchedule::validate('today', '12:00');
             TriggerSchedule::validate('tomorrow', 'now +15 mins');
             TriggerSchedule::validate('everyday', '23:59');
+            TriggerSchedule::validate('everyday', '8:00');
             TriggerSchedule::validate('2025-12-31', '00:00');
             $this->assertTrue(true);
         } catch (InvalidTriggerScheduleException $e) {

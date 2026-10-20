@@ -38,9 +38,9 @@ class TriggerSchedule
             $targetDateTime->addMinutes((int)$matches[1]);
             $this->resolvedTime = $targetDateTime->format('H:i');
         } else {
-            // 秒数付き(HH:MM:SS)をHH:MMに丸める
-            if (preg_match('/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/', $time)) {
-                $this->resolvedTime = substr($time, 0, 5);
+            // 時刻(H:i:s または H:i または 1桁時間)を HH:MM に正規化
+            if (preg_match('/^([0-1]?[0-9]|2[0-3]):([0-5][0-9])(:[0-5][0-9])?$/', $time, $timeMatches)) {
+                $this->resolvedTime = sprintf('%02d:%02d', (int)$timeMatches[1], (int)$timeMatches[2]);
             } else {
                 $this->resolvedTime = $time;
             }
@@ -88,7 +88,7 @@ class TriggerSchedule
     {
         // 1. 時刻のチェック
         $isRelativeTime = (bool)preg_match('/^now \+(\d+) mins$/', $time);
-        $isAbsoluteTime = (bool)preg_match('/^([0-1][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $time);
+        $isAbsoluteTime = (bool)preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/', $time);
 
         if (!$isRelativeTime && !$isAbsoluteTime) {
             throw new InvalidTriggerScheduleException("時刻の形式が不正です。'HH:MM'、'HH:MM:SS'、または'now +X mins'を指定してください。入力: '{$time}'");
