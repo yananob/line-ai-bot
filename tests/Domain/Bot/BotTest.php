@@ -211,4 +211,22 @@ final class BotTest extends TestCase
         $this->expectException(TriggerNotFoundException::class);
         $this->bot->deleteTriggerById("存在しないID");
     }
+
+    public function test_getMergedPersonality_caches_result_until_personality_is_updated(): void
+    {
+        $defaultPersonality = new BotPersonalityConfig(new StringList(['デフォルト']), new StringList([]));
+        $defaultBot = new Bot("defaultBotId", "Default", $defaultPersonality);
+        $bot = new Bot("bot1", "Bot 1", null, '', [], $defaultBot);
+
+        $merged1 = $bot->getMergedPersonality();
+        $merged2 = $bot->getMergedPersonality();
+        $this->assertSame($merged1, $merged2, "連続呼び出し時はキャッシュされた同一インスタンスを返すべきです");
+
+        // 個別設定更新でキャッシュがクリアされる
+        $newPersonality = new BotPersonalityConfig(new StringList(['個別']), new StringList([]));
+        $bot->setPersonality($newPersonality);
+        $merged3 = $bot->getMergedPersonality();
+        $this->assertNotSame($merged1, $merged3, "personality更新後は新しいマージ結果が再生成されるべきです");
+        $this->assertEquals(['デフォルト', '個別'], $merged3->getBotCharacteristics()->toArray());
+    }
 }

@@ -132,8 +132,16 @@ class Container
     public function getLineClient(): LineClient
     {
         if ($this->lineClient === null) {
-            $lineConfig = json_decode(getenv("LINE_TOKENS_N_TARGETS") ?: '{"tokens": [], "target_ids": []}', true);
-            $this->lineClient = new LineClient($lineConfig["tokens"], $lineConfig["target_ids"]);
+            $rawConfig = getenv("LINE_TOKENS_N_TARGETS");
+            $lineConfig = is_string($rawConfig) ? json_decode($rawConfig, true) : null;
+            $tokens = (is_array($lineConfig) && isset($lineConfig["tokens"]) && is_array($lineConfig["tokens"]))
+                ? $lineConfig["tokens"]
+                : [];
+            $presetTargetIds = (is_array($lineConfig) && isset($lineConfig["target_ids"]) && is_array($lineConfig["target_ids"]))
+                ? $lineConfig["target_ids"]
+                : [];
+
+            $this->lineClient = new LineClient($tokens, $presetTargetIds);
         }
         return $this->lineClient;
     }
