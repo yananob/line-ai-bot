@@ -179,4 +179,39 @@ final class TriggerScheduleTest extends TestCase
             '相対時刻_解決済み' => ['today', 'now +10 mins', '2025-01-01 10:10:00', 5, true],
         ];
     }
+
+    public function test_shouldRunNow_returns_false_when_interval_is_less_than_or_equal_to_zero(): void
+    {
+        $schedule = new TriggerSchedule('today', '12:00');
+        $this->assertFalse($schedule->shouldRunNow(0));
+        $this->assertFalse($schedule->shouldRunNow(-5));
+    }
+
+    public function test_shouldRunNow_accepts_deterministic_now_instance(): void
+    {
+        $tz = new \DateTimeZone(Consts::TIMEZONE);
+        $schedule = new TriggerSchedule('2025-01-01', '12:00');
+
+        $matchingNow = Carbon::parse('2025-01-01 12:05:00', $tz);
+        $nonMatchingNow = Carbon::parse('2025-01-01 13:00:00', $tz);
+
+        $this->assertTrue($schedule->shouldRunNow(10, $matchingNow));
+        $this->assertFalse($schedule->shouldRunNow(10, $nonMatchingNow));
+    }
+
+    public function test_construct_and_validate_handles_surrounding_whitespace(): void
+    {
+        $tz = new \DateTimeZone(Consts::TIMEZONE);
+        $now = Carbon::parse('2025-01-01 10:00:00', $tz);
+
+        $schedule = new TriggerSchedule("  today  ", "  12:00  ", $now);
+        $this->assertSame('today', $schedule->getOriginalDate());
+        $this->assertSame('12:00', $schedule->getOriginalTime());
+        $this->assertSame('2025/01/01', $schedule->getResolvedDate());
+        $this->assertSame('12:00', $schedule->getResolvedTime());
+
+        // validate静的メソッドでも例外がスローされないことを確認
+        TriggerSchedule::validate("  everyday  ", "  08:00  ");
+        $this->assertTrue(true);
+    }
 }

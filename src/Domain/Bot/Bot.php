@@ -23,6 +23,7 @@ class Bot
     private string $lineTarget;
     private array $triggers; // This will hold Trigger objects
     private ?Bot $defaultBot;
+    private ?BotPersonalityConfig $cachedMergedPersonality = null;
 
     /** @var DomainEvent[] */
     private array $recordedEvents = [];
@@ -74,10 +75,17 @@ class Bot
 
     public function getMergedPersonality(): BotPersonalityConfig
     {
-        if ($this->defaultBot !== null) {
-            return $this->personality->merge($this->defaultBot->getPersonality());
+        if ($this->cachedMergedPersonality !== null) {
+            return $this->cachedMergedPersonality;
         }
-        return $this->personality;
+
+        if ($this->defaultBot !== null) {
+            $this->cachedMergedPersonality = $this->personality->merge($this->defaultBot->getPersonality());
+        } else {
+            $this->cachedMergedPersonality = $this->personality;
+        }
+
+        return $this->cachedMergedPersonality;
     }
 
     public function getBotCharacteristics(): StringList
@@ -151,6 +159,7 @@ class Bot
     public function setPersonality(BotPersonalityConfig $personality): void
     {
         $this->personality = $personality;
+        $this->cachedMergedPersonality = null;
         $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 
@@ -162,6 +171,7 @@ class Bot
             $this->personality->getHumanCharacteristics(),
             $configRequests
         );
+        $this->cachedMergedPersonality = null;
         $this->recordEvent(new BotConfigChangedEvent($this->id, $this->name, $this->personality));
     }
 

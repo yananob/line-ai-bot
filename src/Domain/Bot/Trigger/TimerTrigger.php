@@ -98,9 +98,9 @@ class TimerTrigger implements Trigger
         return $this->schedule->getResolvedDate();
     }
 
-    public function shouldRunNow(int $timerTriggeredByNMins): bool
+    public function shouldRunNow(int $timerTriggeredByNMins, ?\Carbon\Carbon $now = null): bool
     {
-        return $this->schedule->shouldRunNow($timerTriggeredByNMins);
+        return $this->schedule->shouldRunNow($timerTriggeredByNMins, $now);
     }
 
     public function __toString(): string

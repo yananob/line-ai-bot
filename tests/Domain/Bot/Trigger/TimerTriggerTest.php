@@ -299,4 +299,16 @@ final class TimerTriggerTest extends TestCase
             ['不正な形式', 'today', 'now +0 mins', 'Could not parse request'],
         ];
     }
+
+    public function test_shouldRunNow_supports_optional_now_parameter(): void
+    {
+        $tz = new \DateTimeZone(Consts::TIMEZONE);
+        $trigger = new TimerTrigger('2025-01-01', '10:00', 'テストリクエスト');
+
+        $matchingNow = Carbon::parse('2025-01-01 10:05:00', $tz);
+        $nonMatchingNow = Carbon::parse('2025-01-01 11:00:00', $tz);
+
+        $this->assertTrue($trigger->shouldRunNow(10, $matchingNow));
+        $this->assertFalse($trigger->shouldRunNow(10, $nonMatchingNow));
+    }
 }
